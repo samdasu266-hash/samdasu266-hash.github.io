@@ -46,7 +46,7 @@ const firebaseConfig = {
 
         // 초기화
         firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore();
+        const db = firebase.app().firestore('default');
         const auth = firebase.auth();
         const APP_ID = "recruitment-portal-v3";
 
@@ -72,14 +72,16 @@ const firebaseConfig = {
                     const dataRef = db.collection('artifacts').doc(APP_ID).collection('public').doc('data');
                     
                     // 공고 데이터 리스너
-                    dataRef.collection('jobs').onSnapshot(snap => {
-                        const list = [];
-                        snap.forEach(doc => list.push({ id: doc.id, ...doc.data() }));
-                        // 최신 게시일 순 정렬
-                        list.sort((a, b) => new Date(b.postedDate || 0) - new Date(a.postedDate || 0));
-                        setJobs(list);
-                        setLoading(false);
-                    });
+dataRef.collection('jobs').onSnapshot(snap => {
+    const list = [];
+    snap.forEach(doc => list.push({ id: doc.id, ...doc.data() }));
+    list.sort((a, b) => new Date(b.postedDate || 0) - new Date(a.postedDate || 0));
+    setJobs(list);
+    setLoading(false);
+}, err => { // <--- 쉼표(,)를 찍고 이 에러 함수를 추가합니다.
+    console.error("데이터 가져오기 실패 원인:", err);
+    setLoading(false);
+});
 
                     // 동기화 시각 리스너
                     dataRef.collection('metadata').doc('sync').onSnapshot(doc => {
@@ -168,4 +170,5 @@ const firebaseConfig = {
         root.render(<App />);
     </script>
 </body>
+
 </html>
