@@ -45,14 +45,18 @@ const firebaseConfig = {
 };
 
         // 초기화
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.app().firestore('default');
-        const auth = firebase.auth();
+firebase.initializeApp(firebaseConfig);
+// 창고 이름을 'default'로 시도하고, 없으면 기본창고를 쓰도록 바꿉니다.
+let db;
+try {db = firebase.app().firestore('default');} 
+catch (e) {db = firebase.firestore();}
+const auth = firebase.auth();
         const APP_ID = "recruitment-portal-v3";
 
         const App = () => {
             const [jobs, setJobs] = useState([]);
             const [loading, setLoading] = useState(true);
+            const [error, setError] = useState(null);
             const [searchTerm, setSearchTerm] = useState('');
             const [activeTab, setActiveTab] = useState('all');
             const [lastSync, setLastSync] = useState("");
@@ -78,8 +82,11 @@ dataRef.collection('jobs').onSnapshot(snap => {
     list.sort((a, b) => new Date(b.postedDate || 0) - new Date(a.postedDate || 0));
     setJobs(list);
     setLoading(false);
-}, err => { // <--- 쉼표(,)를 찍고 이 에러 함수를 추가합니다.
-    console.error("데이터 가져오기 실패 원인:", err);
+    setError(null); // 성공하면 에러 초기화
+}, err => { 
+    // 실패하면 에러 내용을 저장하고 로딩을 끕니다.
+    console.error("실패 원인:", err);
+    setError(`데이터를 가져오지 못했습니다: ${err.message}`);
     setLoading(false);
 });
 
@@ -112,7 +119,12 @@ dataRef.collection('jobs').onSnapshot(snap => {
                                 <span className="text-blue-600">공기업/공단 채용공고</span> 모음집
                             </h1>
                         </header>
-
+{/* 에러가 있을 때만 빨간 박스를 보여줍니다. */}
+{error && (
+    <div className="bg-red-50 border border-red-200 p-4 rounded-2xl mb-6 text-red-600 text-sm font-bold">
+        ⚠️ {error}
+    </div>
+)}
                         <div className="bg-white p-5 rounded-3xl shadow-sm border border-slate-200 mb-8 space-y-6">
                             <div className="relative">
                                 <Icon name="search" className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" />
@@ -172,3 +184,4 @@ dataRef.collection('jobs').onSnapshot(snap => {
 </body>
 
 </html>
+
