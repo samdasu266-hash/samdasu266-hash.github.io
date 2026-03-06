@@ -4,7 +4,8 @@ import asyncio
 from datetime import datetime
 import firebase_admin
 from firebase_admin import credentials
-from google.cloud import firestore # 구글 전용 도구를 직접 꺼냄
+from google.cloud import firestore
+from google.oauth2 import service_account
 from playwright.async_api import async_playwright
 
 # 1. Firebase 인증 (GitHub Secrets에서 가져옴)
@@ -21,7 +22,12 @@ if not firebase_admin._apps:
     })
 cred_dict = json.loads(firebase_json)
 project_id = cred_dict.get('project_id')
-db = firestore.Client(project=project_id, database='default')
+# 1. 여기서 열쇠를 만듭니다 (추가)
+google_creds = service_account.Credentials.from_service_account_info(cred_dict)
+
+# 2. 여기서 열쇠를 주입합니다 (기존 db 설정 줄을 아래처럼 수정)
+db = firestore.Client(project=project_id, credentials=google_creds, database='default')
+
 APP_ID = "recruitment-portal-v3"
 
 async def scrape_site(browser, inst_id, url):
@@ -130,8 +136,3 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
-
-
-
-
-
