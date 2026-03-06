@@ -44,11 +44,14 @@ const firebaseConfig = {
   measurementId: "G-2Y8EY9552N"
 };
 
-        // 초기화
-firebase.initializeApp(firebaseConfig);
-// 창고 이름을 'default'로 시도하고, 없으면 기본창고를 쓰도록 바꿉니다.
-let db;
-const db = firebase.firestore();
+// 초기화
+if (!firebase.apps.length) {
+    firebase.initializeApp(firebaseConfig);
+}
+
+// 중복 선언(let db)을 지우고 하나로 합칩니다. 
+// 대부분의 경우 firestore()만 적으면 자동으로 기본 창고에 연결됩니다.
+const db = firebase.firestore(); 
 const auth = firebase.auth();
         const APP_ID = "recruitment-portal-v3";
 
@@ -183,5 +186,6 @@ dataRef.collection('jobs').onSnapshot(snap => {
 </body>
 
 </html>
+
 
 
