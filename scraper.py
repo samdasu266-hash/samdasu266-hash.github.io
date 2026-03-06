@@ -3,7 +3,8 @@ import json
 import asyncio
 from datetime import datetime
 import firebase_admin
-from firebase_admin import credentials, firestore
+from firebase_admin import credentials
+from google.cloud import firestore # 구글 전용 도구를 직접 꺼냄
 from playwright.async_api import async_playwright
 
 # 1. Firebase 인증 (GitHub Secrets에서 가져옴)
@@ -18,11 +19,9 @@ if not firebase_admin._apps:
     firebase_admin.initialize_app(cred, {
         'projectId': 'get-out-from-hospital'
     })
-# (default) 데이터베이스를 명시적으로 지정합니다.
-# 괄호와 이름을 빼고 가장 기본형으로 바꿉니다. 
-# 이렇게 하면 구글이 알아서 프로젝트의 메인 창고를 찾아갑니다.
-# 괄호 없는 'default'라는 이름을 명시적으로 지정합니다.
-db = firestore.client(database='default')
+cred_dict = json.loads(firebase_json)
+project_id = cred_dict.get('project_id')
+db = firestore.Client(project=project_id, database='default')
 APP_ID = "recruitment-portal-v3"
 
 async def scrape_site(browser, inst_id, url):
@@ -101,7 +100,9 @@ async def main():
         targets = [
             {"id": "hira", "url": "https://hira.recruitlab.co.kr/app/recruitment-announcement/list"},
             {"id": "nhis", "url": "https://nhis.kpcice.kr/Include/PackageAppo.html?rRound=1"},
-            {"id": "neca", "url": "https://neca.applyin.co.kr/jobs/"}
+            {"id": "neca", "url": "https://neca.applyin.co.kr/jobs/"},
+    {"id": "kuksiwon", "url": "https://dware.intojob.co.kr/main/kuksiwon.jsp"},
+    {"id": "koiha", "url": "https://koiha.recruiter.co.kr/career/job"}
         ]
         
         all_collected_jobs = []
@@ -129,6 +130,7 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+
 
 
 
