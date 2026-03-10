@@ -32,18 +32,20 @@
         .job-card:hover { transform: translateY(-2px); border-color: #3b82f6; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
         
         /* 네비게이션 정렬 및 하단 라인 보정 */
-        .nav-link { position: relative; display: inline-flex; align-items: center; height: 40px; padding-bottom: 2px; }
-        .nav-link.active::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 2px; background-color: #2563eb; }
+        .nav-link { position: relative; display: inline-flex; align-items: center; height: 44px; padding: 0 4px; border-bottom: 2px solid transparent; transition: all 0.2s; }
+        .nav-link.active { color: #2563eb; border-bottom-color: #2563eb; }
     </style>
 </head>
 <body class="bg-slate-50 text-left">
 
-    <!-- 검색 엔진 로봇을 위한 텍스트 내용 -->
+    <!-- 🔥 검색 엔진 로봇을 위한 1,000자 이상의 하드코딩 텍스트 -->
     <div id="root">
         <div style="display:none;">
-            <h2>보건의료 공공기관 취업 포털 서비스 안내</h2>
-            <p>이 사이트는 국민건강보험공단(건보), 건강보험심사평가원(심평원), 국민연금공단, 근로복지공단, 대한적십자사 등 보건의료 분야 주요 공공기관의 채용 공고를 실시간으로 모아 제공하는 전문 정보 플랫폼입니다.</p>
-            <p>간호사, 방사선사, 물리치료사 및 보건행정직 취업 준비생들을 위해 각 기관별 초봉 연봉 정보, 서류 전형 필수 가점 자격증, 실제 현직자들이 말하는 육아휴직 및 유연근무 분위기를 상세히 분석하여 가이드로 제공하고 있습니다.</p>
+            <h2>보건의료 공공기관 취업 포털 서비스 안내 및 합격 전략</h2>
+            <p>이 사이트는 국민건강보험공단(건보), 건강보험심사평가원(심평원), 국민연금공단(국연), 근로복지공단(근복), 대한적십자사 등 보건의료 분야 주요 공공기관의 채용 정보를 실시간으로 수집하여 제공하는 전문 정보 플랫폼입니다.</p>
+            <p>간호사, 방사선사, 물리치료사, 임상병리사 및 보건행정직 취업 준비생들을 위해 각 기관별 초봉 및 평균 연봉 정보, 서류 전형 필수 가점 자격증(컴퓨터활용능력 1급, 한국사능력검정시험 1급, 사회복지사 1급), 그리고 실제 현직자들이 체감하는 육아휴직 분위기와 유연근무제 사용 현황을 상세히 분석하여 가이드로 제공합니다.</p>
+            <p>특히 2026년 채용 트렌드에 맞춰 NCS 기반의 직무역량 평가 준비법과 블라인드 면접 시 주의사항 등 독창적인 칼럼 콘텐츠를 통해 취업 성공률을 높여드립니다. 국민건강보험공단은 정량적 스펙 관리가 중요하며, 건강보험심사평가원은 풍부한 임상 경력이 합격의 핵심 열쇠가 됩니다. 이러한 기관별 차이점을 명확히 분석하여 전략적인 지원을 돕습니다.</p>
+            <p>무기계약직, 공무직, 기간제, 정규직 등 고용 형태별 실시간 필터링 기능을 제공하며, 모바일 최적화 레이아웃을 통해 언제 어디서든 최신 공고를 확인할 수 있습니다. 보건직 공기업 취업의 모든 것을 이곳에서 확인하세요.</p>
         </div>
     </div>
 
@@ -85,17 +87,15 @@
             const [showPrivacy, setShowPrivacy] = useState(false);
             const [showContact, setShowContact] = useState(false);
 
-            // 🔥 기관 데이터 (한국어 줄임말 매핑용)
             const institutions = [
-                { id: 'nhis', name: '국민건강보험공단', shortName: '건보공단', specs: { recruitSchedule: '연 2회 (3~4월, 8~9월)', salary: '신입 약 4,000 / 평균 약 7,500', language: '토익 850+', cert: '컴활 1급, 한국사 1급 필수 수준', summary: '서류 가점을 만점으로 채우는 것이 기본입니다.' } },
-                { id: 'hira', name: '건강보험심사평가원', shortName: '심평원', specs: { recruitSchedule: '연 2회 (4~5월, 9~10월)', salary: '신입 약 4,100 / 평균 약 7,800', language: '토익 850+ (심사직 700+)', cert: 'ADsP, SQLD 등 데이터 자격증 우대', summary: '심사직은 종합병원급 임상경력이 핵심입니다.' } },
-                { id: 'nps', name: '국민연금공단', shortName: '국민연금', specs: { recruitSchedule: '연 2회 (4월, 9월)', salary: '신입 약 3,800 / 평균 약 7,100', language: '토익 800+', cert: '사회복지사 1급 강력 우대', summary: '전공 필기 난이도가 매우 높습니다.' } },
-                { id: 'comwel', name: '근로복지공단', shortName: '근로복지', specs: { recruitSchedule: '연 2회 (4~5월, 9~10월)', salary: '신입 약 3,600 / 평균 약 6,500', language: '토익 750+', cert: '직무 자격증 가점 비중 높음', summary: '필기 전형 비중이 압도적으로 높습니다.' } },
-                { id: 'neca', name: '한국보건의료연구원', shortName: '보의연', specs: { recruitSchedule: '수시 및 통합채용', salary: '신입 약 3,900 / 평균 약 7,200', language: '토익 800+', cert: '연구 실적 중시', summary: '연구직 중심의 아카데믹한 분위기입니다.' } },
-                { id: 'kuksiwon', name: '한국보건의료인국가시험원', shortName: '국시원', specs: { recruitSchedule: '연 1~2회 (하반기)', salary: '신입 약 3,700 / 평균 약 6,900', language: '토익 750+', cert: '행정 역량 중시', summary: '서울 소재 및 비수기 워라밸 최상입니다.' } },
-                { id: 'koiha', name: '의료기관평가인증원', shortName: '인증원', specs: { recruitSchedule: '상·하반기 및 수시', salary: '신입 약 3,800 / 평균 약 6,800', language: '영어성적 필수', cert: '인증 평가 경력 우대', summary: '현장 평가 출장이 잦은 전문직무입니다.' } },
-                { id: 'redcross', name: '대한적십자사', shortName: '적십자사', specs: { recruitSchedule: '본사 통합 및 지사별 수시', salary: '신입 약 3,500 / 평균 약 6,200', language: '토익 750+', cert: '헌혈 및 봉사 경력 중시', summary: '적십자 정신과 봉사 실적이 중요합니다.' } },
-                { id: 'mohw', name: '보건복지부', shortName: '보건복지부', specs: { recruitSchedule: '수시 채용', salary: '공무직 보수규정 적용', language: '직무별 상이', cert: '관련 실무경력 중시', summary: '다양한 공무직 및 임기제 채용이 진행됩니다.' } }
+                { id: 'nhis', name: '국민건강보험공단', shortName: '건보공단', specs: { recruitSchedule: '연 2회 (상반기 3~4월, 하반기 8~9월)', salary: '신입 약 4,000 / 평균 약 7,500', language: '토익 850점 이상 안정권', cert: '컴활 1급, 한국사 1급 필수 수준', summary: '서류 가점을 만점으로 채우는 것이 기본 전제입니다.' } },
+                { id: 'hira', name: '건강보험심사평가원', shortName: '심평원', specs: { recruitSchedule: '연 2회 (상반기 4~5월, 하반기 9~10월)', salary: '신입 약 4,100 / 평균 약 7,800', language: '토익 850점 이상 (심사직 700+)', cert: 'ADsP, SQLD 등 데이터 역량 우대', summary: '심사직은 종합병원급 이상의 임상 경력이 합격의 핵심입니다.' } },
+                { id: 'nps', name: '국민연금공단', shortName: '국민연금', specs: { recruitSchedule: '연 2회 (상반기 4월, 하반기 9월)', salary: '신입 약 3,800 / 평균 약 7,100', language: '토익 800점 이상 권장', cert: '사회복지사 1급 가점 비중 높음', summary: 'NCS 및 전공 필기 시험의 난이도가 상당히 높은 편입니다.' } },
+                { id: 'comwel', name: '근로복지공단', shortName: '근로복지', specs: { recruitSchedule: '연 2회 (상반기 4~5월, 하반기 9~10월)', salary: '신입 약 3,600 / 평균 약 6,500', language: '토익 750점 이상 우대', cert: '직무 자격증 가점 비중 높음', summary: '블라인드 원칙 준수와 필기 성적이 합격에 결정적입니다.' } },
+                { id: 'neca', name: '한국보건의료연구원', shortName: '보의연', specs: { recruitSchedule: '수시 및 상·하반기 통합 채용', salary: '신입 약 3,900 / 평균 약 7,200', language: '토익 800점 이상 권장', cert: '석/박사 학위 및 연구 실적 중시', summary: '연구 중심 기관으로 학술적 전문성과 서울 근무의 장점이 큽니다.' } },
+                { id: 'kuksiwon', name: '한국보건의료인국가시험원', shortName: '국시원', specs: { recruitSchedule: '연 1~2회 (하반기 집중)', salary: '신입 약 3,700 / 평균 약 6,900', language: '토익 750점 이상 권장', cert: '행정 및 기획 역량 중시', summary: '서울 광진구 소재 및 비수기 워라밸이 매우 뛰어납니다.' } },
+                { id: 'koiha', name: '의료기관평가인증원', shortName: '인증원', specs: { recruitSchedule: '상·하반기 및 결원 수시 채용', salary: '신입 약 3,800 / 평균 약 6,800', language: '공인영어성적 필수 제출', cert: '인증 평가 및 QPS 실무자 우대', summary: '전국 병원 현장 평가 출장이 잦은 직무적 특성이 있습니다.' } },
+                { id: 'redcross', name: '대한적십자사', shortName: '적십자사', specs: { recruitSchedule: '본사 통합 및 각 지사별 수시', salary: '신입 약 3,500 / 평균 약 6,200', language: '토익 750점 이상 권장', cert: '헌혈 횟수 및 봉사 활동 가점 필수', summary: '봉사 정신과 기관 미션에 대한 이해도가 면접에서 중요합니다.' } }
             ];
 
             useEffect(() => {
@@ -135,24 +135,30 @@
             return (
                 <div className="max-w-5xl mx-auto p-4 md:p-8 flex flex-col min-h-[100dvh]">
                     
-                    {/* 상단 네비게이션 (정렬 보정) */}
-                    <nav className="mb-10 flex flex-wrap items-center gap-x-6 gap-y-2 border-b border-slate-200 text-[13px] md:text-sm font-bold overflow-x-auto no-scrollbar whitespace-nowrap">
+                    {/* 🚀 정렬 및 링크 구조가 완벽히 보정된 상단 네비게이션 */}
+                    <nav className="mb-10 flex flex-wrap items-center gap-x-6 gap-y-1 border-b border-slate-200 text-[13px] md:text-sm font-bold overflow-x-auto no-scrollbar whitespace-nowrap">
                         <button 
                             onClick={() => setMainView('jobs')} 
-                            className={`nav-link transition-colors ${mainView === 'jobs' ? 'text-blue-600 active' : 'text-slate-500 hover:text-slate-800'}`}
+                            className={`nav-link ${mainView === 'jobs' ? 'active' : 'text-slate-500 hover:text-slate-800'}`}
                         >
-                            실시간 공고
+                            실시간 채용공고
                         </button>
-                        <a href="tips.html" className="nav-link text-slate-500 hover:text-blue-600">취업 총정리</a>
-                        <a href="guide.html" className="nav-link text-slate-500 hover:text-blue-600">근무환경 비교</a>
+                        <button 
+                            onClick={() => setMainView('guide')} 
+                            className={`nav-link ${mainView === 'guide' ? 'active' : 'text-slate-500 hover:text-slate-800'}`}
+                        >
+                            기관별 합격 가이드
+                        </button>
+                        <div className="flex-1 min-w-[20px]"></div>
+                        <a href="tips.html" className="nav-link text-slate-500 hover:text-blue-600">채용 트렌드</a>
                         <a href="career.html" className="nav-link text-slate-500 hover:text-blue-600">임상경력 활용</a>
-                        <a href="license.html" className="nav-link text-slate-500 hover:text-blue-600">가점 자격증</a>
-                        <a href="interview.html" className="nav-link text-slate-500 hover:text-blue-600">면접 주의사항</a>
+                        <a href="license.html" className="nav-link text-slate-500 hover:text-blue-600">서류 가점 전략</a>
+                        <a href="interview.html" className="nav-link text-slate-500 hover:text-blue-600">면접 필승 가이드</a>
                     </nav>
 
                     <header className="mb-10 space-y-3">
                         <div className="flex flex-wrap gap-2">
-                            <span className="bg-blue-600 text-white px-2.5 py-0.5 rounded-full text-[10px] font-bold">LIVE UPDATE</span>
+                            <span className="bg-blue-600 text-white px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider">Live Update</span>
                             <span className="bg-white border border-slate-200 text-slate-700 px-2.5 py-0.5 rounded-full text-[10px] font-bold shadow-sm flex items-center gap-1">
                                 <Icon name="users" className="w-3 h-3 text-emerald-500" /> 오늘 방문자: {todayVisitors}명
                             </span>
@@ -164,13 +170,12 @@
 
                     {mainView === 'jobs' ? (
                         <main className="space-y-6">
-                            {/* 검색 바 */}
+                            {/* 검색 및 필터 영역 */}
                             <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm relative">
                                 <Icon name="search" className="absolute left-7 top-1/2 -translate-y-1/2 text-slate-300 w-4 h-4" />
                                 <input type="text" placeholder="기관명 또는 공고 제목으로 검색..." onChange={e => setSearchTerm(e.target.value)} className="w-full pl-10 pr-4 py-1.5 bg-transparent text-sm focus:outline-none font-medium border-none" />
                             </div>
 
-                            {/* 🔥 기관 필터 (한국어 줄임말 적용) */}
                             <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
                                 <button onClick={() => setActiveTab('all')} className={`flex-shrink-0 px-4 py-2 rounded-xl text-xs font-bold border transition-all ${activeTab === 'all' ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'}`}>전체보기</button>
                                 {institutions.map(inst => (
@@ -184,107 +189,121 @@
                                 ))}
                             </div>
 
-                            {/* 공고 리스트 */}
+                            {/* 공고 카드 리스트 */}
                             <div className="space-y-3">
                                 {loading ? <div className="py-20 text-center text-slate-300 animate-pulse font-bold text-sm">최신 채용 정보를 동기화 중입니다...</div> :
                                     filteredJobs.length > 0 ? (
                                         filteredJobs.map(job => {
                                             const instInfo = institutions.find(i => i.id === job.instId) || { shortName: job.instId.toUpperCase() };
+                                            const isClosed = job.status === '마감';
                                             return (
                                                 <div key={job.id} className="job-card bg-white p-5 md:p-6 rounded-2xl border border-slate-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 text-left">
                                                     <div className="flex-1">
                                                         <div className="flex gap-1.5 mb-2 flex-wrap">
-                                                            {/* 🔥 공고 카드 내 기관명도 한국어 줄임말로 표시 */}
-                                                            <span className="text-[10px] font-black px-2 py-0.5 bg-slate-100 rounded text-slate-500 uppercase">{instInfo.shortName}</span>
-                                                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${job.status === '마감' ? 'text-red-600 bg-red-50 border-red-100' : 'text-blue-600 bg-blue-50 border-blue-100'}`}>{job.status === '마감' ? '서류접수마감' : '채용진행중'}</span>
+                                                            <span className="text-[10px] font-black px-2 py-0.5 bg-slate-100 rounded text-slate-500 uppercase tracking-tight">{instInfo.shortName}</span>
+                                                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${isClosed ? 'text-red-600 bg-red-50 border-red-100' : 'text-blue-600 bg-blue-50 border-blue-100'}`}>{isClosed ? '서류접수마감' : '채용진행중'}</span>
                                                             <span className="text-[10px] font-bold px-2 py-0.5 rounded border text-purple-600 bg-purple-50 border-purple-100">{job.jobType || "정규직"}</span>
                                                         </div>
-                                                        <h3 className="text-[16px] md:text-[17px] font-bold text-slate-800 mb-2 leading-snug break-keep">{job.title}</h3>
-                                                        <p className="text-[11px] font-bold text-slate-400 flex items-center gap-1"><Icon name="calendar" className="w-3 h-3" /> 접수기간: {job.startDate} ~ <span className={job.status === '마감' ? 'text-slate-300' : 'text-red-400'}>{job.endDate}</span></p>
+                                                        <h3 className={`text-[16px] md:text-[17px] font-bold text-slate-800 mb-2 leading-snug break-keep`}>{job.title}</h3>
+                                                        <p className="text-[11px] font-bold text-slate-400 flex items-center gap-1"><Icon name="calendar" className="w-3 h-3" /> 접수기간: {job.startDate} ~ <span className={isClosed ? 'text-slate-300' : 'text-red-400'}>{job.endDate}</span></p>
                                                     </div>
-                                                    <button onClick={() => window.open(job.link, '_blank')} className={`w-full md:w-auto px-7 py-2.5 rounded-xl font-bold text-xs shadow-sm transition-all ${job.status === '마감' ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-slate-900 text-white hover:bg-blue-600'}`}>{job.status === '마감' ? '모집종료' : '지원하기'}</button>
+                                                    <button onClick={() => window.open(job.link, '_blank')} className={`w-full md:w-auto px-7 py-2.5 rounded-xl font-bold text-xs shadow-sm transition-all ${isClosed ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-slate-900 text-white hover:bg-blue-600'}`}>{isClosed ? '모집종료' : '지원하기'}</button>
                                                 </div>
                                             );
                                         })
                                     ) : (
-                                        <div className="py-20 text-center bg-white rounded-3xl border border-dashed border-slate-200"><p className="text-slate-400 text-sm font-bold">현재 필터에 해당하는 진행 중인 공고가 없습니다.</p></div>
+                                        <div className="py-20 text-center bg-white rounded-3xl border border-dashed border-slate-200"><p className="text-slate-400 text-sm font-bold">진행 중인 공고가 없습니다.</p></div>
                                     )
                                 }
                             </div>
                         </main>
                     ) : (
-                        /* 기관별 합격 가이드 줄글 페이지 */
-                        <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm space-y-12 text-left">
-                            <h2 className="text-2xl font-black text-slate-900 border-b pb-4">주요 보건의료 기관별 합격 전략 및 근무 환경 분석</h2>
-                            {institutions.map(inst => (
-                                <article key={inst.id} className="space-y-4">
-                                    <h3 className="text-xl font-bold text-blue-700 flex items-center gap-2"><Icon name="building" /> {inst.name} ({inst.shortName})</h3>
-                                    <div className="text-sm text-slate-700 space-y-3 font-medium leading-relaxed">
-                                        <p><strong>📅 채용 일정:</strong> {inst.specs.recruitSchedule}</p>
-                                        <p><strong>💰 급여 수준:</strong> {inst.specs.salary}</p>
-                                        <p><strong>🎯 요구 스펙:</strong> 어학은 {inst.specs.language} 이상이 안정권이며, 자격증은 {inst.specs.cert} 위주로 가점을 확보해야 합니다.</p>
-                                        <p className="bg-blue-50 p-5 rounded-2xl text-blue-900 text-[13px] border border-blue-100"><strong>💡 합격 핵심 전략:</strong> {inst.specs.summary}</p>
-                                    </div>
-                                </article>
-                            ))}
+                        /* 기관별 분석 줄글 뷰 (SEO 가점 요소) */
+                        <div className="bg-white p-8 md:p-12 rounded-3xl border border-slate-200 shadow-sm space-y-16 text-left">
+                            <header className="border-b border-slate-100 pb-8">
+                                <h2 className="text-2xl font-black text-slate-900 mb-4">보건의료 공공기관별 심층 합격 전략 분석</h2>
+                                <p className="text-slate-500 font-medium leading-relaxed">각 기관의 고유한 채용 특성과 현직자들이 강조하는 핵심 스펙을 정리했습니다. 본인의 강점에 맞는 기관을 선택하여 전략적으로 준비하세요.</p>
+                            </header>
+                            
+                            <div className="grid grid-cols-1 gap-12">
+                                {institutions.map(inst => (
+                                    <article key={inst.id} className="space-y-5">
+                                        <h3 className="text-xl font-bold text-blue-700 flex items-center gap-2 underline underline-offset-8 decoration-blue-100"><Icon name="building" /> {inst.name} ({inst.shortName})</h3>
+                                        <div className="text-[14px] text-slate-700 space-y-3 font-medium leading-relaxed">
+                                            <p><strong>📅 연간 채용 주기:</strong> {inst.specs.recruitSchedule} 기간에 집중적으로 신입 및 경력직 채용이 진행됩니다.</p>
+                                            <p><strong>💰 처우 및 복지:</strong> 신입 사원 기준 {inst.specs.salary} 수준의 경쟁력 있는 급여를 제공하며, 공공기관 특유의 안정적인 복지 혜택을 누릴 수 있습니다.</p>
+                                            <p><strong>🎯 필수 핵심 스펙:</strong> 어학 성적은 {inst.specs.language} 이상 확보가 권장되며, 자격증 가점은 {inst.specs.cert} 위주로 구성하는 것이 가장 효율적입니다.</p>
+                                            <div className="bg-blue-50 p-6 rounded-2xl text-blue-900 text-[13.5px] border border-blue-100 mt-2 shadow-inner leading-relaxed">
+                                                <strong>💡 현직자 합격 꿀팁:</strong> {inst.specs.summary}
+                                            </div>
+                                        </div>
+                                    </article>
+                                ))}
+                            </div>
                         </div>
                     )}
 
-                    {/* 추천 가이드 카드 (SEO) */}
-                    <section className="mt-20 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                        <a href="guide.html" className="bg-white p-6 rounded-2xl border border-slate-200 hover:border-blue-500 transition-all shadow-sm">
-                            <Icon name="map-pin" className="text-blue-500 mb-3" />
-                            <h4 className="font-bold text-slate-900 text-sm mb-1">기관별 근무환경</h4>
-                            <p className="text-[11px] text-slate-500">본사 위치부터 워라밸까지 한눈에 비교</p>
+                    {/* 🔥 하단 전문 칼럼 추천 가이드 (SEO 핵심 구조) */}
+                    <section className="mt-24 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <a href="guide.html" className="bg-white p-6 rounded-2xl border border-slate-200 hover:border-blue-500 transition-all shadow-sm group">
+                            <Icon name="map-pin" className="text-blue-500 mb-3 group-hover:scale-110 transition-transform" />
+                            <h4 className="font-bold text-slate-900 text-sm mb-1">기관별 근무환경 비교</h4>
+                            <p className="text-[11px] text-slate-500">본사 위치 및 실질 워라밸 분석</p>
                         </a>
-                        <a href="career.html" className="bg-white p-6 rounded-2xl border border-slate-200 hover:border-blue-500 transition-all shadow-sm">
-                            <Icon name="award" className="text-orange-500 mb-3" />
-                            <h4 className="font-bold text-slate-900 text-sm mb-1">임상 경력 활용법</h4>
-                            <p className="text-[11px] text-slate-500">병원 경력이 합격에 미치는 영향 분석</p>
+                        <a href="career.html" className="bg-white p-6 rounded-2xl border border-slate-200 hover:border-blue-500 transition-all shadow-sm group">
+                            <Icon name="award" className="text-orange-500 mb-3 group-hover:scale-110 transition-transform" />
+                            <h4 className="font-bold text-slate-900 text-sm mb-1">임상 경력 활용 가이드</h4>
+                            <p className="text-[11px] text-slate-500">경력이 합격에 미치는 영향 분석</p>
                         </a>
-                        <a href="license.html" className="bg-white p-6 rounded-2xl border border-slate-200 hover:border-blue-500 transition-all shadow-sm">
-                            <Icon name="check-circle" className="text-emerald-500 mb-3" />
-                            <h4 className="font-bold text-slate-900 text-sm mb-1">가점 자격증 정리</h4>
-                            <p className="text-[11px] text-slate-500">서류 합격권을 위한 필수 자격증 조합</p>
+                        <a href="license.html" className="bg-white p-6 rounded-2xl border border-slate-200 hover:border-blue-500 transition-all shadow-sm group">
+                            <Icon name="check-circle" className="text-emerald-500 mb-3 group-hover:scale-110 transition-transform" />
+                            <h4 className="font-bold text-slate-900 text-sm mb-1">서류 만점 자격증 전략</h4>
+                            <p className="text-[11px] text-slate-500">직렬별 필수 가점 자격증 로드맵</p>
                         </a>
-                        <a href="interview.html" className="bg-white p-6 rounded-2xl border border-slate-200 hover:border-blue-500 transition-all shadow-sm">
-                            <Icon name="users" className="text-purple-500 mb-3" />
-                            <h4 className="font-bold text-slate-900 text-sm mb-1">면접 주의사항</h4>
-                            <p className="text-[11px] text-slate-500">실격 방지를 위한 블라인드 면접 가이드</p>
+                        <a href="interview.html" className="bg-white p-6 rounded-2xl border border-slate-200 hover:border-blue-500 transition-all shadow-sm group">
+                            <Icon name="users" className="text-purple-500 mb-3 group-hover:scale-110 transition-transform" />
+                            <h4 className="font-bold text-slate-900 text-sm mb-1">블라인드 면접 필승법</h4>
+                            <p className="text-[11px] text-slate-500">실격 방지를 위한 필수 체크리스트</p>
                         </a>
                     </section>
 
-                    {/* FAQ 섹션 */}
-                    <section className="mt-12 bg-white p-8 rounded-3xl border border-slate-200 shadow-sm">
+                    {/* 취업 FAQ 섹션 */}
+                    <section className="mt-12 bg-white p-8 rounded-3xl border border-slate-200 shadow-sm text-left">
                         <h2 className="text-xl font-black text-slate-900 mb-6 flex items-center gap-2"><Icon name="help-circle" className="text-blue-600" /> 보건의료 취업 FAQ</h2>
-                        <div className="space-y-6 text-sm text-slate-700 font-medium">
+                        <div className="space-y-6 text-[14px] text-slate-700 font-medium leading-relaxed">
                             <div>
-                                <h3 className="font-bold text-slate-900 mb-2">Q. 보건직 공기업 서류 전형에서 가장 중요한 것은?</h3>
-                                <p>대부분의 기관이 정량 평가를 실시하므로, 공고에 명시된 가점 자격증(컴활, 한국사, 사회복지사 등)을 미리 취득하여 서류 합격권 점수를 만들어두는 것이 최우선입니다.</p>
+                                <h3 className="font-bold text-slate-900 mb-2">Q. 보건직 공기업 채용에서 가장 중요한 '서류 컷' 기준은 무엇인가요?</h3>
+                                <p>대부분의 기관은 자격증 점수로 서류를 선발하는 '정량 평가' 방식을 채택합니다. 따라서 컴활 1급, 한국사 1급, 토익 800점 이상의 기본 스펙을 갖춘 후, 직렬별 우대 자격증(사회복지사 등)으로 추가 가점을 확보하는 것이 합격권의 기본입니다.</p>
                             </div>
                         </div>
                     </section>
 
-                    <footer className="mt-16 pt-8 pb-4 border-t border-slate-200 text-center space-y-4">
-                        <div className="flex justify-center gap-4 text-[11px] font-bold text-slate-500">
+                    <footer className="mt-20 pt-10 pb-6 border-t border-slate-200 text-center space-y-6">
+                        <div className="flex justify-center gap-6 text-[12px] font-bold text-slate-500">
                             <button onClick={() => setShowPrivacy(true)} className="hover:text-slate-800 transition-colors">개인정보처리방침</button>
-                            <span className="text-slate-300">|</span>
+                            <span className="text-slate-200">|</span>
                             <button onClick={() => setShowContact(true)} className="hover:text-slate-800 transition-colors">문의하기</button>
                         </div>
-                        <p className="text-[10px] text-slate-400 font-medium">© 2026 보건의료 채용 포털. 모든 정보는 참고용이며 상세 내용은 각 기관 공식 공고를 확인하시기 바랍니다.</p>
+                        <div className="space-y-1">
+                            <p className="text-[11px] text-slate-400 font-medium">© 2026 보건의료 채용 포털. All rights reserved.</p>
+                            <p className="text-[10px] text-slate-300">모든 채용 정보는 실시간 수집 데이터로, 정확한 내용은 반드시 각 기관의 공식 공고문을 확인하시기 바랍니다.</p>
+                        </div>
                     </footer>
 
                     {/* 개인정보 모달 */}
                     {showPrivacy && (
                         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
-                            <div className="bg-white w-full max-w-lg rounded-[2rem] p-7 shadow-2xl relative animate-in zoom-in duration-300">
+                            <div className="bg-white w-full max-w-lg rounded-[2.5rem] p-8 shadow-2xl relative animate-in zoom-in duration-300">
                                 <button onClick={() => setShowPrivacy(false)} className="absolute top-6 right-6 text-slate-300 hover:text-slate-900"><Icon name="x" /></button>
-                                <h2 className="text-xl font-black text-slate-900 mb-5">개인정보처리방침</h2>
-                                <div className="space-y-4 text-[13px] text-slate-600 font-medium leading-relaxed">
-                                    <p>본 사이트는 구글 애드센스 광고를 게재하며, 이를 위해 쿠키를 사용합니다. 쿠키는 방문자의 이전 방문 내역을 기반으로 맞춤형 광고를 제공하는 데 사용됩니다.</p>
-                                    <p>사용자는 구글 광고 설정에서 맞춤 광고를 위한 쿠키 사용을 거부할 수 있습니다.</p>
+                                <h2 className="text-2xl font-black text-slate-900 mb-6 flex items-center gap-2"><Icon name="shield-check" className="text-blue-600"/> 개인정보처리방침</h2>
+                                <div className="space-y-4 text-[13.5px] text-slate-600 font-medium leading-relaxed max-h-[50vh] overflow-y-auto pr-2 no-scrollbar">
+                                    <p>본 사이트는 구글 애드센스(Google AdSense) 광고를 게재하며, 원활한 서비스 제공을 위해 쿠키를 활용합니다.</p>
+                                    <h3 className="font-bold text-slate-900 mt-4">1. 쿠키 및 맞춤 광고 안내</h3>
+                                    <p>구글을 포함한 제3자 공급업체는 사용자가 본 사이트 또는 다른 사이트를 방문한 내역을 기반으로 쿠키를 사용하여 맞춤형 광고를 제공합니다.</p>
+                                    <h3 className="font-bold text-slate-900 mt-4">2. 쿠키 수집 거부 및 관리</h3>
+                                    <p>사용자는 구글 광고 설정 페이지에서 맞춤 광고를 위한 쿠키 사용을 옵트아웃(거부)할 수 있습니다.</p>
                                 </div>
-                                <button onClick={() => setShowPrivacy(false)} className="w-full mt-6 py-3.5 bg-slate-900 text-white rounded-xl font-bold">확인 완료</button>
+                                <button onClick={() => setShowPrivacy(false)} className="w-full mt-8 py-4 bg-slate-900 text-white rounded-2xl font-bold hover:bg-blue-600 transition-colors shadow-lg">확인 완료</button>
                             </div>
                         </div>
                     )}
@@ -292,15 +311,15 @@
                     {/* 문의하기 모달 */}
                     {showContact && (
                         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
-                            <div className="bg-white w-full max-w-sm rounded-[2rem] p-7 shadow-2xl relative text-center animate-in zoom-in duration-300">
+                            <div className="bg-white w-full max-w-sm rounded-[2.5rem] p-8 shadow-2xl relative text-center animate-in zoom-in duration-300">
                                 <button onClick={() => setShowContact(false)} className="absolute top-6 right-6 text-slate-300 hover:text-slate-900"><Icon name="x" /></button>
-                                <Icon name="mail" className="w-12 h-12 mx-auto text-blue-500 mb-4" />
-                                <h2 className="text-xl font-black text-slate-900 mb-2">운영자 문의하기</h2>
-                                <p className="text-sm text-slate-600 font-medium mb-6 leading-relaxed">사이트 이용 건의 및 제보는 아래 이메일로 보내주세요.</p>
-                                <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 mb-6">
-                                    <span className="font-bold text-slate-800 text-sm">samdasu266@gmail.com</span>
+                                <Icon name="mail" className="w-14 h-14 mx-auto text-blue-500 mb-4" />
+                                <h2 className="text-xl font-black text-slate-900 mb-3">운영자 문의하기</h2>
+                                <p className="text-sm text-slate-600 font-medium mb-6 leading-relaxed">기관 추가 요청, 오류 제보 및 각종 건의사항은 아래 메일로 보내주시기 바랍니다.</p>
+                                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 mb-6 flex justify-center items-center">
+                                    <span className="font-bold text-blue-600 text-[15px] select-all tracking-tight">samdasu266@gmail.com</span>
                                 </div>
-                                <button onClick={() => setShowContact(false)} className="w-full py-3.5 bg-slate-900 text-white rounded-xl font-bold">닫기</button>
+                                <button onClick={() => setShowContact(false)} className="w-full py-4 bg-slate-900 text-white rounded-2xl font-bold hover:bg-blue-600 transition-colors shadow-lg">닫기</button>
                             </div>
                         </div>
                     )}
