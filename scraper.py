@@ -68,8 +68,8 @@ async def scrape_site(browser, inst_id, url):
                 if "채용" not in row_text or "공고" not in row_text:
                     continue
 
-                # 🔥 [제외 조건] 의사, 의무직, 진료직, 합격자 단어가 있으면 제외
-                exclude_words = ["의사", "의무직", "진료직", "합격자"]
+                # 🔥 [제외 조건] 의사, 의무직, 진료직, 합격자, 변호사 단어가 있으면 제외
+                exclude_words = ["의사", "의무직", "진료직", "합격자", "변호사"]
                 if any(ex in title for ex in exclude_words) or any(ex in row_text for ex in exclude_words):
                     continue
 
