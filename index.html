@@ -41,9 +41,9 @@
             measurementId: "G-2Y8EY9552N"
         };
 
-        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-        const db = firebase.app().firestore('default');
-        const auth = firebase.auth();
+if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+const auth = firebase.auth();
         const APP_ID = "recruitment-portal-v3";
 
         const App = () => {
@@ -210,3 +210,4 @@
     </script>
 </body>
 </html>
+
