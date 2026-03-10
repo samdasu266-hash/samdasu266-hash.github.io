@@ -26,7 +26,7 @@ project_id = cred_dict.get('project_id')
 google_creds = service_account.Credentials.from_service_account_info(cred_dict)
 
 # 2. 여기서 열쇠를 주입합니다 (기존 db 설정 줄을 아래처럼 수정)
-db = firestore.Client(project=project_id, credentials=google_creds, database='default')
+db = firestore.Client(project=project_id, credentials=google_creds)
 
 APP_ID = "recruitment-portal-v3"
 
@@ -136,3 +136,4 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+
