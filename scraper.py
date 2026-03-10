@@ -163,7 +163,7 @@ async def main():
             {"id": "nps", "url": "https://www.nps.or.kr/pnsgdnc/hiregdnc/getOHAE0004M0List.do"},
             {"id": "mohw", "url": "https://www.mohw.go.kr/board.es?mid=a10501010400&bid=0003"},
             {"id": "comwel", "url": "https://www.comwel.or.kr/recruit/hp/pblanc/pblancList.do"},
-            {"id": "redcross", "url": "https://www.redcross.or.kr/recruit/commonAction.do"}
+            {"id": "redcross", "url": "https://www.redcross.or.kr/recruit"}
         ]
         
         all_collected_jobs = []
@@ -197,3 +197,4 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+
