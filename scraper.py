@@ -23,7 +23,6 @@ if not firebase_admin._apps:
 db = firestore.client()
 APP_ID = "recruitment-portal-v3"
 
-# 한국 시간 고정
 KST = timezone(timedelta(hours=9))
 
 async def scrape_site(browser, inst_id, url):
@@ -51,32 +50,34 @@ async def scrape_site(browser, inst_id, url):
                     if await row.evaluate("node => node.tagName") == "A": link_el = row
                     else: continue
                         
-                title = (await link_el.inner_text()).strip()
-                if len(title) < 5: continue
+                raw_title = (await link_el.inner_text()).strip()
+                if len(raw_title) < 5: continue
 
-                # 🔥 1. 필수 포함 단어 필터 (AND 조건: 채용 & 공고)
-                if "채용" not in title or "공고" not in title:
+                # 🔥 1. 제목에 포함된 지저분한 기간 날짜 텍스트 완벽 제거 
+                # (예: 2026-01-21(수) 17:00 ~ 2026-02-04(수) 18:00 패턴을 통째로 날림)
+                clean_title = re.sub(r'20\d{2}\s*[-./]\s*\d{1,2}\s*[-./]\s*\d{1,2}.*', '', raw_title).strip()
+
+                # 🔥 2. "채용" 과 "공고" 두 단어가 무조건 모두(AND) 있어야만 통과
+                if "채용" not in clean_title or "공고" not in clean_title:
                     continue
 
-                # 🔥 2. 제외 단어 필터 (OR 조건)
+                # 🔥 3. 제외 단어 중 하나라도 있으면 즉시 버림 (OR 조건)
                 exclude_words = ["발표", "변호사", "합격자", "면접", "약사", "약무직", "의사", "의무직"]
-                if any(ex in title for ex in exclude_words):
+                if any(ex in clean_title for ex in exclude_words):
                     continue
 
-                # 🔥 3. 고용 형태(직무 형태) 추출
-                job_type = "정규직" # 명시되지 않은 경우 기본값
-                if "무기계약직" in title:
+                # 🔥 4. 제목을 분석하여 고용 형태(정규직/비정규직 등) 자동 추출
+                job_type = "정규직" # 안 적혀있으면 기본 정규직 간주
+                if "무기계약직" in clean_title:
                     job_type = "무기계약직"
-                elif "공무직" in title:
+                elif "공무직" in clean_title:
                     job_type = "공무직"
-                elif "기간제" in title or "계약직" in title or "촉탁직" in title:
+                elif "기간제" in clean_title or "계약직" in clean_title or "촉탁직" in clean_title:
                     job_type = "계약직/기간제"
-                elif "비정규직" in title:
+                elif "비정규직" in clean_title:
                     job_type = "비정규직"
-                elif "인턴" in title:
+                elif "인턴" in clean_title:
                     job_type = "인턴"
-                elif "정규직" in title:
-                    job_type = "정규직"
 
                 href = url
                 raw_href = await link_el.get_attribute("href")
@@ -84,7 +85,7 @@ async def scrape_site(browser, inst_id, url):
                     if raw_href.startswith("http"): href = raw_href
                     elif raw_href.startswith("/"): href = url.split("/")[0] + "//" + url.split("/")[2] + raw_href
 
-                # 날짜 추출 (한자리수 대응)
+                # 날짜 파싱 및 마감 상태 처리
                 date_matches = re.findall(r'20\d{2}\s*[-./]\s*\d{1,2}\s*[-./]\s*\d{1,2}', row_text)
                 
                 posted_date_str = now.strftime("%Y-%m-%d")
@@ -103,25 +104,27 @@ async def scrape_site(browser, inst_id, url):
                     if parsed_dates:
                         posted_date_str = parsed_dates[0]
                         if len(parsed_dates) >= 2:
-                            end_date_str = parsed_dates[1]
+                            # 여러 날짜 중 마지막 날짜를 마감일로 판단
+                            end_date_str = parsed_dates[-1]
                             try:
+                                # 🔥 마감일 18:00 기준으로 현재 시간과 비교 (건보 상반기 종료 오류 해결)
                                 end_date_obj = datetime.strptime(end_date_str, "%Y-%m-%d").replace(tzinfo=KST) + timedelta(hours=18)
                                 if now > end_date_obj:
                                     status = "마감"
                             except:
                                 pass
 
-                # 제목에 마감 표기 시 강제 처리
-                if "[마감]" in title or "접수마감" in row_text:
+                # 게시판 텍스트에 아예 '마감' 글자가 박혀있으면 강제 마감
+                if "[마감]" in raw_title or "접수마감" in row_text or "접수종료" in row_text:
                     status = "마감"
                 
                 found_jobs.append({
                     "instId": inst_id,
-                    "title": title.replace("새글", "").replace("[마감]", "").strip(),
+                    "title": clean_title.replace("새글", "").replace("[마감]", "").strip(),
                     "postedDate": posted_date_str,
                     "endDate": end_date_str,
                     "status": status,
-                    "jobType": job_type, # 데이터베이스에 고용형태 추가
+                    "jobType": job_type, # 데이터베이스에 직무 형태 저장
                     "link": href
                 })
             except: continue
@@ -144,7 +147,6 @@ async def scrape_site(browser, inst_id, url):
 async def main():
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=True)
-        # 🔥 보건복지부 (mohw) 타겟 복구
         targets = [
             {"id": "hira", "url": "https://hira.recruitlab.co.kr/app/recruitment-announcement/list"},
             {"id": "nhis", "url": "https://www.nhis.or.kr/nhis/together/wbhaea02700m01.do"},
