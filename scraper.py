@@ -42,7 +42,6 @@ async def scrape_site(browser, inst_id, url):
         if not rows: rows = await page.query_selector_all("a")
 
         now = datetime.now(KST)
-        today = now.date()
 
         for row in rows:
             try:
@@ -70,37 +69,53 @@ async def scrape_site(browser, inst_id, url):
                     if raw_href.startswith("http"): href = raw_href
                     elif raw_href.startswith("/"): href = url.split("/")[0] + "//" + url.split("/")[2] + raw_href
 
-                # 날짜 추출
-                date_matches = re.findall(r'20\d{2}\s*[-./]\s*\d{2}\s*[-./]\s*\d{2}', row_text)
+                # 🔥 날짜 정밀 추출기 (한자리수 월/일 완벽 대응: 2026.3.9 도 잡아냄)
+                date_matches = re.findall(r'20\d{2}\s*[-./]\s*\d{1,2}\s*[-./]\s*\d{1,2}', row_text)
+                
                 posted_date_str = now.strftime("%Y-%m-%d")
                 end_date_str = "상세참조"
-                status = "진행중" # 기본값
+                status = "진행중"
                 
                 if date_matches:
-                    parsed = [d.replace(' ', '').replace('.', '-').replace('/', '-') for d in date_matches]
-                    posted_date_str = parsed[0]
+                    parsed_dates = []
+                    for d in date_matches:
+                        # 공백 제거 및 구분자를 '-'로 변경 (2026. 3. 9 -> 2026-3-9)
+                        clean_d = re.sub(r'\s+', '', d).replace('.', '-').replace('/', '-')
+                        parts = clean_d.split('-')
+                        if len(parts) == 3:
+                            # 2026-3-9 -> 2026-03-09 포맷 통일
+                            formatted_date = f"{parts[0]}-{int(parts[1]):02d}-{int(parts[2]):02d}"
+                            parsed_dates.append(formatted_date)
                     
-                    # 마감일이 존재할 경우 비교 로직
-                    if len(parsed) >= 2: 
-                        end_date_str = parsed[1]
-                        try:
-                            end_date_obj = datetime.strptime(end_date_str, "%Y-%m-%d").date()
-                            if today > end_date_obj:
-                                status = "마감"
-                        except:
-                            pass
+                    if parsed_dates:
+                        posted_date_str = parsed_dates[0]
+                        
+                        # 두 번째 날짜가 마감일인 경우
+                        if len(parsed_dates) >= 2:
+                            end_date_str = parsed_dates[1]
+                            try:
+                                # 🔥 마감 시간을 해당 일자의 "오후 6시(18:00)"로 지정하여 현재 시간과 정확히 비교
+                                end_date_obj = datetime.strptime(end_date_str, "%Y-%m-%d").replace(tzinfo=KST) + timedelta(hours=18)
+                                if now > end_date_obj:
+                                    status = "마감"
+                            except Exception as e:
+                                pass
+
+                # 게시판 목록 자체에 [마감] 뱃지가 글씨로 박혀있는 경우 강제 마감 처리
+                if "[마감]" in title or "접수마감" in row_text:
+                    status = "마감"
                 
                 found_jobs.append({
                     "instId": inst_id,
-                    "title": title.replace("새글", "").strip(),
+                    "title": title.replace("새글", "").replace("[마감]", "").strip(),
                     "postedDate": posted_date_str,
                     "endDate": end_date_str,
-                    "status": status, # 🔥 진행중 또는 마감 상태 추가
+                    "status": status,
                     "link": href
                 })
             except: continue
         
-        # 중복 제목 제거
+        # 중복 제목 제거 (공백 모두 지우고 비교)
         unique_jobs = []
         seen = set()
         for job in found_jobs:
@@ -137,20 +152,23 @@ async def main():
             batch = db.batch()
             jobs_path = db.collection('artifacts').document(APP_ID).collection('public').document('data').collection('jobs')
             
-            # 기존 데이터 삭제
+            # 🔥 기존 데이터 깔끔하게 전체 삭제 (찌꺼기 방지)
             for doc in jobs_path.get():
                 batch.delete(doc.reference)
             
-            # 새 데이터 저장
+            # 🔥 최신 데이터로 업데이트
             for i, job in enumerate(all_jobs):
                 batch.set(jobs_path.document(f"job_{i}"), job)
             
             meta_ref = db.collection('artifacts').document(APP_ID).collection('public').document('data').collection('metadata').document('sync')
             batch.set(meta_ref, {"lastSync": datetime.now(KST).isoformat()})
             batch.commit()
-            print(f"완료: {len(all_jobs)}개 저장")
+            print(f"🎉 성공: 총 {len(all_jobs)}개의 공고 저장 및 상태 업데이트 완료!")
+        else:
+            print("수집된 공고가 0개입니다.")
         await browser.close()
 
 if __name__ == "__main__":
     asyncio.run(main())
+
 
