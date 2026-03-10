@@ -55,25 +55,62 @@
             const [lastSync, setLastSync] = useState("");
             const [showSpecInfo, setShowSpecInfo] = useState(null);
 
-            // 1. 합격 스펙 정확성 재확인 및 업데이트 (NHIS url 변경)
+            // 1. 합격 스펙 및 복지/연봉 정보 추가
             const institutions = [
-                { id: 'nhis', name: '국민건강보험공단', shortName: '건보공단', url: 'https://www.nhis.or.kr/nhis/together/wbhaea02700m01.do', specs: { language: '토익 700점 이상', cert: '컴활 1급, 한국사 1급, 사복 1급', license: '간호사/영양사/방사선사 등', summary: 'NCS(필기) 변별력이 가장 크며, 서류 자격증 가점이 필수적입니다.' } },
-                { id: 'hira', name: '건강보험심사평가원', shortName: '심평원', url: 'https://hira.recruitlab.co.kr/app/recruitment-announcement/list', specs: { language: '토익 700점 이상 (사무/심사직)', cert: '컴활 1급, 한국사 1급', license: '간호사 등 면허 및 임상경력', summary: '심사직은 임상경력이 중요하며, 사무직은 서류 가점(자격증)이 합격의 열쇠입니다.' } },
-                { id: 'neca', name: '한국보건의료연구원', shortName: '보의연', url: 'https://neca.applyin.co.kr/jobs/', specs: { language: '토익 800점 이상 우대', cert: '데이터 분석(ADsP, 사회조사분석사)', license: '석/박사 학위 (연구직 중심)', summary: '연구직 비중이 높아 관련 전공 석사 이상 학위와 연구 실적이 중시됩니다.' } },
-                { id: 'kuksiwon', name: '한국보건의료인국가시험원', shortName: '국시원', url: 'https://dware.intojob.co.kr', specs: { language: '토익 700점 이상', cert: '컴활 1급, 정보처리기사 등', license: '직렬별 무관 (행정 중심)', summary: '국가시험을 주관하는 기관으로, 꼼꼼한 행정 및 기획 역량이 요구됩니다.' } },
-                { id: 'koiha', name: '의료기관평가인증원', shortName: '인증원', url: 'https://koiha.recruiter.co.kr', specs: { language: '공인영어성적 필수', cert: '보건교육사, 의무기록사 우대', license: '의료인 면허 및 임상경력', summary: '의료기관 평가 인증 업무를 수행하므로 관련 실무 경력자를 강하게 선호합니다.' } },
+                { 
+                    id: 'nhis', name: '국민건강보험공단', shortName: '건보공단', url: 'https://nhis.kpcice.kr', 
+                    specs: { 
+                        language: '토익 700점 이상', cert: '컴활 1급, 한국사 1급, 사복 1급', license: '간호사/영양사/방사선사 등', 
+                        summary: 'NCS 변별력이 크며, 워라밸과 복지가 매우 우수합니다.',
+                        salary: '신입 약 4,000만원 / 평균 약 7,500만원',
+                        parentalLeave: '남/녀 모두 최대 3년 (법정 1년 + 자체 2년), 눈치 보지 않고 자유로운 사용 분위기'
+                    } 
+                },
+                { 
+                    id: 'hira', name: '건강보험심사평가원', shortName: '심평원', url: 'https://hira.recruitlab.co.kr', 
+                    specs: { 
+                        language: '토익 700점 이상', cert: '컴활 1급, 한국사 1급', license: '간호사 등 면허 및 임상경력', 
+                        summary: '심사직은 임상경력이, 사무직은 서류 가점이 합격의 열쇠입니다.',
+                        salary: '신입 약 4,100만원 / 평균 약 7,800만원',
+                        parentalLeave: '남/녀 최대 3년 보장, 대체인력 제도가 잘 되어 있어 사용률 높음'
+                    } 
+                },
+                { 
+                    id: 'neca', name: '한국보건의료연구원', shortName: '보의연', url: 'https://neca.applyin.co.kr', 
+                    specs: { 
+                        language: '토익 800점 이상 우대', cert: '데이터 분석(ADsP, 사회조사분석사)', license: '석/박사 학위 (연구직 중심)', 
+                        summary: '연구직 비중이 높아 관련 학위와 실적이 중시됩니다.',
+                        salary: '신입 약 3,900만원 / 평균 약 7,200만원 (연구직 상이)',
+                        parentalLeave: '법정 1년 + 기관장 승인 시 연장 가능, 여성 연구원 비율이 높아 출산/육아 친화적'
+                    } 
+                },
+                { 
+                    id: 'kuksiwon', name: '한국보건의료인국가시험원', shortName: '국시원', url: 'https://dware.intojob.co.kr', 
+                    specs: { 
+                        language: '토익 700점 이상', cert: '컴활 1급, 정보처리기사 등', license: '직렬별 무관 (행정 중심)', 
+                        summary: '국가시험을 주관하는 만큼 꼼꼼한 행정/기획 역량이 요구됩니다.',
+                        salary: '신입 약 3,700만원 / 평균 약 6,900만원',
+                        parentalLeave: '기본 1년 (자녀당 1년), 시험 시즌 외에는 유연근무 및 육아시간 활용 용이'
+                    } 
+                },
+                { 
+                    id: 'koiha', name: '의료기관평가인증원', shortName: '인증원', url: 'https://koiha.recruiter.co.kr', 
+                    specs: { 
+                        language: '공인영어성적 필수', cert: '보건교육사, 의무기록사 우대', license: '의료인 면허 및 임상경력', 
+                        summary: '평가/인증 실무 경력자를 강하게 선호합니다.',
+                        salary: '신입 약 3,800만원 / 평균 약 6,800만원 (경력 인정 시 상향)',
+                        parentalLeave: '기본 1년 + 기관 규정에 따라 연장 가능, 남성 직원 사용 비율 증가 추세'
+                    } 
+                },
             ];
 
             useEffect(() => {
                 auth.signInAnonymously().then(() => {
                     const dataRef = db.collection('artifacts').doc(APP_ID).collection('public').doc('data');
                     
-                    // 4. 공고 제목 괄호 날짜 지우기 함수
                     const cleanTitleText = (title) => {
                         if (!title) return '';
-                        // 날짜 패턴(2024.01.01~02.01 등) 찾아서 제거
                         let cleaned = title.replace(/[\[\(]?\d{2,4}[-./]\d{1,2}[-./]\d{1,2}\s*[~-]\s*(\d{2,4}[-./])?\d{1,2}[-./]\d{1,2}[\]\)]?/g, '');
-                        // 빈 괄호 찌꺼기 제거
                         cleaned = cleaned.replace(/\(\s*\)|\[\s*\]/g, '');
                         return cleaned.trim();
                     };
@@ -84,11 +121,9 @@
                             const data = doc.data();
                             const titleLower = (data.title || '').toLowerCase();
                             
-                            // 3. 첨부파일 끌고 오지 않기 (필터링)
                             const isAttachment = /\.(hwp|hwpx|pdf|zip|doc|docx|xls|xlsx)/i.test(titleLower);
                             const hasAttachKeyword = /첨부|붙임|다운로드|파일/.test(titleLower);
                             
-                            // 첨부파일이 아닐 때만 리스트에 넣음
                             if (!isAttachment && !hasAttachKeyword) {
                                 data.displayTitle = cleanTitleText(data.title);
                                 list.push({ id: doc.id, ...data });
@@ -114,7 +149,6 @@
 
             const filteredJobs = useMemo(() => {
                 return jobs.filter(job => 
-                    // 필터 시에도 클리닝된 제목 기준
                     (job.displayTitle?.toLowerCase().includes(searchTerm.toLowerCase())) &&
                     (activeTab === 'all' || job.instId === activeTab)
                 );
@@ -148,9 +182,11 @@
                                                     </button>
                                                 </div>
                                                 <div className="p-3 bg-slate-50 rounded-xl text-left">
-                                                    <p className="text-[10px] font-black text-slate-400 mb-1 uppercase tracking-tighter">합격 전략</p>
+                                                    <p className="text-[10px] font-black text-slate-400 mb-1 uppercase tracking-tighter">합격/복지 요약</p>
                                                     <p className="text-[11px] text-slate-600 leading-relaxed font-medium">{inst.specs.summary}</p>
-                                                    <button onClick={() => setShowSpecInfo(inst)} className="text-[10px] text-blue-600 font-bold mt-2 hover:underline block">상세 정보</button>
+                                                    <button onClick={() => setShowSpecInfo(inst)} className="text-[10px] text-blue-600 font-bold mt-2 hover:underline block flex items-center gap-1">
+                                                        <Icon name="info" className="w-3 h-3" /> 상세 스펙 및 연봉 보기
+                                                    </button>
                                                 </div>
                                             </div>
                                         ))}
@@ -180,7 +216,6 @@
                                     ) : filteredJobs.length > 0 ? (
                                         filteredJobs.map(job => {
                                             const inst = institutions.find(i => i.id === job.instId) || { shortName: job.instId };
-                                            // 2. 접수기간 텍스트 포맷 처리
                                             const periodText = job.endDate && !job.endDate.includes('상세') 
                                                                 ? `${job.postedDate} ~ ${job.endDate}` 
                                                                 : `${job.postedDate} ~ 별도확인`;
@@ -192,10 +227,8 @@
                                                             <span className="text-[10px] font-black px-2 py-0.5 bg-slate-100 rounded text-slate-500 uppercase">{inst.shortName}</span>
                                                             <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 rounded uppercase">채용공고</span>
                                                         </div>
-                                                        {/* 4. 클리닝 된 제목(displayTitle) 출력 */}
                                                         <h3 className="text-xl font-bold text-slate-800 leading-snug group-hover:text-blue-700 transition-colors">{job.displayTitle}</h3>
                                                         <div className="flex gap-4 text-xs font-bold text-slate-400 tracking-tight">
-                                                            {/* 2. 접수기간 렌더링 */}
                                                             <span className="flex items-center gap-1">
                                                                 <Icon name="calendar" className="w-3 h-3" />
                                                                 접수기간: {periodText}
@@ -217,13 +250,29 @@
                         </div>
                     </div>
 
+                    {/* 🔥 상세 스펙 모달: 연봉 및 육아휴직 정보 추가 */}
                     {showSpecInfo && (
                         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm transition-all">
-                            <div className="bg-white w-full max-w-md rounded-[2.5rem] p-8 shadow-2xl relative text-left animate-in zoom-in duration-300">
+                            <div className="bg-white w-full max-w-lg rounded-[2.5rem] p-8 shadow-2xl relative text-left animate-in zoom-in duration-300 max-h-[90vh] overflow-y-auto no-scrollbar">
                                 <button onClick={() => setShowSpecInfo(null)} className="absolute top-8 right-8 text-slate-300 hover:text-slate-900 transition-colors"><Icon name="x" /></button>
                                 <div className="space-y-6">
-                                    <h2 className="text-2xl font-black text-slate-900">{showSpecInfo.name} 상세 스펙</h2>
+                                    <h2 className="text-2xl font-black text-slate-900">{showSpecInfo.name} 상세 정보</h2>
+                                    
                                     <div className="space-y-4">
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="col-span-2 p-4 bg-blue-50 border border-blue-100 rounded-2xl text-left">
+                                                <p className="flex items-center gap-1 text-[10px] font-black text-blue-500 mb-1 uppercase tracking-widest text-left"><Icon name="banknote" className="w-3 h-3" /> 연봉 정보 (알리오 공시 기준)</p>
+                                                <p className="text-sm font-bold text-slate-800 text-left">{showSpecInfo.specs.salary}</p>
+                                            </div>
+                                            
+                                            <div className="col-span-2 p-4 bg-purple-50 border border-purple-100 rounded-2xl text-left">
+                                                <p className="flex items-center gap-1 text-[10px] font-black text-purple-500 mb-1 uppercase tracking-widest text-left"><Icon name="baby" className="w-3 h-3" /> 육아휴직 및 복지</p>
+                                                <p className="text-sm font-bold text-slate-800 text-left leading-relaxed">{showSpecInfo.specs.parentalLeave}</p>
+                                            </div>
+                                        </div>
+
+                                        <div className="pt-2 border-t border-slate-100"></div>
+
                                         <div className="p-4 bg-slate-50 rounded-2xl text-left">
                                             <p className="text-[10px] font-black text-slate-400 mb-1 uppercase tracking-widest text-left">어학 성적</p>
                                             <p className="text-sm font-bold text-slate-700 text-left">{showSpecInfo.specs.language}</p>
@@ -237,6 +286,8 @@
                                             <p className="text-sm font-bold text-slate-700 text-left">{showSpecInfo.specs.license}</p>
                                         </div>
                                     </div>
+                                    
+                                    <p className="text-[10px] text-slate-400 text-center font-medium">※ 위 정보는 알리오(ALIO) 공시 및 최신 채용 트렌드를 바탕으로 구성되었습니다.</p>
                                     <button onClick={() => setShowSpecInfo(null)} className="w-full py-4 bg-slate-900 text-white rounded-2xl font-bold hover:bg-blue-600 transition-colors">확인 완료</button>
                                 </div>
                             </div>
@@ -251,7 +302,3 @@
     </script>
 </body>
 </html>
-
-
-
-
