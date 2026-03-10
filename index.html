@@ -63,7 +63,7 @@
         const [error, setError] = useState(null);
         const [searchTerm, setSearchTerm] = useState('');
         const [activeTab, setActiveTab] = useState('all');
-        const [lastSync, setLastSync] = useState("");
+        const [lastSync, setLastSync] = useState(null);
         const [showSpecInfo, setShowSpecInfo] = useState(null);
         
         // 스크롤 조작을 위한 Ref
@@ -95,6 +95,8 @@
 
                 const unsubscribeJobs = dataRef.collection('jobs').onSnapshot(snap => {
                     const list = [];
+                    const seenTitles = new Set(); // 🔥 중복 제거를 위한 세트
+
                     snap.forEach(doc => {
                         const data = doc.data();
                         const title = data.title || '';
@@ -102,11 +104,17 @@
                         
                         const isAttachment = /\.(hwp|hwpx|pdf|zip|doc|docx|xls|xlsx)/i.test(titleLower);
                         const hasAttachKeyword = /첨부|붙임|다운로드|파일/.test(titleLower);
-                        const hasExcludeWord = /합격자|의무직|의사|진료직/.test(title);
+                        const hasExcludeWord = /합격자|의무직|의사|진료직|변호사/.test(title);
                         
                         if (!isAttachment && !hasAttachKeyword && !hasExcludeWord) {
-                            data.displayTitle = cleanTitleText(title);
-                            list.push({ id: doc.id, ...data });
+                            const displayTitle = cleanTitleText(title);
+                            // 🔥 띄어쓰기를 모두 없앤 문자열로 중복 공고(예: 국가생명윤리정책원) 철저히 병합
+                            const compareTitle = displayTitle.replace(/\s+/g, '');
+                            
+                            if (!seenTitles.has(compareTitle)) {
+                                seenTitles.add(compareTitle);
+                                list.push({ id: doc.id, displayTitle, ...data });
+                            }
                         }
                     });
                     
@@ -116,7 +124,9 @@
                 }, err => setError(err.message));
 
                 dataRef.collection('metadata').doc('sync').onSnapshot(doc => {
-                    if(doc.exists && doc.data().lastSync) setLastSync(new Date(doc.data().lastSync).toLocaleString());
+                    if(doc.exists && doc.data().lastSync) {
+                        setLastSync(new Date(doc.data().lastSync));
+                    }
                 });
             });
         }, []);
@@ -136,13 +146,39 @@
             }
         };
 
+        // 날짜 포맷팅 헬퍼 함수
+        const formatDateString = (dateObj) => {
+            if (!dateObj) return '확인 중...';
+            const year = dateObj.getFullYear();
+            const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+            const day = String(dateObj.getDate()).padStart(2, '0');
+            return `${year}년 ${month}월 ${day}일`;
+        };
+
+        const formatTimeString = (dateObj) => {
+            if (!dateObj) return '';
+            const hours = String(dateObj.getHours()).padStart(2, '0');
+            const minutes = String(dateObj.getMinutes()).padStart(2, '0');
+            return `${hours}:${minutes}`;
+        };
+
         return (
             <div className="bg-slate-50 p-2 md:p-6 text-left rounded-3xl overflow-hidden border border-slate-200 shadow-sm mt-4 relative">
                 <div className="max-w-5xl mx-auto">
                     <header className="mb-8 space-y-3">
                         <div className="flex flex-wrap gap-2">
-                            <span className="bg-blue-600 text-white px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-tighter">Live Updates</span>
-                            <span className="bg-white border border-slate-200 text-slate-500 px-2.5 py-0.5 rounded-full text-[10px] font-bold">수집: {lastSync || '확인 중...'}</span>
+                            {/* 🔥 라벨 변경: 매시간 정각 자동 업데이트 */}
+                            <span className="bg-blue-600 text-white px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-tighter">
+                                매시간 정각 자동 업데이트
+                            </span>
+                            <span className="bg-white border border-slate-200 text-slate-600 px-2.5 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1">
+                                <Icon name="calendar" className="w-3 h-3" />
+                                기준일자: {formatDateString(lastSync)}
+                            </span>
+                            <span className="bg-white border border-slate-200 text-slate-500 px-2.5 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1">
+                                <Icon name="clock" className="w-3 h-3" />
+                                최근 수집: {formatTimeString(lastSync)}
+                            </span>
                         </div>
                         <h1 className="text-2xl md:text-3xl font-black text-slate-900 leading-tight">
                             보건직 및 간호사 <span className="text-blue-600 text-xl block md:inline">공기업/공단 채용공고 모음</span>
@@ -199,7 +235,6 @@
                                         ))}
                                     </div>
                                     
-                                    {/* 모바일 화면에서 스크롤이 가능하다는 것을 보여주는 그라데이션 및 안내 아이콘 */}
                                     <div className="absolute right-0 top-0 bottom-2 w-12 bg-gradient-to-l from-white to-transparent pointer-events-none hidden md:block group-hover:hidden transition-opacity"></div>
                                     <button 
                                         onClick={() => scrollFilters('right')}
