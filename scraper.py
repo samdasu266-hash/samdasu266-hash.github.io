@@ -1,7 +1,8 @@
 import os
 import json
 import asyncio
-from datetime import datetime
+# 🔥 한국 시간(KST)을 맞추기 위해 timedelta, timezone 추가
+from datetime import datetime, timedelta, timezone
 import firebase_admin
 from firebase_admin import credentials
 from firebase_admin import firestore
@@ -21,6 +22,9 @@ if not firebase_admin._apps:
 
 db = firestore.client()
 APP_ID = "recruitment-portal-v3"
+
+# 🔥 로봇 시계를 무조건 한국 시간(UTC+9)으로 강제 고정
+KST = timezone(timedelta(hours=9))
 
 async def scrape_site(browser, inst_id, url):
     page = await browser.new_page(
@@ -61,13 +65,13 @@ async def scrape_site(browser, inst_id, url):
                             base = url.split("/")[0] + "//" + url.split("/")[2]
                             href = base + raw_href
                         elif raw_href and raw_href.startswith("javascript"):
-                            # 자바스크립트 링크인 경우 메인 게시판 URL로 유지
                             href = url
                             
                     found_jobs.append({
                         "instId": inst_id,
                         "title": text,
-                        "postedDate": datetime.now().strftime("%Y-%m-%d"),
+                        # 🔥 한국 시간으로 날짜 기록
+                        "postedDate": datetime.now(KST).strftime("%Y-%m-%d"),
                         "endDate": "상세 모집요강 참조",
                         "type": "채용공고",
                         "link": href
@@ -96,7 +100,6 @@ async def main():
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=True, args=['--disable-blink-features=AutomationControlled'])
         
-        # 🔥 여기서 NHIS(건보)의 타겟 주소를 새로 요청하신 주소로 변경했습니다.
         targets = [
             {"id": "hira", "url": "https://hira.recruitlab.co.kr/app/recruitment-announcement/list"},
             {"id": "nhis", "url": "https://www.nhis.or.kr/nhis/together/wbhaea02700m01.do"},
@@ -119,7 +122,8 @@ async def main():
                 batch.set(doc_ref, job)
             
             meta_ref = db.collection('artifacts').document(APP_ID).collection('public').document('data').collection('metadata').document('sync')
-            batch.set(meta_ref, {"lastSync": datetime.now().isoformat()})
+            # 🔥 한국 시간으로 동기화 시간 정확히 기록
+            batch.set(meta_ref, {"lastSync": datetime.now(KST).isoformat()})
             
             batch.commit()
             print(f"🎉 성공! 깔끔하게 정제된 총 {len(all_collected_jobs)}개의 공고 저장 완료!")
@@ -130,6 +134,3 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
-
-
-
