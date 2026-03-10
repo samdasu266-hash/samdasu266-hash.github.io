@@ -41,12 +41,10 @@ async def scrape_site(browser, inst_id, url):
         
         found_jobs = []
         
-        # 🔥 단순히 제목만 찾는게 아니라, 날짜/카테고리까지 다 읽기 위해 테이블의 한 '줄(Row)'을 통째로 가져옵니다.
+        # 테이블의 한 '줄(Row)'을 통째로 가져옵니다.
         rows = await page.query_selector_all("tbody tr")
-        # 만약 tr 형식이 아니라면, 리스트(li)나 카드(item) 형식으로도 찾아봅니다.
         if not rows or len(rows) < 2:
             rows = await page.query_selector_all(".board-list li, ul.list li, .recruitment-item, .item")
-        # 그래도 못 찾으면 최후의 수단으로 제목을 가져옵니다.
         if not rows or len(rows) < 2:
             rows = await page.query_selector_all("a, td.subject, div.tit, span.title, td.title")
         
@@ -54,27 +52,11 @@ async def scrape_site(browser, inst_id, url):
         
         for row in rows:
             try:
-                # 한 줄의 모든 글자를 싹 다 읽어옵니다.
                 row_text = (await row.inner_text()).strip()
                 if len(row_text) < 5: 
                     continue
                 
-                # 🔥 [요청 1] 건보(NHIS)인 경우, 글 안에 "채용 공고"라는 말이 없으면 수집 안 함!
-                if inst_id == 'nhis':
-                    if "채용공고" not in row_text.replace(" ", ""):
-                        continue
-                
-                # 첨부파일 거르기!
-                ban_words = [".hwp", ".hwpx", ".pdf", ".zip", ".doc", ".docx", ".xls", ".xlsx", "첨부", "다운로드", "붙임", "file"]
-                if any(ban in row_text.lower() for ban in ban_words):
-                    continue
-                    
-                # 진짜 공고 키워드
-                keywords = ["채용", "공고", "모집", "예고", "안내", "신규직원", "채용계획", "임용"]
-                if not any(kw in row_text for kw in keywords):
-                    continue
-                
-                # 그 줄 안에 있는 링크(a 태그) 찾기
+                # 1. 링크와 제목(title)을 먼저 찾아냅니다!
                 link_el = await row.query_selector("a")
                 if not link_el:
                     if await row.evaluate("node => node.tagName") == "A":
@@ -84,6 +66,22 @@ async def scrape_site(browser, inst_id, url):
                         
                 title = (await link_el.inner_text()).strip()
                 if len(title) < 5: continue
+
+                # 🔥 [요청 1 수정] 건보(NHIS)인 경우, 글 안에 "채용 공고"라는 말이 없으면 수집 안 함!
+                if inst_id == 'nhis':
+                    if "채용공고" not in row_text.replace(" ", ""):
+                        continue
+                
+                # 🔥 [핵심 수정] 첨부파일 거르기는 "제목(title)"에만 적용합니다! 
+                # (row_text 전체를 검사하면 게시판의 '첨부파일' 컬럼 때문에 정상 공고도 다 버려집니다)
+                ban_words = [".hwp", ".hwpx", ".pdf", ".zip", ".doc", ".docx", ".xls", ".xlsx", "첨부", "다운로드", "붙임", "file"]
+                if any(ban in title.lower() for ban in ban_words):
+                    continue
+                    
+                # 진짜 공고 키워드 확인 (제목 기준)
+                keywords = ["채용", "공고", "모집", "예고", "안내", "신규직원", "채용계획", "임용"]
+                if not any(kw in title for kw in keywords):
+                    continue
                 
                 href = url
                 raw_href = await link_el.get_attribute("href")
@@ -92,9 +90,9 @@ async def scrape_site(browser, inst_id, url):
                     elif raw_href.startswith("/"): href = url.split("/")[0] + "//" + url.split("/")[2] + raw_href
                     elif raw_href.startswith("javascript"): href = url
                     
-                # 🔥 [요청 3] 날짜 및 접수기간 자동 추출기
-                # "2026.03.10" 혹은 "2026-03-10" 등의 패턴을 모두 찾아냅니다.
-                date_matches = re.findall(r'20\d{2}[-./]\d{2}[-./]\d{2}', row_text)
+                # 🔥 [요청 3 수정] 날짜 추출기 강화
+                # "2026. 02. 20" 처럼 공백이 섞여 있어도 잡아내도록 정규식 업그레이드
+                date_matches = re.findall(r'20\d{2}\s*[-./]\s*\d{2}\s*[-./]\s*\d{2}', row_text)
                 
                 posted_date_str = now.strftime("%Y-%m-%d")
                 end_date_str = "상세 모집요강 참조"
@@ -102,8 +100,8 @@ async def scrape_site(browser, inst_id, url):
                 
                 # 날짜를 발견했다면?
                 if date_matches:
-                    # 표기법을 통일 (예: 2026.03.10 -> 2026-03-10)
-                    parsed_dates = [d.replace('.', '-').replace('/', '-') for d in date_matches]
+                    # 빈칸을 지우고 표기법을 통일 (예: 2026. 03. 10 -> 2026-03-10)
+                    parsed_dates = [d.replace(' ', '').replace('.', '-').replace('/', '-') for d in date_matches]
                     
                     # 가장 첫 번째 날짜를 '작성일'로 설정
                     posted_date_str = parsed_dates[0]
@@ -156,7 +154,7 @@ async def main():
         targets = [
             {"id": "hira", "url": "https://hira.recruitlab.co.kr/app/recruitment-announcement/list"},
             {"id": "nhis", "url": "https://www.nhis.or.kr/nhis/together/wbhaea02700m01.do"},
-            {"id": "neca", "url": "https://neca.applyin.co.kr/jobs/"},
+            {"id": "neca", "url": "https://www.neca.re.kr/lay1/program/S1T207C209/people/index.do"},
             {"id": "kuksiwon", "url": "https://dware.intojob.co.kr/main/kuksiwon.jsp"},
             {"id": "koiha", "url": "https://koiha.recruiter.co.kr/career/job"}
         ]
