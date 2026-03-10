@@ -4,10 +4,10 @@ import asyncio
 from datetime import datetime
 import firebase_admin
 from firebase_admin import credentials
-from firebase_admin import firestore  # 🔥 구글 클라우드 대신 파이어베이스 전용 모듈 사용
+from firebase_admin import firestore
 from playwright.async_api import async_playwright
 
-# 1. Firebase 인증 (표준 방식)
+# 1. Firebase 인증
 firebase_json = os.environ.get('FIREBASE_CONFIG_JSON')
 if not firebase_json:
     print("Error: FIREBASE_CONFIG_JSON 설정 없음")
@@ -19,9 +19,7 @@ cred = credentials.Certificate(cred_dict)
 if not firebase_admin._apps:
     firebase_admin.initialize_app(cred)
 
-# 2. 길을 잃지 않는 가장 안전한 DB 연결 방식
 db = firestore.client()
-
 APP_ID = "recruitment-portal-v3"
 
 async def scrape_site(browser, inst_id, url):
@@ -32,7 +30,7 @@ async def scrape_site(browser, inst_id, url):
     )
     
     try:
-        print(f"[{inst_id}] 사이트 뚫는 중...")
+        print(f"[{inst_id}] 사이트 접속 중: {url}")
         await page.goto(url, wait_until="domcontentloaded", timeout=60000)
         await asyncio.sleep(8) 
         
@@ -42,9 +40,16 @@ async def scrape_site(browser, inst_id, url):
         for el in elements:
             try:
                 text = (await el.inner_text()).strip()
+                # 텍스트가 너무 짧으면 무시
                 if len(text) < 8: 
                     continue
+                
+                # 첨부파일 거르기!
+                ban_words = [".hwp", ".hwpx", ".pdf", ".zip", ".doc", ".docx", ".xls", ".xlsx", "첨부", "다운로드", "붙임", "file"]
+                if any(ban in text.lower() for ban in ban_words):
+                    continue
                     
+                # 진짜 공고 키워드
                 keywords = ["채용", "공고", "모집", "예고", "안내", "신규직원", "채용계획", "임용"]
                 if any(kw in text for kw in keywords):
                     href = url
@@ -55,6 +60,9 @@ async def scrape_site(browser, inst_id, url):
                         elif raw_href and raw_href.startswith("/"):
                             base = url.split("/")[0] + "//" + url.split("/")[2]
                             href = base + raw_href
+                        elif raw_href and raw_href.startswith("javascript"):
+                            # 자바스크립트 링크인 경우 메인 게시판 URL로 유지
+                            href = url
                             
                     found_jobs.append({
                         "instId": inst_id,
@@ -67,6 +75,7 @@ async def scrape_site(browser, inst_id, url):
             except:
                 continue
         
+        # 중복 제목 제거
         unique_jobs = []
         seen_titles = set()
         for job in found_jobs:
@@ -74,11 +83,11 @@ async def scrape_site(browser, inst_id, url):
                 unique_jobs.append(job)
                 seen_titles.add(job['title'])
                 
-        print(f"[{inst_id}] 수집 성공! {len(unique_jobs)}건 발견")
+        print(f"[{inst_id}] 수집 성공! 첨부파일 제외 {len(unique_jobs)}건 발견")
         return unique_jobs[:10]
         
     except Exception as e:
-        print(f"[{inst_id}] 접속 차단됨 또는 에러: {e}")
+        print(f"[{inst_id}] 접속 에러: {e}")
         return []
     finally:
         await page.close()
@@ -87,9 +96,10 @@ async def main():
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=True, args=['--disable-blink-features=AutomationControlled'])
         
+        # 🔥 여기서 NHIS(건보)의 타겟 주소를 새로 요청하신 주소로 변경했습니다.
         targets = [
             {"id": "hira", "url": "https://hira.recruitlab.co.kr/app/recruitment-announcement/list"},
-            {"id": "nhis", "url": "https://nhis.kpcice.kr/Include/PackageAppo.html?rRound=1"},
+            {"id": "nhis", "url": "https://www.nhis.or.kr/nhis/together/wbhaea02700m01.do"},
             {"id": "neca", "url": "https://neca.applyin.co.kr/jobs/"},
             {"id": "kuksiwon", "url": "https://dware.intojob.co.kr/main/kuksiwon.jsp"},
             {"id": "koiha", "url": "https://koiha.recruiter.co.kr/career/job"}
@@ -102,7 +112,6 @@ async def main():
         
         if all_collected_jobs:
             batch = db.batch()
-            # 웹사이트가 바라보는 정확한 경로
             jobs_path = db.collection('artifacts').document(APP_ID).collection('public').document('data').collection('jobs')
             
             for i, job in enumerate(all_collected_jobs):
@@ -113,7 +122,7 @@ async def main():
             batch.set(meta_ref, {"lastSync": datetime.now().isoformat()})
             
             batch.commit()
-            print(f"🎉 성공! 총 {len(all_collected_jobs)}개의 공고 창고에 저장 완료!")
+            print(f"🎉 성공! 깔끔하게 정제된 총 {len(all_collected_jobs)}개의 공고 저장 완료!")
         else:
             print("수집된 공고가 0개입니다.")
             
@@ -121,3 +130,6 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+
+
+
