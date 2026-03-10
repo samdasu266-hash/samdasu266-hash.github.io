@@ -23,7 +23,7 @@ if not firebase_admin._apps:
 db = firestore.client()
 APP_ID = "recruitment-portal-v3"
 
-# 🔥 한국 시간 고정
+# 한국 시간 고정
 KST = timezone(timedelta(hours=9))
 
 async def scrape_site(browser, inst_id, url):
@@ -54,14 +54,29 @@ async def scrape_site(browser, inst_id, url):
                 title = (await link_el.inner_text()).strip()
                 if len(title) < 5: continue
 
-                # 채용/공고 단어 필수 필터
-                if "채용" not in title and "공고" not in title:
+                # 🔥 1. 필수 포함 단어 필터 (AND 조건: 채용 & 공고)
+                if "채용" not in title or "공고" not in title:
                     continue
 
-                # 제외 단어
-                exclude_words = ["의사", "의무직", "진료직", "합격자", "변호사"]
+                # 🔥 2. 제외 단어 필터 (OR 조건)
+                exclude_words = ["발표", "변호사", "합격자", "면접", "약사", "약무직", "의사", "의무직"]
                 if any(ex in title for ex in exclude_words):
                     continue
+
+                # 🔥 3. 고용 형태(직무 형태) 추출
+                job_type = "정규직" # 명시되지 않은 경우 기본값
+                if "무기계약직" in title:
+                    job_type = "무기계약직"
+                elif "공무직" in title:
+                    job_type = "공무직"
+                elif "기간제" in title or "계약직" in title or "촉탁직" in title:
+                    job_type = "계약직/기간제"
+                elif "비정규직" in title:
+                    job_type = "비정규직"
+                elif "인턴" in title:
+                    job_type = "인턴"
+                elif "정규직" in title:
+                    job_type = "정규직"
 
                 href = url
                 raw_href = await link_el.get_attribute("href")
@@ -69,7 +84,7 @@ async def scrape_site(browser, inst_id, url):
                     if raw_href.startswith("http"): href = raw_href
                     elif raw_href.startswith("/"): href = url.split("/")[0] + "//" + url.split("/")[2] + raw_href
 
-                # 🔥 날짜 정밀 추출기 (한자리수 월/일 완벽 대응: 2026.3.9 도 잡아냄)
+                # 날짜 추출 (한자리수 대응)
                 date_matches = re.findall(r'20\d{2}\s*[-./]\s*\d{1,2}\s*[-./]\s*\d{1,2}', row_text)
                 
                 posted_date_str = now.strftime("%Y-%m-%d")
@@ -79,29 +94,24 @@ async def scrape_site(browser, inst_id, url):
                 if date_matches:
                     parsed_dates = []
                     for d in date_matches:
-                        # 공백 제거 및 구분자를 '-'로 변경 (2026. 3. 9 -> 2026-3-9)
                         clean_d = re.sub(r'\s+', '', d).replace('.', '-').replace('/', '-')
                         parts = clean_d.split('-')
                         if len(parts) == 3:
-                            # 2026-3-9 -> 2026-03-09 포맷 통일
                             formatted_date = f"{parts[0]}-{int(parts[1]):02d}-{int(parts[2]):02d}"
                             parsed_dates.append(formatted_date)
                     
                     if parsed_dates:
                         posted_date_str = parsed_dates[0]
-                        
-                        # 두 번째 날짜가 마감일인 경우
                         if len(parsed_dates) >= 2:
                             end_date_str = parsed_dates[1]
                             try:
-                                # 🔥 마감 시간을 해당 일자의 "오후 6시(18:00)"로 지정하여 현재 시간과 정확히 비교
                                 end_date_obj = datetime.strptime(end_date_str, "%Y-%m-%d").replace(tzinfo=KST) + timedelta(hours=18)
                                 if now > end_date_obj:
                                     status = "마감"
-                            except Exception as e:
+                            except:
                                 pass
 
-                # 게시판 목록 자체에 [마감] 뱃지가 글씨로 박혀있는 경우 강제 마감 처리
+                # 제목에 마감 표기 시 강제 처리
                 if "[마감]" in title or "접수마감" in row_text:
                     status = "마감"
                 
@@ -111,11 +121,12 @@ async def scrape_site(browser, inst_id, url):
                     "postedDate": posted_date_str,
                     "endDate": end_date_str,
                     "status": status,
+                    "jobType": job_type, # 데이터베이스에 고용형태 추가
                     "link": href
                 })
             except: continue
         
-        # 중복 제목 제거 (공백 모두 지우고 비교)
+        # 중복 제목 제거
         unique_jobs = []
         seen = set()
         for job in found_jobs:
@@ -133,6 +144,7 @@ async def scrape_site(browser, inst_id, url):
 async def main():
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=True)
+        # 🔥 보건복지부 (mohw) 타겟 복구
         targets = [
             {"id": "hira", "url": "https://hira.recruitlab.co.kr/app/recruitment-announcement/list"},
             {"id": "nhis", "url": "https://www.nhis.or.kr/nhis/together/wbhaea02700m01.do"},
@@ -141,7 +153,8 @@ async def main():
             {"id": "koiha", "url": "https://koiha.recruiter.co.kr/career/job"},
             {"id": "nps", "url": "https://www.nps.or.kr/pnsgdnc/hiregdnc/getOHAE0004M0List.do"},
             {"id": "comwel", "url": "https://www.comwel.or.kr/recruit/hp/pblanc/pblancList.do"},
-            {"id": "redcross", "url": "https://www.redcross.or.kr/recruit/"}
+            {"id": "redcross", "url": "https://www.redcross.or.kr/recruit/"},
+            {"id": "mohw", "url": "https://www.mohw.go.kr/board.es?mid=a10501010400&bid=0003"}
         ]
         
         all_jobs = []
@@ -152,18 +165,16 @@ async def main():
             batch = db.batch()
             jobs_path = db.collection('artifacts').document(APP_ID).collection('public').document('data').collection('jobs')
             
-            # 🔥 기존 데이터 깔끔하게 전체 삭제 (찌꺼기 방지)
             for doc in jobs_path.get():
                 batch.delete(doc.reference)
             
-            # 🔥 최신 데이터로 업데이트
             for i, job in enumerate(all_jobs):
                 batch.set(jobs_path.document(f"job_{i}"), job)
             
             meta_ref = db.collection('artifacts').document(APP_ID).collection('public').document('data').collection('metadata').document('sync')
             batch.set(meta_ref, {"lastSync": datetime.now(KST).isoformat()})
             batch.commit()
-            print(f"🎉 성공: 총 {len(all_jobs)}개의 공고 저장 및 상태 업데이트 완료!")
+            print(f"성공: {len(all_jobs)}개의 공고 저장")
         else:
             print("수집된 공고가 0개입니다.")
         await browser.close()
