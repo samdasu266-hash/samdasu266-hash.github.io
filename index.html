@@ -75,7 +75,6 @@
             const [showSpecInfo, setShowSpecInfo] = useState(null);
             const [todayVisitors, setTodayVisitors] = useState(0);
 
-            // 🔥 보건복지부가 포함된 기관 리스트
             const institutions = [
                 { id: 'nhis', name: '국민건강보험공단', shortName: '건보공단', url: 'https://nhis.kpcice.kr', specs: { language: '[행정직] 토익 850점 이상 안정권\n[건강/요양직] 토익 750점 이상', cert: '[공통] 컴활 1급, 한국사 1급 필수\n[행정/요양] 사회복지사 1급 (서류 만점 필수)', license: '[건강직] 간호사/영양사/방사선사 등\n[요양직] 간호사/물리치료사/사복 등', salary: '신입 약 4,000 / 평균 약 7,500', parentalLeave: '최대 3년(법정1+자체2). 남녀불문 눈치 보지 않고 육아휴직 및 유연근무를 사용하는 최상의 워라밸 분위기입니다.', summary: '서류 가점을 최대로 채우는 것이 기본이며, 최근 건강직은 병원 임상경력 1년 이상자 강세입니다.' } },
                 { id: 'hira', name: '건강보험심사평가원', shortName: '심평원', url: 'https://hira.recruitlab.co.kr', specs: { language: '[행정직] 토익 850점 이상\n[심사직] 토익 700점 이상 기본', cert: '[공통] 컴활 1급, 한국사 1급 가점\n[행정직] ADsP, SQLD 등 데이터 자격증 가점 트렌드', license: '[심사직] 간호사 등 면허 필수\n* 종합병원 이상 임상경력 1~3년 이상 필수 및 강세', salary: '신입 약 4,100 / 평균 약 7,800', parentalLeave: '최대 3년. 여성 비율이 높아 육아휴직과 단축근무가 매우 당연시되며 대체인력 제도도 잘 되어 있습니다.', summary: '심사직은 임상경력이 합격의 핵심 열쇠이며, 행정직은 데이터/IT 관련 자격증이 트렌드입니다.' } },
@@ -216,6 +215,7 @@
                                         return (
                                             <div key={job.id} className="job-card bg-white p-5 md:p-6 rounded-2xl border border-slate-200 hover:shadow-lg transition-all flex flex-col md:flex-row justify-between items-start md:items-center gap-4 text-left group">
                                                 <div className="space-y-2.5 flex-1">
+                                                    {/* 🔥 기관명, 상태배지 옆에 똑같은 스타일로 고용형태 배지 표시 */}
                                                     <div className="flex gap-1.5 items-center flex-wrap">
                                                         <span className="text-[10px] font-black px-1.5 py-0.5 bg-slate-100 border border-slate-200 rounded text-slate-500 uppercase">{institutions.find(i => i.id === job.instId)?.shortName || job.instId}</span>
                                                         <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${isClosed ? 'text-red-600 bg-red-50 border-red-200' : 'text-blue-600 bg-blue-50 border-blue-200'}`}>
