@@ -64,24 +64,24 @@ async def scrape_site(browser, inst_id, url):
                 title = (await link_el.inner_text()).strip()
                 if len(title) < 5: continue
 
-                # 🔥 [건보공단 & 연금공단 필터] "채용공고"가 없으면 패스
-                if inst_id in ['nhis', 'nps']:
-                    if "채용" not in row_text.replace(" ", ""):
-                        continue
-                
-                # 🔥 [보건복지부 중복 방지 필터] 기존 5대 기관 이름이 제목에 있으면 스킵!
+                # 🔥 [핵심 필터 1] "채용"과 "공고"가 둘 다 있어야만 수집
+                if "채용" not in row_text or "공고" not in row_text:
+                    continue
+
+                # 🔥 [핵심 필터 2] 의사, 의무직, 진료직, 합격자 단어가 있으면 즉시 제외!
+                exclude_words = ["의사", "의무직", "진료직", "합격자"]
+                if any(ex in title for ex in exclude_words) or any(ex in row_text for ex in exclude_words):
+                    continue
+
+                # [보건복지부 중복 방지 필터]
                 if inst_id == 'mohw':
-                    overlap_keywords = ['건강보험', '건보', '심사평가원', '심평원', '보건의료연구원', '보의연', '국가시험원', '국시원', '의료기관평가인증원', '인증원', '국민연금']
+                    overlap_keywords = ['건강보험', '건보', '심사평가원', '심평원', '보건의료연구원', '보의연', '국가시험원', '국시원', '의료기관평가인증원', '인증원', '국민연금', '근로복지', '적십자']
                     if any(overlap in title for overlap in overlap_keywords):
                         continue
 
-                # 첨부파일 거르기는 "제목(title)"에만 적용
+                # 첨부파일 거르기
                 ban_words = [".hwp", ".hwpx", ".pdf", ".zip", ".doc", ".docx", ".xls", ".xlsx", "첨부", "다운로드", "붙임", "file"]
                 if any(ban in title.lower() for ban in ban_words):
-                    continue
-                    
-                keywords = ["채용", "공고", "모집", "예고", "안내", "신규직원", "채용계획", "임용"]
-                if not any(kw in title for kw in keywords):
                     continue
                 
                 href = url
@@ -148,7 +148,7 @@ async def main():
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=True, args=['--disable-blink-features=AutomationControlled'])
         
-        # 🔥 국민연금(nps) 및 보건복지부(mohw) 타겟 추가!
+        # 🔥 총 9개 수집 대상 타겟 (근로복지공단, 적십자사 추가)
         targets = [
             {"id": "hira", "url": "https://hira.recruitlab.co.kr/app/recruitment-announcement/list"},
             {"id": "nhis", "url": "https://www.nhis.or.kr/nhis/together/wbhaea02700m01.do"},
@@ -156,7 +156,9 @@ async def main():
             {"id": "kuksiwon", "url": "https://dware.intojob.co.kr/main/kuksiwon.jsp"},
             {"id": "koiha", "url": "https://koiha.recruiter.co.kr/career/job"},
             {"id": "nps", "url": "https://www.nps.or.kr/pnsgdnc/hiregdnc/getOHAE0004M0List.do"},
-            {"id": "mohw", "url": "https://www.mohw.go.kr/board.es?mid=a10501010400&bid=0003"}
+            {"id": "mohw", "url": "https://www.mohw.go.kr/board.es?mid=a10501010400&bid=0003"},
+            {"id": "comwel", "url": "https://www.comwel.or.kr/recruit/hp/pblanc/pblancList.do"},
+            {"id": "redcross", "url": "https://www.redcross.or.kr/recruit/commonAction.do"}
         ]
         
         all_collected_jobs = []
