@@ -1,192 +1,327 @@
-import os
-import json
-import asyncio
-import re
-from datetime import datetime, timedelta, timezone
-import firebase_admin
-from firebase_admin import credentials
-from firebase_admin import firestore
-from playwright.async_api import async_playwright
-
-# 1. Firebase 인증
-firebase_json = os.environ.get('FIREBASE_CONFIG_JSON')
-if not firebase_json:
-    print("Error: FIREBASE_CONFIG_JSON 설정 없음")
-    exit(1)
-
-cred_dict = json.loads(firebase_json)
-cred = credentials.Certificate(cred_dict)
-
-if not firebase_admin._apps:
-    firebase_admin.initialize_app(cred)
-
-db = firestore.client()
-APP_ID = "recruitment-portal-v3"
-
-# 🔥 한국 시간 고정
-KST = timezone(timedelta(hours=9))
-
-async def scrape_site(browser, inst_id, url):
-    page = await browser.new_page(
-        user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
-        locale="ko-KR",
-        extra_http_headers={"Accept-Language": "ko-KR,ko;q=0.9"}
-    )
+<!-- 1. 스타일 및 라이브러리 로드 -->
+<script src="https://cdn.tailwindcss.com"></script>
+<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;600;700;800&display=swap');
+    #recruitment-app-root { font-family: 'Pretendard', sans-serif; line-height: 1.5; }
     
-    try:
-        print(f"[{inst_id}] 사이트 접속 중: {url}")
-        await page.goto(url, wait_until="domcontentloaded", timeout=60000)
-        await asyncio.sleep(8) 
+    /* 🔥 부드러운 가로 스크롤을 위한 커스텀 스크롤바 디자인 */
+    .filter-scroll-container {
+        scrollbar-width: thin;
+        scrollbar-color: #cbd5e1 transparent;
+    }
+    .filter-scroll-container::-webkit-scrollbar {
+        height: 4px;
+    }
+    .filter-scroll-container::-webkit-scrollbar-track {
+        background: transparent;
+    }
+    .filter-scroll-container::-webkit-scrollbar-thumb {
+        background-color: #cbd5e1;
+        border-radius: 10px;
+    }
+</style>
+
+<!-- 2. 앱이 그려질 위치 -->
+<div id="recruitment-app-root"></div>
+
+<!-- 3. Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
+<!-- 4. 메인 스크립트 -->
+<script type="text/babel">
+    const { useState, useEffect, useMemo, useRef } = React;
+
+    const Icon = ({ name, className = "w-5 h-5" }) => {
+        useEffect(() => { if (window.lucide) lucide.createIcons(); }, [name]);
+        return <i data-lucide={name} className={className}></i>;
+    };
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyDUBJ3oGSEbhEKHLP04OuUUXkiZNpv6vXE",
+        authDomain: "get-out-from-hospital.firebaseapp.com",
+        projectId: "get-out-from-hospital",
+        storageBucket: "get-out-from-hospital.firebasestorage.app",
+        messagingSenderId: "18005175262",
+        appId: "1:18005175262:web:ae31eedd60bb90d438cb4f",
+        measurementId: "G-2Y8EY9552N"
+    };
+
+    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+    const db = firebase.app().firestore('default');
+    const auth = firebase.auth();
+    const APP_ID = "recruitment-portal-v3";
+
+    const App = () => {
+        const [jobs, setJobs] = useState([]);
+        const [loading, setLoading] = useState(true);
+        const [error, setError] = useState(null);
+        const [searchTerm, setSearchTerm] = useState('');
+        const [activeTab, setActiveTab] = useState('all');
+        const [lastSync, setLastSync] = useState(null);
+        const [showSpecInfo, setShowSpecInfo] = useState(null);
         
-        found_jobs = []
-        
-        rows = await page.query_selector_all("tbody tr")
-        if not rows or len(rows) < 2:
-            rows = await page.query_selector_all(".board-list li, ul.list li, .recruitment-item, .item")
-        if not rows or len(rows) < 2:
-            rows = await page.query_selector_all("a, td.subject, div.tit, span.title, td.title")
-        
-        now = datetime.now(KST)
-        
-        for row in rows:
-            try:
-                row_text = (await row.inner_text()).strip()
-                if len(row_text) < 5: 
-                    continue
+        // 스크롤 조작을 위한 Ref
+        const scrollContainerRef = useRef(null);
+
+        const institutions = [
+            { id: 'nhis', name: '국민건강보험공단', shortName: '건보공단', url: 'https://nhis.kpcice.kr', specs: { language: '토익 700점 이상', cert: '컴활 1급, 한국사 1급, 사복 1급', license: '간호사/영양사/방사선사 등', summary: 'NCS(필기) 변별력이 가장 크며, 서류 자격증 가점이 필수적입니다.', salary: '신입 약 4,000만원 / 평균 약 7,500만원', parentalLeave: '남/녀 모두 최대 3년, 눈치 보지 않고 자유로운 사용 분위기' } },
+            { id: 'hira', name: '건강보험심사평가원', shortName: '심평원', url: 'https://hira.recruitlab.co.kr', specs: { language: '토익 700점 이상', cert: '컴활 1급, 한국사 1급', license: '간호사 등 면허 및 임상경력', summary: '심사직은 임상경력이 중요하며, 사무직은 서류 가점이 합격의 열쇠입니다.', salary: '신입 약 4,100만원 / 평균 약 7,800만원', parentalLeave: '남/녀 최대 3년 보장, 대체인력 제도가 잘 되어 있음' } },
+            { id: 'nps', name: '국민연금공단', shortName: '국민연금', url: 'https://nps.saramin.co.kr/service/nps/3707/applicant/apply/recruit_default.asp', specs: { language: '토익 700점 이상', cert: '컴활 1급, 한국사 1급 등', license: '직렬별 무관 (관련 자격 우대)', summary: '필기(NCS 및 전공) 난이도가 높으며 서류 자격증 가점이 중요합니다.', salary: '신입 약 3,800만원 / 평균 약 7,100만원', parentalLeave: '남/녀 육아휴직 3년 보장, 유연근무제 정착' } },
+            { id: 'comwel', name: '근로복지공단', shortName: '근로복지', url: 'https://www.comwel.or.kr/recruit/hp/pblanc/pblancList.do', specs: { language: '토익 700점 이상', cert: '컴활, 한국사 우대', license: '간호사 면허 및 임상경력 우대', summary: 'NCS와 전공(보건/행정) 필기가 중요하며 블라인드 채용을 철저히 준수합니다.', salary: '신입 약 3,600만원 / 평균 약 6,500만원', parentalLeave: '자녀당 최대 3년 보장, 전국 지사 순환근무 가능성 고려 필요' } },
+            { id: 'neca', name: '한국보건의료연구원', shortName: '보의연', url: 'https://www.neca.re.kr/lay1/program/S1T207C209/people/index.do', specs: { language: '토익 800점 이상 우대', cert: '데이터 분석(ADsP 등)', license: '석/박사 학위 (연구직 중심)', summary: '연구직 비중이 높아 관련 전공 학위와 연구 실적이 중시됩니다.', salary: '신입 약 3,900만원 / 평균 약 7,200만원', parentalLeave: '법정 1년+연장 가능, 연구 중심 조직으로 유연한 분위기' } },
+            { id: 'kuksiwon', name: '한국보건의료인국가시험원', shortName: '국시원', url: 'https://dware.intojob.co.kr/main/kuksiwon.jsp', specs: { language: '토익 700점 이상', cert: '컴활 1급, 정보처리기사 등', license: '직렬별 무관 (행정 중심)', summary: '국가시험 주관 기관으로 꼼꼼한 행정 및 기획 역량이 요구됩니다.', salary: '신입 약 3,700만원 / 평균 약 6,900만원', parentalLeave: '기본 1년 (자녀당 1년), 비수기 유연근무 활용 용이' } },
+            { id: 'koiha', name: '의료기관평가인증원', shortName: '인증원', url: 'https://koiha.recruiter.co.kr/career/job', specs: { language: '공인영어성적 필수', cert: '보건교육사 우대', license: '의료인 면허 및 임상경력', summary: '의료기관 평가 인증 업무 수행을 위해 실무 경력자를 강하게 선호합니다.', salary: '신입 약 3,800만원 / 평균 약 6,800만원', parentalLeave: '기본 1년+연장 가능, 출장 업무가 잦은 점 고려 필요' } },
+            { id: 'redcross', name: '대한적십자사', shortName: '적십자사', url: 'https://www.redcross.or.kr/recruit/commonAction.do', specs: { language: '토익 700점 이상 (사무직)', cert: '컴활, 워드, 한국사, 헌혈/봉사시간 가점', license: '간호사/임상병리사 면허 (혈액원 등)', summary: '헌혈 등 적십자 활동 경험과 봉사시간이 서류 가점에 매우 중요합니다.', salary: '신입 약 3,500만원 / 평균 약 6,200만원 (수당 제외)', parentalLeave: '자녀 1명당 최대 3년 보장 (혈액원/병원 등 소속 기관별 차이 있음)' } },
+            { id: 'mohw', name: '보건복지부 및 소속기관', shortName: '보건복지부', url: 'https://www.mohw.go.kr/board.es?mid=a10501010400&bid=0003', specs: { language: '공고별 상이', cert: '관련 직무 자격증 우대', license: '의료인 면허 및 실무경력 우대', summary: '본부 및 소속기관(병원, 보건소 등)의 공무원, 공무직 등 수시 채용', salary: '공무원/공무직 보수규정 및 직무별 상이', parentalLeave: '국가공무원법 및 근로기준법에 따른 철저한 육아휴직 1~3년 보장' } },
+        ];
+
+        useEffect(() => {
+            auth.signInAnonymously().then(() => {
+                const dataRef = db.collection('artifacts').doc(APP_ID).collection('public').doc('data');
                 
-                link_el = await row.query_selector("a")
-                if not link_el:
-                    if await row.evaluate("node => node.tagName") == "A":
-                        link_el = row
-                    else:
-                        continue
+                const cleanTitleText = (title) => {
+                    if (!title) return '';
+                    let cleaned = title.replace(/[\[\(]?\d{2,4}[-./]\d{1,2}[-./]\d{1,2}\s*[~-]\s*(\d{2,4}[-./])?\d{1,2}[-./]\d{1,2}[\]\)]?/g, '');
+                    cleaned = cleaned.replace(/\(\s*\)|\[\s*\]/g, '');
+                    cleaned = cleaned.replace(/새글/g, '');
+                    return cleaned.trim();
+                };
+
+                const unsubscribeJobs = dataRef.collection('jobs').onSnapshot(snap => {
+                    const list = [];
+                    const seenTitles = new Set(); // 🔥 중복 제거를 위한 세트
+
+                    snap.forEach(doc => {
+                        const data = doc.data();
+                        const title = data.title || '';
+                        const titleLower = title.toLowerCase();
                         
-                title = (await link_el.inner_text()).strip()
-                if len(title) < 5: continue
-
-                # 🔥 [가장 중요한 수정] "채용"과 "공고" 단어가 'row_text'가 아닌 'title(공고 제목)'에 모두 포함되어야만 수집
-                if "채용" not in title or "공고" not in title:
-                    continue
-
-                # 🔥 [제외 조건] 의사, 의무직, 진료직, 합격자, 변호사 단어가 제목이나 내용에 있으면 제외
-                exclude_words = ["의사", "의무직", "진료직", "합격자", "변호사"]
-                if any(ex in title for ex in exclude_words) or any(ex in row_text for ex in exclude_words):
-                    continue
-
-                # [보건복지부 중복 방지 필터]
-                if inst_id == 'mohw':
-                    overlap_keywords = ['건강보험', '건보', '심사평가원', '심평원', '보건의료연구원', '보의연', '국가시험원', '국시원', '의료기관평가인증원', '인증원', '국민연금', '근로복지', '적십자']
-                    if any(overlap in title for overlap in overlap_keywords):
-                        continue
-
-                # 첨부파일 거르기
-                ban_words = [".hwp", ".hwpx", ".pdf", ".zip", ".doc", ".docx", ".xls", ".xlsx", "첨부", "다운로드", "붙임", "file"]
-                if any(ban in title.lower() for ban in ban_words):
-                    continue
-                
-                href = url
-                raw_href = await link_el.get_attribute("href")
-                if raw_href:
-                    if raw_href.startswith("http"): href = raw_href
-                    elif raw_href.startswith("/"): href = url.split("/")[0] + "//" + url.split("/")[2] + raw_href
-                    elif raw_href.startswith("javascript"): href = url
-                    
-                # [제목 클리닝] "새글" 텍스트 제거
-                clean_title = title.replace("새글", "").strip()
-
-                # 날짜 및 기간 추출기
-                date_matches = re.findall(r'20\d{2}\s*[-./]\s*\d{2}\s*[-./]\s*\d{2}', row_text)
-                
-                posted_date_str = now.strftime("%Y-%m-%d")
-                end_date_str = "상세 모집요강 참조"
-                is_too_old = False
-                
-                if date_matches:
-                    parsed_dates = [d.replace(' ', '').replace('.', '-').replace('/', '-') for d in date_matches]
-                    posted_date_str = parsed_dates[0]
-                    
-                    try:
-                        posted_date_obj = datetime.strptime(posted_date_str, "%Y-%m-%d").replace(tzinfo=KST)
-                        # 30일 초과된 공고 제외
-                        if (now - posted_date_obj).days > 30:
-                            is_too_old = True
-                    except:
-                        pass
+                        const isAttachment = /\.(hwp|hwpx|pdf|zip|doc|docx|xls|xlsx)/i.test(titleLower);
+                        const hasAttachKeyword = /첨부|붙임|다운로드|파일/.test(titleLower);
+                        const hasExcludeWord = /합격자|의무직|의사|진료직|변호사/.test(title);
                         
-                    if len(parsed_dates) >= 2:
-                        end_date_str = parsed_dates[1]
-                
-                if is_too_old:
-                    continue
+                        if (!isAttachment && !hasAttachKeyword && !hasExcludeWord) {
+                            const displayTitle = cleanTitleText(title);
+                            // 🔥 띄어쓰기를 모두 없앤 문자열로 중복 공고(예: 국가생명윤리정책원) 철저히 병합
+                            const compareTitle = displayTitle.replace(/\s+/g, '');
                             
-                found_jobs.append({
-                    "instId": inst_id,
-                    "title": clean_title,
-                    "postedDate": posted_date_str,
-                    "endDate": end_date_str,
-                    "type": "채용공고",
-                    "link": href
-                })
-            except Exception as e:
-                continue
-        
-        # 중복 제목 제거
-        unique_jobs = []
-        seen_titles = set()
-        for job in found_jobs:
-            if job['title'] not in seen_titles:
-                unique_jobs.append(job)
-                seen_titles.add(job['title'])
-                
-        print(f"[{inst_id}] 수집 성공! 총 {len(unique_jobs)}건 발견")
-        return unique_jobs[:10]
-        
-    except Exception as e:
-        print(f"[{inst_id}] 접속 에러: {e}")
-        return []
-    finally:
-        await page.close()
+                            if (!seenTitles.has(compareTitle)) {
+                                seenTitles.add(compareTitle);
+                                list.push({ id: doc.id, displayTitle, ...data });
+                            }
+                        }
+                    });
+                    
+                    list.sort((a, b) => new Date(b.postedDate || 0) - new Date(a.postedDate || 0));
+                    setJobs(list);
+                    setLoading(false);
+                }, err => setError(err.message));
 
-async def main():
-    async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True, args=['--disable-blink-features=AutomationControlled'])
-        
-        # 🔥 총 9개 수집 대상 타겟
-        targets = [
-            {"id": "hira", "url": "https://hira.recruitlab.co.kr/app/recruitment-announcement/list"},
-            {"id": "nhis", "url": "https://www.nhis.or.kr/nhis/together/wbhaea02700m01.do"},
-            {"id": "neca", "url": "https://www.neca.re.kr/lay1/program/S1T207C209/people/index.do"},
-            {"id": "kuksiwon", "url": "https://dware.intojob.co.kr/main/kuksiwon.jsp"},
-            {"id": "koiha", "url": "https://koiha.recruiter.co.kr/career/job"},
-            {"id": "nps", "url": "https://www.nps.or.kr/pnsgdnc/hiregdnc/getOHAE0004M0List.do"},
-            {"id": "mohw", "url": "https://www.mohw.go.kr/board.es?mid=a10501010400&bid=0003"},
-            {"id": "comwel", "url": "https://www.comwel.or.kr/recruit/hp/pblanc/pblancList.do"},
-            {"id": "redcross", "url": "https://www.redcross.or.kr/recruit/commonAction.do"}
-        ]
-        
-        all_collected_jobs = []
-        for target in targets:
-            jobs = await scrape_site(browser, target['id'], target['url'])
-            all_collected_jobs.extend(jobs)
-        
-        if all_collected_jobs:
-            batch = db.batch()
-            jobs_path = db.collection('artifacts').document(APP_ID).collection('public').document('data').collection('jobs')
-            
-            # 기존 데이터 덮어쓰기 (새로운 수집 결과로 갱신)
-            for i, job in enumerate(all_collected_jobs):
-                doc_ref = jobs_path.document(f"job_{i}")
-                batch.set(doc_ref, job)
-            
-            meta_ref = db.collection('artifacts').document(APP_ID).collection('public').document('data').collection('metadata').document('sync')
-            batch.set(meta_ref, {"lastSync": datetime.now(KST).isoformat()})
-            
-            batch.commit()
-            print(f"🎉 성공! 깔끔하게 정제된 총 {len(all_collected_jobs)}개의 공고 저장 완료!")
-        else:
-            print("수집된 공고가 0개입니다.")
-            
-        await browser.close()
+                dataRef.collection('metadata').doc('sync').onSnapshot(doc => {
+                    if(doc.exists && doc.data().lastSync) {
+                        setLastSync(new Date(doc.data().lastSync));
+                    }
+                });
+            });
+        }, []);
 
-if __name__ == "__main__":
-    asyncio.run(main())
+        const filteredJobs = useMemo(() => {
+            return jobs.filter(job => 
+                (job.displayTitle?.toLowerCase().includes(searchTerm.toLowerCase())) &&
+                (activeTab === 'all' || job.instId === activeTab)
+            );
+        }, [jobs, searchTerm, activeTab]);
+
+        // 🔥 좌우 스크롤 이동 버튼 로직
+        const scrollFilters = (direction) => {
+            if (scrollContainerRef.current) {
+                const scrollAmount = direction === 'left' ? -200 : 200;
+                scrollContainerRef.current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+            }
+        };
+
+        // 날짜 포맷팅 헬퍼 함수
+        const formatDateString = (dateObj) => {
+            if (!dateObj) return '확인 중...';
+            const year = dateObj.getFullYear();
+            const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+            const day = String(dateObj.getDate()).padStart(2, '0');
+            return `${year}년 ${month}월 ${day}일`;
+        };
+
+        const formatTimeString = (dateObj) => {
+            if (!dateObj) return '';
+            const hours = String(dateObj.getHours()).padStart(2, '0');
+            const minutes = String(dateObj.getMinutes()).padStart(2, '0');
+            return `${hours}:${minutes}`;
+        };
+
+        return (
+            <div className="bg-slate-50 p-2 md:p-6 text-left rounded-3xl overflow-hidden border border-slate-200 shadow-sm mt-4 relative">
+                <div className="max-w-5xl mx-auto">
+                    <header className="mb-8 space-y-3">
+                        <div className="flex flex-wrap gap-2">
+                            {/* 🔥 라벨 변경: 매시간 정각 자동 업데이트 */}
+                            <span className="bg-blue-600 text-white px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-tighter">
+                                매시간 정각 자동 업데이트
+                            </span>
+                            <span className="bg-white border border-slate-200 text-slate-600 px-2.5 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1">
+                                <Icon name="calendar" className="w-3 h-3" />
+                                기준일자: {formatDateString(lastSync)}
+                            </span>
+                            <span className="bg-white border border-slate-200 text-slate-500 px-2.5 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1">
+                                <Icon name="clock" className="w-3 h-3" />
+                                최근 수집: {formatTimeString(lastSync)}
+                            </span>
+                        </div>
+                        <h1 className="text-2xl md:text-3xl font-black text-slate-900 leading-tight">
+                            보건직 및 간호사 <span className="text-blue-600 text-xl block md:inline">공기업/공단 채용공고 모음</span>
+                        </h1>
+                    </header>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                        <aside className="lg:col-span-1 space-y-4">
+                            <div className="bg-white p-5 rounded-2xl border border-slate-200">
+                                <h2 className="text-[11px] font-black text-slate-400 uppercase mb-4 tracking-widest text-left">수집 기관 리스트</h2>
+                                <div className="space-y-4 text-left">
+                                    {institutions.map(inst => (
+                                        <div key={inst.id} className="space-y-1.5 border-b border-slate-50 pb-3 last:border-0 last:pb-0">
+                                            <div className="flex items-center justify-between text-sm font-bold text-slate-700">
+                                                {inst.name}
+                                                <button onClick={() => window.open(inst.url, '_blank')} className="text-slate-300 hover:text-blue-600"><Icon name="external-link" className="w-3.5 h-3.5" /></button>
+                                            </div>
+                                            <p className="text-[11px] text-slate-500 leading-snug">{inst.specs.summary}</p>
+                                            <button onClick={() => setShowSpecInfo(inst)} className="text-[10px] text-blue-600 font-bold hover:underline">상세 정보</button>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </aside>
+
+                        <main className="lg:col-span-3 space-y-5 relative">
+                            {/* 🔥 검색 및 필터 영역 디자인 개선 */}
+                            <div className="bg-white p-4 rounded-2xl border border-slate-200 space-y-4">
+                                <div className="relative">
+                                    <Icon name="search" className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-300 w-4 h-4" />
+                                    <input type="text" placeholder="공고 제목 검색..." onChange={e => setSearchTerm(e.target.value)} className="w-full pl-10 pr-4 py-2.5 bg-slate-50 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium" />
+                                </div>
+                                
+                                {/* 스크롤 가능한 필터 칩 컨테이너 */}
+                                <div className="relative flex items-center group">
+                                    <div 
+                                        ref={scrollContainerRef}
+                                        className="filter-scroll-container flex gap-1.5 overflow-x-auto pb-2 pt-1 px-1 w-full scroll-smooth"
+                                    >
+                                        <button 
+                                            onClick={() => setActiveTab('all')} 
+                                            className={`flex-shrink-0 px-4 py-1.5 rounded-lg text-[13px] font-bold whitespace-nowrap transition-all border ${activeTab === 'all' ? 'bg-slate-900 text-white border-slate-900 shadow-md' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}`}
+                                        >
+                                            전체
+                                        </button>
+                                        {institutions.map(inst => (
+                                            <button 
+                                                key={inst.id} 
+                                                onClick={() => setActiveTab(inst.id)} 
+                                                className={`flex-shrink-0 px-4 py-1.5 rounded-lg text-[13px] font-bold whitespace-nowrap transition-all border ${activeTab === inst.id ? 'bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-200' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:border-blue-300'}`}
+                                            >
+                                                {inst.shortName}
+                                            </button>
+                                        ))}
+                                    </div>
+                                    
+                                    <div className="absolute right-0 top-0 bottom-2 w-12 bg-gradient-to-l from-white to-transparent pointer-events-none hidden md:block group-hover:hidden transition-opacity"></div>
+                                    <button 
+                                        onClick={() => scrollFilters('right')}
+                                        className="hidden md:flex absolute -right-2 top-1/2 -translate-y-[calc(50%+4px)] w-8 h-8 bg-white border border-slate-200 rounded-full items-center justify-center shadow-sm text-slate-500 hover:text-blue-600 hover:border-blue-300 opacity-0 group-hover:opacity-100 transition-opacity"
+                                    >
+                                        <Icon name="chevron-right" className="w-4 h-4" />
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div className="space-y-3">
+                                {loading ? (
+                                    <div className="py-20 text-center text-slate-300 animate-pulse font-bold">데이터 로드 중...</div>
+                                ) : filteredJobs.length > 0 ? (
+                                    filteredJobs.map(job => {
+                                        const inst = institutions.find(i => i.id === job.instId) || { shortName: job.instId };
+                                        const periodText = job.endDate && !job.endDate.includes('상세') 
+                                                            ? `${job.postedDate} ~ ${job.endDate}` 
+                                                            : `${job.postedDate} ~ 별도확인`;
+
+                                        return (
+                                            <div key={job.id} className="bg-white p-5 rounded-2xl border border-slate-200 hover:border-blue-400 hover:shadow-md transition-all flex flex-col md:flex-row justify-between items-start md:items-center gap-4 text-left group">
+                                                <div className="space-y-2 flex-1">
+                                                    <div className="flex gap-2 items-center">
+                                                        <span className="text-[10px] font-black px-1.5 py-0.5 bg-slate-100 rounded text-slate-500 uppercase">{inst.shortName}</span>
+                                                        <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-1.5 rounded">채용공고</span>
+                                                    </div>
+                                                    <h3 className="text-[15px] md:text-[17px] font-bold text-slate-800 group-hover:text-blue-700 transition-colors leading-snug break-keep">{job.displayTitle}</h3>
+                                                    <div className="flex gap-3 text-[11px] font-bold text-slate-400">
+                                                        <span className="flex items-center gap-1"><Icon name="calendar" className="w-3 h-3" /> 접수기간: {periodText}</span>
+                                                    </div>
+                                                </div>
+                                                <button onClick={() => window.open(job.link, '_blank')} className="w-full md:w-auto px-6 py-2.5 bg-slate-900 text-white rounded-xl font-bold text-xs hover:bg-blue-600 transition-colors shrink-0">지원하기</button>
+                                            </div>
+                                        );
+                                    })
+                                ) : (
+                                    <div className="py-20 text-center bg-white rounded-2xl border border-dashed border-slate-300">
+                                        <p className="text-slate-400 text-sm font-bold">검색 결과가 없습니다.</p>
+                                    </div>
+                                )}
+                            </div>
+                        </main>
+                    </div>
+                </div>
+
+                {showSpecInfo && (
+                    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+                        <div className="bg-white w-full max-w-md rounded-[2rem] p-7 shadow-2xl relative text-left animate-in zoom-in duration-300 max-h-[90vh] overflow-y-auto no-scrollbar">
+                            <button onClick={() => setShowSpecInfo(null)} className="absolute top-6 right-6 text-slate-300 hover:text-slate-900 transition-colors"><Icon name="x" /></button>
+                            <div className="space-y-5">
+                                <h2 className="text-xl font-black text-slate-900">{showSpecInfo.name} 상세 정보</h2>
+                                
+                                <div className="space-y-3">
+                                    <div className="grid grid-cols-1 gap-3">
+                                        <div className="p-3 bg-blue-50 border border-blue-100 rounded-xl text-left">
+                                            <p className="text-[10px] font-black text-blue-500 mb-0.5 uppercase tracking-widest">연봉 정보</p>
+                                            <p className="text-sm font-bold text-slate-800">{showSpecInfo.specs.salary}</p>
+                                        </div>
+                                        <div className="p-3 bg-purple-50 border border-purple-100 rounded-xl text-left">
+                                            <p className="text-[10px] font-black text-purple-500 mb-0.5 uppercase tracking-widest">육아휴직 및 복지</p>
+                                            <p className="text-sm font-bold text-slate-800 leading-relaxed">{showSpecInfo.specs.parentalLeave}</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="pt-2 border-t border-slate-100"></div>
+
+                                    {[
+                                        { label: '어학 성적', value: showSpecInfo.specs.language },
+                                        { label: '자격 사항', value: showSpecInfo.specs.cert },
+                                        { label: '면허/학위', value: showSpecInfo.specs.license }
+                                    ].map((spec, i) => (
+                                        <div key={i} className="p-3.5 bg-slate-50 rounded-xl text-left">
+                                            <p className="text-[10px] font-black text-slate-400 mb-0.5 uppercase tracking-widest">{spec.label}</p>
+                                            <p className="text-sm font-bold text-slate-700 leading-relaxed">{spec.value}</p>
+                                        </div>
+                                    ))}
+                                </div>
+                                <button onClick={() => setShowSpecInfo(null)} className="w-full py-3.5 bg-slate-900 text-white rounded-xl font-bold hover:bg-blue-600 transition-colors">확인 완료</button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </div>
+        );
+    };
+
+    const root = ReactDOM.createRoot(document.getElementById('recruitment-app-root'));
+    root.render(<App />);
+</script>
