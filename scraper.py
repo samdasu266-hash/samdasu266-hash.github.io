@@ -64,11 +64,11 @@ async def scrape_site(browser, inst_id, url):
                 title = (await link_el.inner_text()).strip()
                 if len(title) < 5: continue
 
-                # 🔥 [핵심 필터 1] "채용"과 "공고"가 둘 다 있어야만 수집
+                # 🔥 [필수 조건] 제목이나 내용에 "채용"과 "공고"가 모두 포함되어야 함
                 if "채용" not in row_text or "공고" not in row_text:
                     continue
 
-                # 🔥 [핵심 필터 2] 의사, 의무직, 진료직, 합격자 단어가 있으면 즉시 제외!
+                # 🔥 [제외 조건] 의사, 의무직, 진료직, 합격자 단어가 있으면 제외
                 exclude_words = ["의사", "의무직", "진료직", "합격자"]
                 if any(ex in title for ex in exclude_words) or any(ex in row_text for ex in exclude_words):
                     continue
@@ -91,6 +91,9 @@ async def scrape_site(browser, inst_id, url):
                     elif raw_href.startswith("/"): href = url.split("/")[0] + "//" + url.split("/")[2] + raw_href
                     elif raw_href.startswith("javascript"): href = url
                     
+                # [제목 클리닝] "새글" 텍스트 제거
+                clean_title = title.replace("새글", "").strip()
+
                 # 날짜 및 기간 추출기
                 date_matches = re.findall(r'20\d{2}\s*[-./]\s*\d{2}\s*[-./]\s*\d{2}', row_text)
                 
@@ -118,7 +121,7 @@ async def scrape_site(browser, inst_id, url):
                             
                 found_jobs.append({
                     "instId": inst_id,
-                    "title": title,
+                    "title": clean_title,
                     "postedDate": posted_date_str,
                     "endDate": end_date_str,
                     "type": "채용공고",
@@ -148,7 +151,7 @@ async def main():
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=True, args=['--disable-blink-features=AutomationControlled'])
         
-        # 🔥 총 9개 수집 대상 타겟 (근로복지공단, 적십자사 추가)
+        # 🔥 총 9개 수집 대상 타겟
         targets = [
             {"id": "hira", "url": "https://hira.recruitlab.co.kr/app/recruitment-announcement/list"},
             {"id": "nhis", "url": "https://www.nhis.or.kr/nhis/together/wbhaea02700m01.do"},
@@ -170,6 +173,7 @@ async def main():
             batch = db.batch()
             jobs_path = db.collection('artifacts').document(APP_ID).collection('public').document('data').collection('jobs')
             
+            # 기존 데이터 덮어쓰기 (새로운 수집 결과로 갱신)
             for i, job in enumerate(all_collected_jobs):
                 doc_ref = jobs_path.document(f"job_{i}")
                 batch.set(doc_ref, job)
