@@ -5,33 +5,49 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>보건직 및 간호사 공기업/공단 채용공고 모음집</title>
     
-    <!-- 🔥 구글 애드센스 소유권 확인 스크립트 추가 -->
+    <!-- 1. 애드센스 코드 스니펫 (가장 상단 배치) -->
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2720320967054456"
      crossorigin="anonymous"></script>
 
-    <!-- 외부 라이브러리 로드 -->
+    <!-- 2. 애드센스 소유권 확인 메타 태그 (추가 권장) -->
+    <meta name="google-adsense-account" content="ca-pub-2720320967054456">
+
+    <!-- SEO 및 로봇 수집용 정적 메타 데이터 -->
+    <meta name="description" content="전국 주요 보건의료 공공기관(건보공단, 심평원, 연금공단 등)의 최신 채용 공고를 매시간 자동으로 수집하여 제공합니다.">
+    <meta name="keywords" content="간호사채용, 보건직공기업, 국민건강보험공단채용, 건강보험심사평가원채용, 의료직공고">
+
+    <!-- 외부 라이브러리 -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
+    
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;600;700;800&display=swap');
-        body { font-family: 'Pretendard', sans-serif; background-color: #f8fafc; color: #0f172a; margin: 0; text-align: left; }
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        
-        /* 가로 스크롤바 디자인 */
-        .filter-scroll-container {
-            scrollbar-width: thin;
-            scrollbar-color: #cbd5e1 transparent;
+        @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800&display=swap');
+        body { 
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif; 
+            background-color: #f8fafc; 
+            color: #1e293b;
+            line-height: 1.6;
+            letter-spacing: -0.02em;
         }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .filter-scroll-container { scrollbar-width: thin; scrollbar-color: #cbd5e1 transparent; }
         .filter-scroll-container::-webkit-scrollbar { height: 4px; }
-        .filter-scroll-container::-webkit-scrollbar-track { background: transparent; }
         .filter-scroll-container::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 10px; }
+        .job-card { transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
+        .job-card:hover { transform: translateY(-2px); }
     </style>
 </head>
-<body>
+<body class="bg-slate-50 text-left">
+    <!-- 🔥 애드센스 로봇을 위한 정적 텍스트 (화면에는 안 보임) -->
+    <div style="display:none;">
+        <h1>보건의료 공기업 채용 공고 대시보드</h1>
+        <p>국민건강보험공단, 건강보험심사평가원, 국민연금공단, 근로복지공단, 대한적십자사 등 주요 보건의료 기관의 채용 정보를 실시간으로 제공합니다.</p>
+        <p>간호사, 보건직, 행정직 채용 공고 및 합격 스펙 정보를 확인하세요.</p>
+    </div>
+
     <div id="root"></div>
 
     <!-- Firebase SDK -->
@@ -47,7 +63,6 @@
             return <i data-lucide={name} className={className}></i>;
         };
 
-        // 🔥 사용자님의 실제 Firebase 설정 (직접 삽입)
         const firebaseConfig = {
             apiKey: "AIzaSyDUBJ3oGSEbhEKHLP04OuUUXkiZNpv6vXE",
             authDomain: "get-out-from-hospital.firebaseapp.com",
@@ -72,117 +87,27 @@
             const scrollContainerRef = useRef(null);
 
             const institutions = [
-                { 
-                    id: 'nhis', name: '국민건강보험공단', shortName: '건보공단', url: 'https://nhis.kpcice.kr', 
-                    specs: { 
-                        language: '토익 700점 이상 (사무직 800점대 우대)', 
-                        cert: '컴활 1급, 한국사 1급, 사복 1급 필수 수준', 
-                        license: '간호사/영양사/방사선사 면허 가점', 
-                        salary: '신입 약 4,000만원 / 평균 약 7,500만원', 
-                        parentalLeave: '남/녀 모두 최대 3년 (법정 1년 + 자체 2년)', 
-                        summary: 'NCS 변별력이 매우 크며 서류 가점이 필수적입니다.' 
-                    } 
-                },
-                { 
-                    id: 'hira', name: '건강보험심사평가원', shortName: '심평원', url: 'https://hira.recruitlab.co.kr', 
-                    specs: { 
-                        language: '토익 700점 이상', 
-                        cert: '컴활 1급, 한국사 1급 가점', 
-                        license: '간호사 등 면허 및 임상경력 필수 (심사직)', 
-                        salary: '신입 약 4,100만원 / 평균 약 7,800만원', 
-                        parentalLeave: '남/녀 최대 3년 보장, 대체인력 활성화', 
-                        summary: '심사직은 임상경력이, 사무직은 자격증이 합격의 열쇠입니다.' 
-                    } 
-                },
-                { 
-                    id: 'nps', name: '국민연금공단', shortName: '국민연금', url: 'https://nps.saramin.co.kr/service/nps/3707/applicant/apply/recruit_default.asp', 
-                    specs: { 
-                        language: '토익 700점 이상 권장', 
-                        cert: '컴활 1급, 한국사 1급, 사복 1급 등', 
-                        license: '직렬별 무관 (관련 전공자 우대)', 
-                        salary: '신입 약 3,800만원 / 평균 약 7,100만원', 
-                        parentalLeave: '남/녀 육아휴직 3년 보장, 유연근무제 정착', 
-                        summary: '필기(NCS+전공) 난이도가 높으며 서류 가점이 중요합니다.' 
-                    } 
-                },
-                { 
-                    id: 'comwel', name: '근로복지공단', shortName: '근로복지', url: 'https://www.comwel.or.kr/recruit', 
-                    specs: { 
-                        language: '토익 700점 이상 (어학 성적 필수 아님)', 
-                        cert: '컴활, 한국사, 사복 1급 가점', 
-                        license: '간호사 면허 및 병원 경력 가점', 
-                        salary: '신입 약 3,600만원 / 평균 약 6,500만원', 
-                        parentalLeave: '자녀당 최대 3년 보장', 
-                        summary: '블라인드 채용을 철저히 준수하며 필기 비중이 높습니다.' 
-                    } 
-                },
-                { 
-                    id: 'neca', name: '한국보건의료연구원', shortName: '보의연', url: 'https://www.neca.re.kr', 
-                    specs: { 
-                        language: '토익 800점~850점 이상 우대', 
-                        cert: '데이터 분석(ADsP), 사회조사분석사', 
-                        license: '보건학/의학 관련 석사 학위 이상 (연구직)', 
-                        salary: '신입 약 3,900만원 / 평균 약 7,200만원', 
-                        parentalLeave: '법정 1년 + 기관장 승인 시 연장 가능', 
-                        summary: '연구직 비중이 높고 학술 실적과 전문성을 중시합니다.' 
-                    } 
-                },
-                { 
-                    id: 'kuksiwon', name: '한국보건의료인국가시험원', shortName: '국시원', url: 'https://dware.intojob.co.kr', 
-                    specs: { 
-                        language: '토익 750점 이상 권장', 
-                        cert: '정보처리기사, 컴활 1급 가점', 
-                        license: '행정직 면허 제한 없음', 
-                        salary: '신입 약 3,700만원 / 평균 약 6,900만원', 
-                        parentalLeave: '기본 1년 보장 및 육아기 근로시간 단축', 
-                        summary: '꼼꼼한 행정 처리 및 기획 역량 중심의 면접이 진행됩니다.' 
-                    } 
-                },
-                { 
-                    id: 'koiha', name: '의료기관평가인증원', shortName: '인증원', url: 'https://koiha.recruiter.co.kr', 
-                    specs: { 
-                        language: '영어 성적 제출 필수', 
-                        cert: '보건교육사, 보건의료정보관리사 우대', 
-                        license: '의료인 면허 및 인증 실무 경력 우대', 
-                        salary: '신입 약 3,800만원 / 평균 약 6,800만원', 
-                        parentalLeave: '기본 1년 보장 + 연장 가능', 
-                        summary: '인증 심사 실무 경험자를 선호하며 출장 업무가 잦습니다.' 
-                    } 
-                },
-                { 
-                    id: 'redcross', name: '대한적십자사', shortName: '적십자사', url: 'https://www.redcross.or.kr/recruit/', 
-                    specs: { 
-                        language: '토익 700점 이상 (사무직)', 
-                        cert: '봉사시간, 헌혈 실적, 컴활 가점', 
-                        license: '간호사/임상병리사 면허 (혈액원 등)', 
-                        salary: '신입 약 3,500만원 / 평균 약 6,200만원', 
-                        parentalLeave: '자녀 1명당 최대 3년 보장', 
-                        summary: '봉사 정신과 적십자 활동 경험이 서류 합격의 큰 비중을 차지합니다.' 
-                    } 
-                },
-                { 
-                    id: 'mohw', name: '보건복지부 및 소속기관', shortName: '보건복지부', url: 'https://www.mohw.go.kr', 
-                    specs: { 
-                        language: '공고별 상이', 
-                        cert: '관련 직무 자격증 가점', 
-                        license: '의료인 면허 및 소속기관 실무경력 우대', 
-                        salary: '보수규정 및 직무별 상이', 
-                        parentalLeave: '국가공무원법 등에 따른 철저한 휴직 보장', 
-                        summary: '본부 및 소속기관의 공무원, 공무직 등 수시 채용이 활발합니다.' 
-                    } 
-                },
+                { id: 'nhis', name: '국민건강보험공단', shortName: '건보공단', url: 'https://nhis.kpcice.kr', specs: { language: '토익 700점 이상', cert: '컴활 1급, 한국사 1급, 사복 1급', license: '간호사/영양사/방사선사 등', salary: '신입 약 4,000 / 평균 약 7,500', parentalLeave: '남/녀 최대 3년 보장 (법정1+자체2)', summary: 'NCS 변별력이 크며 서류 가점이 필수적입니다.' } },
+                { id: 'hira', name: '건강보험심사평가원', shortName: '심평원', url: 'https://hira.recruitlab.co.kr', specs: { language: '토익 700점 이상', cert: '컴활 1급, 한국사 1급 가점', license: '간호사 등 면허 및 임상경력 필수', salary: '신입 약 4,100 / 평균 약 7,800', parentalLeave: '남/녀 최대 3년 보장, 대체인력 활성화', summary: '심사직은 임상경력이, 사무직은 자격증이 핵심입니다.' } },
+                { id: 'nps', name: '국민연금공단', shortName: '국민연금', url: 'https://nps.saramin.co.kr', specs: { language: '토익 700점 이상 권장', cert: '컴활 1급, 한국사 1급 등', license: '직렬별 무관 (전공자 우대)', salary: '신입 약 3,800 / 평균 약 7,100', parentalLeave: '남/녀 육아휴직 3년 보장', summary: '필기 난이도가 높으며 서류 자격증 가점이 중요합니다.' } },
+                { id: 'comwel', name: '근로복지공단', shortName: '근로복지', url: 'https://www.comwel.or.kr/recruit', specs: { language: '토익 700점 이상 가점', cert: '컴활, 한국사, 사복 1급', license: '간호사 면허 및 병원 경력 우대', salary: '신입 약 3,600 / 평균 약 6,500', parentalLeave: '자녀당 최대 3년 보장', summary: '철저한 블라인드 채용과 필기 비중이 높은 곳입니다.' } },
+                { id: 'neca', name: '한국보건의료연구원', shortName: '보의연', url: 'https://www.neca.re.kr', specs: { language: '토익 800~850점 이상 우대', cert: '데이터 분석(ADsP) 등', license: '석사 학위 이상 (연구직 중심)', salary: '신입 약 3,900 / 평균 약 7,200', parentalLeave: '법정 1년+연장 가능', summary: '연구 실적과 전문 역량을 매우 중시하는 기관입니다.' } },
+                { id: 'kuksiwon', name: '한국보건의료인국가시험원', shortName: '국시원', url: 'https://dware.intojob.co.kr', specs: { language: '토익 750점 이상 권장', cert: '정보처리기사, 컴활 1급', license: '행정직 면허 제한 없음', salary: '신입 약 3,700 / 평균 약 6,900', parentalLeave: '기본 1년 보장 및 육아시간 활용 가능', summary: '꼼꼼한 행정 처리 및 기획 역량이 중요하게 평가됩니다.' } },
+                { id: 'koiha', name: '의료기관평가인증원', shortName: '인증원', url: 'https://koiha.recruiter.co.kr', specs: { language: '영어 성적 제출 필수', cert: '보건교육사 우대', license: '의료인 면허 및 실무 경력', salary: '신입 약 3,800 / 평균 약 6,800', parentalLeave: '기본 1년 보장 + 연장 가능', summary: '인증 심사 실무 경험자를 선호하며 출장이 잦은 편입니다.' } },
+                { id: 'redcross', name: '대한적십자사', shortName: '적십자사', url: 'https://www.redcross.or.kr/recruit/', specs: { language: '토익 700점 이상 (사무직)', cert: '봉사시간, 헌혈, 컴활 가점', license: '간호사/임상병리사 면허 (혈액원)', salary: '신입 약 3,500 / 평균 약 6,200', parentalLeave: '자녀 1명당 최대 3년 보장', summary: '봉사 정신과 적십자 활동 경험이 합격에 큰 영향을 줍니다.' } },
+                { id: 'mohw', name: '보건복지부 및 소속기관', shortName: '보건복지부', url: 'https://www.mohw.go.kr', specs: { language: '공고별 상이', cert: '관련 직무 자격증 가점', license: '의료인 면허 및 실무경력 우대', salary: '보수규정 및 직무별 상이', parentalLeave: '국가공무원법 등에 따른 휴직 보장', summary: '공무원/공무직 등 다양한 형태의 채용이 수시 진행됩니다.' } },
             ];
 
             useEffect(() => {
                 auth.signInAnonymously().then(() => {
                     const dataRef = db.collection('artifacts').doc(APP_ID).collection('public').doc('data');
-                    
                     dataRef.collection('jobs').onSnapshot(snap => {
                         const list = [];
                         const seenTitles = new Set(); 
                         snap.forEach(doc => {
                             const data = doc.data();
-                            const compareTitle = (data.title || '').replace(/\s+/g, '');
+                            const title = data.title || '';
+                            const compareTitle = title.replace(/\s+/g, '');
                             if (!seenTitles.has(compareTitle)) {
                                 seenTitles.add(compareTitle);
                                 list.push({ id: doc.id, ...data });
@@ -191,8 +116,7 @@
                         list.sort((a, b) => new Date(b.postedDate || 0) - new Date(a.postedDate || 0));
                         setJobs(list);
                         setLoading(false);
-                    }, () => setLoading(false));
-
+                    });
                     dataRef.collection('metadata').doc('sync').onSnapshot(doc => {
                         if(doc.exists && doc.data().lastSync) setLastSync(new Date(doc.data().lastSync));
                     });
@@ -211,34 +135,37 @@
 
             return (
                 <div className="max-w-5xl mx-auto p-4 md:p-8">
-                    <header className="mb-10 space-y-4 text-left">
+                    <header className="mb-10 space-y-3 text-left">
                         <div className="flex flex-wrap gap-2">
-                            <span className="bg-blue-600 text-white px-3 py-1 rounded-full text-[10px] font-bold tracking-tighter uppercase">매시간 정각 자동 업데이트</span>
-                            <span className="bg-white border border-slate-200 text-slate-600 px-3 py-1 rounded-full text-[10px] font-bold flex items-center gap-1 shadow-sm">
+                            <span className="bg-blue-600 text-white px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-tighter uppercase">매시간 정각 자동 업데이트</span>
+                            <span className="bg-white border border-slate-200 text-slate-600 px-2.5 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1 shadow-sm">
                                 <Icon name="calendar" className="w-3 h-3 text-blue-500" /> 기준일자: {formatDate(lastSync)}
                             </span>
-                            <span className="bg-white border border-slate-200 text-slate-500 px-3 py-1 rounded-full text-[10px] font-bold flex items-center gap-1">
+                            <span className="bg-white border border-slate-200 text-slate-500 px-2.5 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1">
                                 <Icon name="clock" className="w-3 h-3" /> 최근 수집: {formatTime(lastSync)}
                             </span>
                         </div>
-                        <h1 className="text-3xl md:text-4xl font-black text-slate-900 leading-tight">
-                            보건직 및 간호사 <span className="text-blue-600">공기업/공단 채용공고</span> 모음
+                        <h1 className="text-2xl md:text-3xl font-black text-slate-900 leading-tight">
+                            보건직 및 간호사 <span className="text-blue-600">공기업/공단 채용공고</span> 모음집
                         </h1>
                     </header>
 
-                    <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-                        <aside className="lg:col-span-1 space-y-6">
-                            <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200 sticky top-8">
-                                <h2 className="text-[11px] font-black text-slate-400 uppercase mb-6 tracking-widest text-left">수집 대상 기관</h2>
-                                <nav className="space-y-4">
+                    <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                        <aside className="lg:col-span-1 space-y-4">
+                            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                                <h2 className="text-[11px] font-black text-slate-400 uppercase mb-5 tracking-widest text-left">수집 대상 기관</h2>
+                                <nav className="space-y-4 text-left">
                                     {institutions.map(inst => (
-                                        <div key={inst.id} className="pb-3 border-b border-slate-50 last:border-0 text-left">
+                                        <div key={inst.id} className="pb-3 border-b border-slate-50 last:border-0 last:pb-0">
                                             <div className="flex items-center justify-between text-[13px] font-bold text-slate-700">
                                                 {inst.name}
-                                                <button onClick={() => window.open(inst.url, '_blank')} className="text-slate-300 hover:text-blue-600 transition-colors"><Icon name="external-link" className="w-3.5 h-3.5" /></button>
+                                                <button onClick={() => window.open(inst.url, '_blank')} className="text-slate-300 hover:text-blue-600 transition-colors">
+                                                    <Icon name="external-link" className="w-3.5 h-3.5" />
+                                                </button>
                                             </div>
-                                            <button onClick={() => setShowSpecInfo(inst)} className="text-[10px] text-blue-600 font-bold hover:underline mt-1 flex items-center gap-1">
-                                                <Icon name="award" className="w-3 h-3" /> 상세 정보 및 연봉 보기
+                                            <p className="text-[11px] text-slate-500 leading-snug mt-1">{inst.specs.summary}</p>
+                                            <button onClick={() => setShowSpecInfo(inst)} className="text-[10px] text-blue-600 font-bold hover:underline mt-1.5 flex items-center gap-1">
+                                                <Icon name="award" className="w-3 h-3" /> 상세 정보 보기
                                             </button>
                                         </div>
                                     ))}
@@ -246,93 +173,87 @@
                             </div>
                         </aside>
 
-                        <main className="lg:col-span-3 space-y-6">
-                            <div className="bg-white p-5 rounded-3xl border border-slate-200 space-y-6 text-left shadow-sm">
+                        <main className="lg:col-span-3 space-y-5">
+                            <div className="bg-white p-4 rounded-2xl border border-slate-200 space-y-4 shadow-sm text-left">
                                 <div className="relative">
-                                    <Icon name="search" className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 w-5 h-5" />
-                                    <input type="text" placeholder="공고 제목으로 검색..." onChange={e => setSearchTerm(e.target.value)} className="w-full pl-12 pr-6 py-4 bg-slate-50 border-none rounded-2xl text-sm focus:ring-2 focus:ring-blue-500 font-medium" />
+                                    <Icon name="search" className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-300 w-4 h-4" />
+                                    <input type="text" placeholder="공고 제목으로 검색..." onChange={e => setSearchTerm(e.target.value)} className="w-full pl-10 pr-4 py-2.5 bg-slate-50 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium border-none" />
                                 </div>
-                                <div className="filter-scroll-container flex gap-2 overflow-x-auto pb-2 px-1 scroll-smooth">
-                                    <button onClick={() => setActiveTab('all')} className={`flex-shrink-0 px-4 py-2 rounded-xl text-xs font-bold border transition-all ${activeTab === 'all' ? 'bg-slate-900 text-white border-slate-900 shadow-md' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}`}>전체보기</button>
+                                <div className="filter-scroll-container flex gap-1.5 overflow-x-auto pb-1 px-1 scroll-smooth no-scrollbar">
+                                    <button onClick={() => setActiveTab('all')} className={`flex-shrink-0 px-4 py-1.5 rounded-lg text-xs font-bold border transition-all ${activeTab === 'all' ? 'bg-slate-900 text-white border-slate-900 shadow-md' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-100'}`}>전체보기</button>
                                     {institutions.map(inst => (
-                                        <button key={inst.id} onClick={() => setActiveTab(inst.id)} className={`flex-shrink-0 px-4 py-2 rounded-xl text-xs font-bold border transition-all ${activeTab === inst.id ? 'bg-blue-600 text-white border-blue-600 shadow-md' : 'bg-white text-slate-600 border-slate-200 hover:bg-blue-50'}`}>{inst.shortName}</button>
+                                        <button key={inst.id} onClick={() => setActiveTab(inst.id)} className={`flex-shrink-0 px-4 py-1.5 rounded-lg text-xs font-bold border transition-all ${activeTab === inst.id ? 'bg-blue-600 text-white border-blue-600 shadow-md' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-100'}`}>{inst.shortName}</button>
                                     ))}
                                 </div>
                             </div>
 
-                            <div className="space-y-4">
+                            <div className="space-y-3">
                                 {loading ? (
-                                    <div className="py-24 text-center font-bold text-slate-300 animate-pulse text-lg">데이터 수집 중입니다...</div>
+                                    <div className="py-20 text-center text-slate-300 animate-pulse font-bold text-sm">데이터를 불러오는 중입니다...</div>
                                 ) : filteredJobs.length > 0 ? (
                                     filteredJobs.map(job => (
-                                        <div key={job.id} className="bg-white p-6 md:p-8 rounded-3xl border border-slate-200 hover:border-blue-400 hover:shadow-xl transition-all flex flex-col md:flex-row justify-between items-start md:items-center gap-6 group text-left">
-                                            <div className="space-y-3 flex-1">
+                                        <div key={job.id} className="job-card bg-white p-5 md:p-6 rounded-2xl border border-slate-200 hover:border-blue-400 hover:shadow-lg transition-all flex flex-col md:flex-row justify-between items-start md:items-center gap-4 text-left group">
+                                            <div className="space-y-2.5 flex-1">
                                                 <div className="flex gap-2 items-center">
-                                                    <span className="text-[10px] font-black px-2 py-0.5 bg-slate-100 rounded text-slate-500 uppercase">{institutions.find(i => i.id === job.instId)?.shortName || job.instId}</span>
-                                                    <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 rounded">채용공고</span>
+                                                    <span className="text-[10px] font-black px-1.5 py-0.5 bg-slate-100 rounded text-slate-500 uppercase">{institutions.find(i => i.id === job.instId)?.shortName || job.instId}</span>
+                                                    <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-1.5 rounded">채용진행중</span>
                                                 </div>
-                                                <h3 className="text-xl font-bold text-slate-800 leading-snug group-hover:text-blue-700 transition-colors">{job.title}</h3>
-                                                <div className="flex gap-4 text-xs font-bold text-slate-400">
+                                                <h3 className="text-[16px] md:text-[18px] font-bold text-slate-800 leading-snug group-hover:text-blue-700 transition-colors break-keep">{job.title}</h3>
+                                                <div className="flex gap-4 text-[11px] font-bold text-slate-400">
                                                     <span className="flex items-center gap-1"><Icon name="calendar" className="w-3 h-3" /> 게시: {job.postedDate}</span>
                                                     <span className="flex items-center gap-1 text-red-400"><Icon name="clock" className="w-3 h-3" /> {job.endDate || '상세참조'}</span>
                                                 </div>
                                             </div>
-                                            <button onClick={() => window.open(job.link, '_blank')} className="w-full md:w-auto px-10 py-4 bg-slate-900 text-white rounded-2xl font-bold text-sm hover:bg-blue-600 transition-all shadow-lg">지원하기</button>
+                                            <button onClick={() => window.open(job.link, '_blank')} className="w-full md:w-auto px-7 py-3 bg-slate-900 text-white rounded-xl font-bold text-xs hover:bg-blue-600 transition-colors shrink-0 shadow-md">지원하기</button>
                                         </div>
                                     ))
                                 ) : (
-                                    <div className="py-24 text-center bg-white rounded-3xl border border-dashed border-slate-300">
-                                        <Icon name="file-text" className="w-12 h-12 text-slate-200 mx-auto mb-4" />
-                                        <p className="text-slate-500 text-sm font-medium">진행 중인 공고가 없습니다.</p>
+                                    <div className="py-20 text-center bg-white rounded-2xl border border-dashed border-slate-300">
+                                        <p className="text-slate-400 text-sm font-bold">진행 중인 채용 공고가 없습니다.</p>
                                     </div>
                                 )}
                             </div>
                         </main>
                     </div>
 
-                    {/* 🔥 상세 정보 모달 (어학성적, 자격사항, 면허 추가 완료) */}
                     {showSpecInfo && (
                         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
-                            <div className="bg-white w-full max-w-lg rounded-[2.5rem] p-8 shadow-2xl relative text-left animate-in zoom-in duration-300 max-h-[90vh] overflow-y-auto no-scrollbar">
-                                <button onClick={() => setShowSpecInfo(null)} className="absolute top-8 right-8 text-slate-300 hover:text-slate-900 transition-colors"><Icon name="x" /></button>
-                                <div className="space-y-6">
-                                    <h2 className="text-2xl font-black text-slate-900">{showSpecInfo.name} 상세 정보</h2>
-                                    <div className="space-y-4">
-                                        {/* 연봉 및 복지 탭 */}
+                            <div className="bg-white w-full max-w-md rounded-[2rem] p-7 shadow-2xl relative text-left animate-in zoom-in duration-300 max-h-[90vh] overflow-y-auto no-scrollbar">
+                                <button onClick={() => setShowSpecInfo(null)} className="absolute top-6 right-6 text-slate-300 hover:text-slate-900 transition-colors"><Icon name="x" /></button>
+                                <div className="space-y-5">
+                                    <h2 className="text-xl font-black text-slate-900">{showSpecInfo.name} 상세 정보</h2>
+                                    <div className="space-y-3">
                                         <div className="grid grid-cols-1 gap-3">
-                                            <div className="p-4 bg-blue-50 border border-blue-100 rounded-2xl">
-                                                <p className="text-[10px] font-black text-blue-500 mb-1 uppercase tracking-widest">연봉 정보</p>
+                                            <div className="p-3.5 bg-blue-50 border border-blue-100 rounded-xl">
+                                                <p className="text-[10px] font-black text-blue-500 mb-0.5 uppercase tracking-widest">연봉 정보 (단위: 만원)</p>
                                                 <p className="text-sm font-bold text-slate-800">{showSpecInfo.specs.salary}</p>
                                             </div>
-                                            <div className="p-4 bg-purple-50 border border-purple-100 rounded-2xl">
-                                                <p className="text-[10px] font-black text-purple-500 mb-1 uppercase tracking-widest">육아휴직 및 복지</p>
+                                            <div className="p-3.5 bg-purple-50 border border-purple-100 rounded-xl">
+                                                <p className="text-[10px] font-black text-purple-500 mb-0.5 uppercase tracking-widest">육아휴직 및 복지</p>
                                                 <p className="text-sm font-bold text-slate-800 leading-relaxed">{showSpecInfo.specs.parentalLeave}</p>
                                             </div>
                                         </div>
-
-                                        <div className="pt-2 border-t border-slate-100"></div>
-
-                                        {/* 🔥 어학, 자격, 면허 정보 표시 영역 */}
+                                        <div className="pt-1 border-t border-slate-100"></div>
                                         <div className="space-y-3">
-                                            <div className="p-4 bg-slate-50 rounded-2xl">
-                                                <p className="text-[10px] font-black text-slate-400 mb-1 uppercase tracking-widest">어학 성적</p>
-                                                <p className="text-sm font-bold text-slate-700">{showSpecInfo.specs.language}</p>
+                                            <div className="p-3.5 bg-slate-50 rounded-xl">
+                                                <p className="text-[10px] font-black text-slate-400 mb-0.5 uppercase tracking-widest">어학 성적</p>
+                                                <p className="text-[13px] font-bold text-slate-700">{showSpecInfo.specs.language}</p>
                                             </div>
-                                            <div className="p-4 bg-slate-50 rounded-2xl">
-                                                <p className="text-[10px] font-black text-slate-400 mb-1 uppercase tracking-widest">자격 사항</p>
-                                                <p className="text-sm font-bold text-slate-700">{showSpecInfo.specs.cert}</p>
+                                            <div className="p-3.5 bg-slate-50 rounded-xl">
+                                                <p className="text-[10px] font-black text-slate-400 mb-0.5 uppercase tracking-widest">자격 사항</p>
+                                                <p className="text-[13px] font-bold text-slate-700">{showSpecInfo.specs.cert}</p>
                                             </div>
-                                            <div className="p-4 bg-slate-50 rounded-2xl">
-                                                <p className="text-[10px] font-black text-slate-400 mb-1 uppercase tracking-widest">면허/학위</p>
-                                                <p className="text-sm font-bold text-slate-700">{showSpecInfo.specs.license}</p>
+                                            <div className="p-3.5 bg-slate-50 rounded-xl">
+                                                <p className="text-[10px] font-black text-slate-400 mb-0.5 uppercase tracking-widest">면허/학위</p>
+                                                <p className="text-[13px] font-bold text-slate-700">{showSpecInfo.specs.license}</p>
                                             </div>
-                                            <div className="p-4 bg-slate-50 rounded-2xl border-l-4 border-blue-400">
-                                                <p className="text-[10px] font-black text-slate-400 mb-1 uppercase tracking-widest">한줄 요약</p>
-                                                <p className="text-sm font-bold text-slate-700 leading-relaxed">{showSpecInfo.specs.summary}</p>
+                                            <div className="p-3.5 bg-blue-50/30 rounded-xl border-l-4 border-blue-400">
+                                                <p className="text-[10px] font-black text-slate-400 mb-0.5 uppercase tracking-widest">합격 요약</p>
+                                                <p className="text-[13px] font-bold text-slate-700 leading-relaxed">{showSpecInfo.specs.summary}</p>
                                             </div>
                                         </div>
                                     </div>
-                                    <button onClick={() => setShowSpecInfo(null)} className="w-full py-4 bg-slate-900 text-white rounded-2xl font-bold hover:bg-blue-600 transition-colors">닫기</button>
+                                    <button onClick={() => setShowSpecInfo(null)} className="w-full py-3.5 bg-slate-900 text-white rounded-xl font-bold hover:bg-blue-600 transition-colors">확인 완료</button>
                                 </div>
                             </div>
                         </div>
