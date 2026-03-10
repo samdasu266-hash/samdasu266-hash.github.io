@@ -64,11 +64,11 @@ async def scrape_site(browser, inst_id, url):
                 title = (await link_el.inner_text()).strip()
                 if len(title) < 5: continue
 
-                # 🔥 [필수 조건] 제목이나 내용에 "채용"과 "공고"가 모두 포함되어야 함
-                if "채용" not in row_text or "공고" not in row_text:
+                # 🔥 [가장 중요한 수정] "채용"과 "공고" 단어가 'row_text'가 아닌 'title(공고 제목)'에 모두 포함되어야만 수집
+                if "채용" not in title or "공고" not in title:
                     continue
 
-                # 🔥 [제외 조건] 의사, 의무직, 진료직, 합격자, 변호사 단어가 있으면 제외
+                # 🔥 [제외 조건] 의사, 의무직, 진료직, 합격자, 변호사 단어가 제목이나 내용에 있으면 제외
                 exclude_words = ["의사", "의무직", "진료직", "합격자", "변호사"]
                 if any(ex in title for ex in exclude_words) or any(ex in row_text for ex in exclude_words):
                     continue
