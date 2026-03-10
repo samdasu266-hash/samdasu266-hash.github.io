@@ -23,6 +23,7 @@ if not firebase_admin._apps:
 db = firestore.client()
 APP_ID = "recruitment-portal-v3"
 
+# 한국 시간 고정
 KST = timezone(timedelta(hours=9))
 
 async def scrape_site(browser, inst_id, url):
@@ -53,83 +54,108 @@ async def scrape_site(browser, inst_id, url):
                 raw_title = (await link_el.inner_text()).strip()
                 if len(raw_title) < 5: continue
 
-                # 🔥 1. 제목에 포함된 지저분한 기간 날짜 텍스트 완벽 제거 
-                # (예: 2026-01-21(수) 17:00 ~ 2026-02-04(수) 18:00 패턴을 통째로 날림)
-                clean_title = re.sub(r'20\d{2}\s*[-./]\s*\d{1,2}\s*[-./]\s*\d{1,2}.*', '', raw_title).strip()
+                # 🔥 1. 제목 청소 (날짜부터 시작하는 뒷부분 문자열을 싹 다 날림)
+                # EX: "자동차보험촉탁심사위원(전문계약직) 채용 2026-01-21(수)..." -> "자동차보험촉탁심사위원(전문계약직) 채용"
+                clean_title = re.sub(r'20\d{2}\s*[-./]\s*\d{1,2}\s*[-./]\s*\d{1,2}.*', '', raw_title)
+                clean_title = clean_title.replace('~', '').replace('[마감]', '').replace('새글', '').strip()
+                clean_title = re.sub(r'\s+', ' ', clean_title) # 불필요한 다중 공백 제거
 
-                # 🔥 2. "채용" 과 "공고" 두 단어가 무조건 모두(AND) 있어야만 통과
+                # 🔥 2. 필수 단어 필터 (AND 조건: "채용"과 "공고" 무조건 둘 다 있어야 함)
                 if "채용" not in clean_title or "공고" not in clean_title:
                     continue
 
-                # 🔥 3. 제외 단어 중 하나라도 있으면 즉시 버림 (OR 조건)
-                exclude_words = ["발표", "변호사", "합격자", "면접", "약사", "약무직", "의사", "의무직"]
+                # 🔥 3. 제외 단어 필터 (OR 조건: 하나라도 있으면 즉시 버림)
+                # "사전공개", "계획" 추가하여 '채용계획 사전공개' 원천 차단
+                exclude_words = ["발표", "변호사", "합격자", "면접", "약사", "약무직", "의사", "의무직", "사전공개", "채용계획", "계획"]
                 if any(ex in clean_title for ex in exclude_words):
                     continue
 
-                # 🔥 4. 제목을 분석하여 고용 형태(정규직/비정규직 등) 자동 추출
-                job_type = "정규직" # 안 적혀있으면 기본 정규직 간주
-                if "무기계약직" in clean_title:
-                    job_type = "무기계약직"
-                elif "공무직" in clean_title:
-                    job_type = "공무직"
-                elif "기간제" in clean_title or "계약직" in clean_title or "촉탁직" in clean_title:
-                    job_type = "계약직/기간제"
-                elif "비정규직" in clean_title:
-                    job_type = "비정규직"
-                elif "인턴" in clean_title:
-                    job_type = "인턴"
+                # 고용 형태 추출
+                job_type = "정규직"
+                if "무기계약직" in clean_title: job_type = "무기계약직"
+                elif "공무직" in clean_title: job_type = "공무직"
+                elif "기간제" in clean_title or "계약직" in clean_title or "촉탁직" in clean_title: job_type = "계약직/기간제"
+                elif "비정규직" in clean_title: job_type = "비정규직"
+                elif "인턴" in clean_title: job_type = "인턴"
 
                 href = url
                 raw_href = await link_el.get_attribute("href")
-                if raw_href:
+                if raw_href and raw_href != "#" and not raw_href.startswith("javascript:"):
                     if raw_href.startswith("http"): href = raw_href
                     elif raw_href.startswith("/"): href = url.split("/")[0] + "//" + url.split("/")[2] + raw_href
+                    else: href = url.rsplit("/", 1)[0] + "/" + raw_href
 
-                # 날짜 파싱 및 마감 상태 처리
-                date_matches = re.findall(r'20\d{2}\s*[-./]\s*\d{1,2}\s*[-./]\s*\d{1,2}', row_text)
+                # 🔥 4. 날짜 및 시간(HH:MM) 초정밀 추출기
+                combined_text = raw_title + " " + row_text
+                # 패턴: 2026.01.21 (수) 17:00 형태까지 모두 인식
+                pattern = r'(20\d{2})\s*[-./]\s*(\d{1,2})\s*[-./]\s*(\d{1,2})(?:\s*(?:\([가-힣]\))?\s*(\d{1,2}:\d{2}))?'
+                matches = re.findall(pattern, combined_text)
                 
-                posted_date_str = now.strftime("%Y-%m-%d")
-                end_date_str = "상세참조"
+                start_str = "상세참조"
+                end_str = "상세참조"
                 status = "진행중"
                 
-                if date_matches:
+                if matches:
                     parsed_dates = []
-                    for d in date_matches:
-                        clean_d = re.sub(r'\s+', '', d).replace('.', '-').replace('/', '-')
-                        parts = clean_d.split('-')
-                        if len(parts) == 3:
-                            formatted_date = f"{parts[0]}-{int(parts[1]):02d}-{int(parts[2]):02d}"
-                            parsed_dates.append(formatted_date)
+                    for m in matches:
+                        try:
+                            y, mo, d, t = m
+                            has_time = bool(t)
+                            hour, minute = 0, 0
+                            if has_time:
+                                hour, minute = map(int, t.split(':'))
+                                if hour >= 24: hour, minute = 23, 59 # 24:00 표기 오류 방지
+                            dt_obj = datetime(int(y), int(mo), int(d), hour, minute)
+                            parsed_dates.append({'dt': dt_obj, 'has_time': has_time})
+                        except:
+                            continue
                     
                     if parsed_dates:
-                        posted_date_str = parsed_dates[0]
-                        if len(parsed_dates) >= 2:
-                            # 여러 날짜 중 마지막 날짜를 마감일로 판단
-                            end_date_str = parsed_dates[-1]
-                            try:
-                                # 🔥 마감일 18:00 기준으로 현재 시간과 비교 (건보 상반기 종료 오류 해결)
-                                end_date_obj = datetime.strptime(end_date_str, "%Y-%m-%d").replace(tzinfo=KST) + timedelta(hours=18)
-                                if now > end_date_obj:
-                                    status = "마감"
-                            except:
-                                pass
+                        parsed_dates.sort(key=lambda x: x['dt']) # 날짜순 정렬
+                        
+                        # 날짜가 1개만 있으면 '마감일'로 간주
+                        if len(parsed_dates) == 1:
+                            end_item = parsed_dates[0]
+                            if not end_item['has_time']: 
+                                end_item['dt'] = end_item['dt'].replace(hour=18, minute=0) # 시간 없으면 18:00 마감 간주
+                            
+                            start_str = "상세참조"
+                            end_str = end_item['dt'].strftime("%y.%m.%d %H:%M")
+                            
+                            # 현재 시간(KST)과 마감 시간 정밀 비교
+                            now_kst = now.replace(tzinfo=None)
+                            if now_kst > end_item['dt']: status = "마감"
+                            
+                        # 날짜가 2개 이상이면 첫 날짜를 '시작일', 마지막 날짜를 '마감일'로 간주
+                        elif len(parsed_dates) >= 2:
+                            start_item = parsed_dates[0]
+                            end_item = parsed_dates[-1]
+                            
+                            if not start_item['has_time']: start_item['dt'] = start_item['dt'].replace(hour=0, minute=0)
+                            if not end_item['has_time']: end_item['dt'] = end_item['dt'].replace(hour=18, minute=0)
+                                
+                            start_str = start_item['dt'].strftime("%y.%m.%d %H:%M")
+                            end_str = end_item['dt'].strftime("%y.%m.%d %H:%M")
+                            
+                            # 현재 시간(KST)과 마감 시간 정밀 비교
+                            now_kst = now.replace(tzinfo=None)
+                            if now_kst > end_item['dt']: status = "마감"
 
-                # 게시판 텍스트에 아예 '마감' 글자가 박혀있으면 강제 마감
+                # 텍스트 자체에 마감이라고 박혀있으면 강제 마감
                 if "[마감]" in raw_title or "접수마감" in row_text or "접수종료" in row_text:
                     status = "마감"
                 
                 found_jobs.append({
                     "instId": inst_id,
-                    "title": clean_title.replace("새글", "").replace("[마감]", "").strip(),
-                    "postedDate": posted_date_str,
-                    "endDate": end_date_str,
+                    "title": clean_title,
+                    "startDate": start_str, # 게시일 대신 시작일 저장
+                    "endDate": end_str,
                     "status": status,
-                    "jobType": job_type, # 데이터베이스에 직무 형태 저장
+                    "jobType": job_type,
                     "link": href
                 })
             except: continue
         
-        # 중복 제목 제거
         unique_jobs = []
         seen = set()
         for job in found_jobs:
@@ -176,7 +202,7 @@ async def main():
             meta_ref = db.collection('artifacts').document(APP_ID).collection('public').document('data').collection('metadata').document('sync')
             batch.set(meta_ref, {"lastSync": datetime.now(KST).isoformat()})
             batch.commit()
-            print(f"성공: {len(all_jobs)}개의 공고 저장")
+            print(f"성공: {len(all_jobs)}개의 공고 저장 완료")
         else:
             print("수집된 공고가 0개입니다.")
         await browser.close()
