@@ -55,7 +55,7 @@
             const [lastSync, setLastSync] = useState("");
             const [showSpecInfo, setShowSpecInfo] = useState(null);
 
-            // 1. 합격 스펙 및 복지/연봉 정보 추가
+            // 1. 합격 스펙 및 복지/연봉 정보 (국민연금, 보건복지부 추가)
             const institutions = [
                 { 
                     id: 'nhis', name: '국민건강보험공단', shortName: '건보공단', url: 'https://nhis.kpcice.kr', 
@@ -73,6 +73,15 @@
                         summary: '심사직은 임상경력이, 사무직은 서류 가점이 합격의 열쇠입니다.',
                         salary: '신입 약 4,100만원 / 평균 약 7,800만원',
                         parentalLeave: '남/녀 최대 3년 보장, 대체인력 제도가 잘 되어 있어 사용률 높음'
+                    } 
+                },
+                { 
+                    id: 'nps', name: '국민연금공단', shortName: '국민연금', url: 'https://nps.saramin.co.kr/service/nps/3707/applicant/apply/recruit_default.asp', 
+                    specs: { 
+                        language: '토익 700점 이상', cert: '컴활 1급, 한국사 1급, 사복 1급 등', license: '직렬별 무관 (관련 자격 우대)', 
+                        summary: '필기(NCS 및 전공) 난이도가 높으며 서류 자격증 가점이 매우 중요합니다.',
+                        salary: '신입 약 3,800만원 / 평균 약 7,100만원',
+                        parentalLeave: '남/녀 육아휴직 3년 보장, 유연근무제 및 PC오프제 정착으로 워라밸 우수'
                     } 
                 },
                 { 
@@ -100,6 +109,15 @@
                         summary: '평가/인증 실무 경력자를 강하게 선호합니다.',
                         salary: '신입 약 3,800만원 / 평균 약 6,800만원 (경력 인정 시 상향)',
                         parentalLeave: '기본 1년 + 기관 규정에 따라 연장 가능, 남성 직원 사용 비율 증가 추세'
+                    } 
+                },
+                { 
+                    id: 'mohw', name: '보건복지부 및 소속기관', shortName: '보건복지부', url: 'https://www.mohw.go.kr/board.es?mid=a10501010400&bid=0003', 
+                    specs: { 
+                        language: '공고별 상이', cert: '관련 직무 자격증 우대', license: '의료인 면허 및 실무경력 우대', 
+                        summary: '본부 및 소속기관(병원, 보건소 등)의 공무원, 공무직 등 다양한 채용이 수시로 진행됩니다.',
+                        salary: '공무원/공무직 보수규정 및 직무별 상이',
+                        parentalLeave: '국가공무원법 및 근로기준법에 따른 철저한 모성보호 및 육아휴직 1~3년 보장'
                     } 
                 },
             ];
@@ -176,7 +194,7 @@
                                         {institutions.map(inst => (
                                             <div key={inst.id} className="space-y-2">
                                                 <div className="flex items-center justify-between text-sm font-bold text-slate-700">
-                                                    {inst.name}
+                                                    {inst.name} {/* 👈 shortName 대신 풀네임(name)으로 변경! */}
                                                     <button onClick={() => window.open(inst.url, '_blank')} className="text-slate-300 hover:text-blue-600 transition-colors">
                                                         <Icon name="external-link" className="w-3 h-3" />
                                                     </button>
@@ -250,7 +268,7 @@
                         </div>
                     </div>
 
-                    {/* 🔥 상세 스펙 모달: 연봉 및 육아휴직 정보 추가 */}
+                    {/* 🔥 상세 스펙 모달 */}
                     {showSpecInfo && (
                         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm transition-all">
                             <div className="bg-white w-full max-w-lg rounded-[2.5rem] p-8 shadow-2xl relative text-left animate-in zoom-in duration-300 max-h-[90vh] overflow-y-auto no-scrollbar">
@@ -261,7 +279,7 @@
                                     <div className="space-y-4">
                                         <div className="grid grid-cols-2 gap-4">
                                             <div className="col-span-2 p-4 bg-blue-50 border border-blue-100 rounded-2xl text-left">
-                                                <p className="flex items-center gap-1 text-[10px] font-black text-blue-500 mb-1 uppercase tracking-widest text-left"><Icon name="banknote" className="w-3 h-3" /> 연봉 정보 (알리오 공시 기준)</p>
+                                                <p className="flex items-center gap-1 text-[10px] font-black text-blue-500 mb-1 uppercase tracking-widest text-left"><Icon name="banknote" className="w-3 h-3" /> 연봉 정보</p>
                                                 <p className="text-sm font-bold text-slate-800 text-left">{showSpecInfo.specs.salary}</p>
                                             </div>
                                             
