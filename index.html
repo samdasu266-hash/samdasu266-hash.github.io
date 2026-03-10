@@ -1,13 +1,14 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    //애드센스 스니펫
-    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2720320967054456"
-     crossorigin="anonymous"></script>
-//애드센스 스니펫
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>보건직 및 간호사 공기업/공단 채용공고 모음집</title>
+    
+    <!-- 🔥 구글 애드센스 소유권 확인 스크립트 추가 -->
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2720320967054456"
+     crossorigin="anonymous"></script>
+
     <!-- 외부 라이브러리 로드 -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
@@ -254,7 +255,7 @@
                                 <div className="filter-scroll-container flex gap-2 overflow-x-auto pb-2 px-1 scroll-smooth">
                                     <button onClick={() => setActiveTab('all')} className={`flex-shrink-0 px-4 py-2 rounded-xl text-xs font-bold border transition-all ${activeTab === 'all' ? 'bg-slate-900 text-white border-slate-900 shadow-md' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}`}>전체보기</button>
                                     {institutions.map(inst => (
-                                        <button key={inst.id} onClick={() => setActiveTab(inst.id)} className={`flex-shrink-0 px-4 py-2 rounded-xl text-xs font-bold border transition-all ${activeTab === inst.id ? 'bg-blue-600 text-white border-blue-600 shadow-md' : 'bg-white text-slate-500 border-slate-200 hover:bg-blue-50'}`}>{inst.shortName}</button>
+                                        <button key={inst.id} onClick={() => setActiveTab(inst.id)} className={`flex-shrink-0 px-4 py-2 rounded-xl text-xs font-bold border transition-all ${activeTab === inst.id ? 'bg-blue-600 text-white border-blue-600 shadow-md' : 'bg-white text-slate-600 border-slate-200 hover:bg-blue-50'}`}>{inst.shortName}</button>
                                     ))}
                                 </div>
                             </div>
