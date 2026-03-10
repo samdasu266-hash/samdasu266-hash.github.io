@@ -4,12 +4,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>보건직 및 간호사 공기업/공단 채용공고 모음집</title>
-    
-    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2720320967054456" crossorigin="anonymous"></script>
+
+    <!-- 1. 구글 애드센스 소유권 확인용 메타 태그 (필수) -->
     <meta name="google-adsense-account" content="ca-pub-2720320967054456">
-    <meta name="description" content="전국 보건의료 공공기관의 최신 채용 정보를 매시간 정각 업데이트하여 제공합니다.">
+
+    <!-- 2. 구글 애드센스 자동 광고 스크립트 (최상단) -->
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2720320967054456"
+     crossorigin="anonymous"></script>
+
+    <!-- SEO 및 로봇 수집용 메타 데이터 -->
+    <meta name="description" content="전국 보건의료 공공기관(건보공단, 심평원, 적십자사 등)의 최신 채용 정보를 매시간 정각 업데이트하여 제공합니다.">
     <link rel="canonical" href="https://samdasu266-hash.github.io/">
 
+    <!-- 외부 라이브러리 로드 -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
@@ -20,25 +27,31 @@
         @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800&display=swap');
         body { 
             font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif; 
-            background-color: #f8fafc; color: #1e293b; line-height: 1.6; letter-spacing: -0.02em;
+            background-color: #f8fafc; 
+            color: #1e293b;
+            line-height: 1.6;
+            letter-spacing: -0.02em;
         }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .filter-scroll-container { scrollbar-width: thin; scrollbar-color: #cbd5e1 transparent; }
         .filter-scroll-container::-webkit-scrollbar { height: 4px; }
         .filter-scroll-container::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 10px; }
-        .job-card { transition: all 0.2s ease-in-out; }
+        .job-card { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
         .job-card:hover { transform: translateY(-2px); border-color: #3b82f6; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
     </style>
 </head>
-<body class="bg-slate-50">
+<body class="bg-slate-50 text-left">
 
+    <!-- 🔥 애드센스 로봇 확인용 '정적 텍스트' (화면에는 안 보이지만 로봇은 읽음) -->
     <div style="display:none;">
         <h1>보건의료 공기업 채용 정보 대시보드</h1>
-        <p>국민건강보험공단, 건강보험심사평가원 등 주요 보건의료 기관의 실시간 채용 정보를 제공합니다.</p>
+        <p>이 사이트는 국민건강보험공단, 건강보험심사평가원, 국민연금공단, 근로복지공단, 대한적십자사 등 주요 보건의료 기관의 채용 정보를 실시간으로 수집합니다.</p>
+        <p>간호사, 보건직, 의료기술직 채용 공고를 매시간 정각 업데이트하여 가장 빠르게 제공합니다.</p>
     </div>
 
     <div id="root"></div>
 
+    <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
@@ -74,16 +87,107 @@
             const [showSpecInfo, setShowSpecInfo] = useState(null);
             const scrollContainerRef = useRef(null);
 
+            // 🔥 직렬별 25-26년 합격자 스펙 반영
             const institutions = [
-                { id: 'nhis', name: '국민건강보험공단', shortName: '건보공단', url: 'https://nhis.kpcice.kr', specs: { language: '토익 700↑', cert: '컴활 1급, 한국사 1급', license: '보건/의료 면허', salary: '신입 약 4,000 / 평균 약 7,500', parentalLeave: '최대 3년 보장', summary: '서류 가점이 합격을 결정합니다.' } },
-                { id: 'hira', name: '건강보험심사평가원', shortName: '심평원', url: 'https://hira.recruitlab.co.kr', specs: { language: '토익 700↑', cert: '컴활 1급, 한국사 1급', license: '간호사 등 면허 필수', salary: '신입 약 4,100 / 평균 약 7,800', parentalLeave: '최대 3년 보장', summary: '심사직은 임상경력이 필수입니다.' } },
-                { id: 'nps', name: '국민연금공단', shortName: '국민연금', url: 'https://nps.saramin.co.kr', specs: { language: '700↑ 권장', cert: '컴활 1급, 한국사 1급', license: '전공 우대', salary: '신입 약 3,800 / 평균 약 7,100', parentalLeave: '3년 보장', summary: '필기 난이도가 상당히 높습니다.' } },
-                { id: 'comwel', name: '근로복지공단', shortName: '근로복지', url: 'https://www.comwel.or.kr/recruit', specs: { language: '어학 가점제', cert: '컴활, 한국사, 사복 1급', license: '간호사 면허 우대', salary: '신입 약 3,600 / 평균 약 6,500', parentalLeave: '최대 3년', summary: '필기 비중이 매우 높습니다.' } },
-                { id: 'neca', name: '한국보건의료연구원', shortName: '보의연', url: 'https://www.neca.re.kr', specs: { language: '800↑ 우대', cert: '데이터 자격 우대', license: '석사 권장', salary: '신입 약 3,900 / 평균 약 7,200', parentalLeave: '법정 1년+', summary: '연구 전문 역량을 중시합니다.' } },
-                { id: 'kuksiwon', name: '한국보건의료인국가시험원', shortName: '국시원', url: 'https://dware.intojob.co.kr', specs: { language: '750↑ 권장', cert: '정처기 가점', license: '행정직 무관', salary: '신입 약 3,700 / 평균 약 6,900', parentalLeave: '기본 1년', summary: '행정 처리 역량이 중요합니다.' } },
-                { id: 'koiha', name: '의료기관평가인증원', shortName: '인증원', url: 'https://koiha.recruiter.co.kr', specs: { language: '영어 필수', cert: '보건교육사 우대', license: '의료인 우대', salary: '신입 약 3,800 / 평균 약 6,800', parentalLeave: '기본 1년', summary: '인증 실무 경험자를 선호합니다.' } },
-                { id: 'redcross', name: '대한적십자사', shortName: '적십자사', url: 'https://www.redcross.or.kr/recruit/', specs: { language: '700↑ 사무직', cert: '봉사, 헌혈 가점', license: '간호/병리 면허', salary: '신입 약 3,500 / 평균 약 6,200', parentalLeave: '최대 3년', summary: '봉사 정신이 핵심 평가 요소입니다.' } },
-                { id: 'mohw', name: '보건복지부', shortName: '보건복지부', url: 'https://www.mohw.go.kr', specs: { language: '공고별 상이', cert: '직무 자격증', license: '의료인 우대', salary: '규정 준수', parentalLeave: '법정 보장', summary: '공무직 채용이 수시로 진행됩니다.' } },
+                { 
+                    id: 'nhis', name: '국민건강보험공단', shortName: '건보공단', url: 'https://nhis.kpcice.kr', 
+                    specs: { 
+                        language: '[행정직] 토익 850점 이상 안정권\n[건강/요양직] 토익 750점 이상', 
+                        cert: '[공통] 컴활 1급, 한국사 1급 필수\n[행정/요양] 사회복지사 1급 (서류 만점 필수)', 
+                        license: '[건강직] 간호사/영양사/방사선사 등\n[요양직] 간호사/물리치료사/사복 등', 
+                        salary: '신입 약 4,000 / 평균 약 7,500', 
+                        parentalLeave: '최대 3년(법정1+자체2). 남녀불문 눈치 보지 않고 육아휴직 및 유연근무를 사용하는 최상의 워라밸 분위기입니다.', 
+                        summary: '서류 가점을 최대로 채우는 것이 기본이며, 최근 건강직은 병원 임상경력 1년 이상자 강세입니다.' 
+                    } 
+                },
+                { 
+                    id: 'hira', name: '건강보험심사평가원', shortName: '심평원', url: 'https://hira.recruitlab.co.kr', 
+                    specs: { 
+                        language: '[행정직] 토익 850점 이상\n[심사직] 토익 700점 이상 기본', 
+                        cert: '[공통] 컴활 1급, 한국사 1급 가점\n[행정직] ADsP, SQLD 등 데이터 자격증 가점 트렌드', 
+                        license: '[심사직] 간호사 등 면허 필수\n* 종합병원 이상 임상경력 1~3년 이상 필수 및 강세', 
+                        salary: '신입 약 4,100 / 평균 약 7,800', 
+                        parentalLeave: '최대 3년. 여성 비율이 높아 육아휴직과 단축근무가 매우 당연시되며 대체인력 제도도 잘 되어 있습니다.', 
+                        summary: '심사직은 임상경력이 합격의 핵심 열쇠이며, 행정직은 데이터/IT 관련 자격증이 트렌드입니다.' 
+                    } 
+                },
+                { 
+                    id: 'nps', name: '국민연금공단', shortName: '국민연금', url: 'https://nps.saramin.co.kr', 
+                    specs: { 
+                        language: '[사무직] 토익 800점 이상\n[심사직] 토익 700점 이상', 
+                        cert: '[공통] 컴활 1급, 한국사 1급, 사복 1급\n* 가점 최대치(자격증 3개)를 꽉 채우는 추세', 
+                        license: '[심사직] 간호사 면허 및 종합병원 임상경력 1년 이상 우대\n[사무직] 직렬별 무관 (전공자 우대)', 
+                        salary: '신입 약 3,800 / 평균 약 7,100', 
+                        parentalLeave: '최대 3년. 휴직은 자유롭게 쓰는 분위기이나 전국 단위 순환근무가 있어 육아 시 거주지 이동을 고려해야 합니다.', 
+                        summary: 'NCS 및 전공 필기 난이도가 최상위 수준이며, 서류 가점 관리가 매우 중요합니다.' 
+                    } 
+                },
+                { 
+                    id: 'comwel', name: '근로복지공단', shortName: '근로복지', url: 'https://www.comwel.or.kr/recruit', 
+                    specs: { 
+                        language: '[일반직] 토익 750점 이상 (어학 가점제)\n[의료사업직] 어학 무관', 
+                        cert: '[공통] 컴활 1급, 한국사 1급\n[일반직] 사회복지사 1급 등 직무 자격증', 
+                        license: '[의료사업] 간호사 면허 필수, 임상 경력 우대\n[재활직] 물리치료사/작업치료사 면허', 
+                        salary: '신입 약 3,600 / 평균 약 6,500', 
+                        parentalLeave: '자녀당 최대 3년. 여성 직원이 많아 휴직은 자유로운 편이지만 소속 지사/병원별로 업무 강도 편차가 큽니다.', 
+                        summary: '블라인드 채용을 철저히 준수하며 필기 비중이 압도적으로 높습니다.' 
+                    } 
+                },
+                { 
+                    id: 'neca', name: '한국보건의료연구원', shortName: '보의연', url: 'https://www.neca.re.kr', 
+                    specs: { 
+                        language: '[연구직/행정직] 토익 800점 이상 (영어 논문 및 문서 작업 다수)', 
+                        cert: '[연구직] ADsP, 사회조사분석사\n[행정직] 컴활, 회계/기획 관련 자격', 
+                        license: '[연구직] 보건/의학/통계 석사 학위 이상 필수\n* SCI급 논문 실적 강세', 
+                        salary: '신입 약 3,900 / 평균 약 7,200', 
+                        parentalLeave: '법정 1년+연장. 연구 중심이라 조직 문화가 수평적이고 유연근무를 활발히 사용하는 분위기입니다.', 
+                        summary: '연구직 중심이므로 학술 실적과 전문 역량을 매우 중시합니다.' 
+                    } 
+                },
+                { 
+                    id: 'kuksiwon', name: '한국보건의료인국가시험원', shortName: '국시원', url: 'https://dware.intojob.co.kr', 
+                    specs: { 
+                        language: '[행정직] 토익 750점 이상 권장 (서류 배수 높음)', 
+                        cert: '[행정직] 정보처리기사, 컴활 1급, 한국사 1급 가점', 
+                        license: '[공통] 직렬별 특별한 면허 제한 없음', 
+                        salary: '신입 약 3,700 / 평균 약 6,900', 
+                        parentalLeave: '기본 1년. 국가시험 비수기에는 연차 및 유연근무 사용이 매우 자유롭고 눈치 보지 않는 편입니다.', 
+                        summary: '서류보다는 필기와 국가시험 주관 기관에 맞는 행정/기획 면접 역량이 절대적입니다.' 
+                    } 
+                },
+                { 
+                    id: 'koiha', name: '의료기관평가인증원', shortName: '인증원', url: 'https://koiha.recruiter.co.kr', 
+                    specs: { 
+                        language: '[연구/심사직] 공인영어성적 제출 필수 (점수대 무관)', 
+                        cert: '[공통] 보건교육사, 보건의료정보관리사 우대', 
+                        license: '[심사직] 의료인 면허 필수\n* 병원 인증평가 및 QPS 실무 경력(3년 이상)자 초강세', 
+                        salary: '신입 약 3,800 / 평균 약 6,800', 
+                        parentalLeave: '기본 1년. 제도적으론 잘 되어있으나 병원 현장 평가 출장이 잦아 육아 시 체력적 부담이 있을 수 있습니다.', 
+                        summary: '인증 심사 및 현장 실무 경험자를 압도적으로 선호합니다.' 
+                    } 
+                },
+                { 
+                    id: 'redcross', name: '대한적십자사', shortName: '적십자사', url: 'https://www.redcross.or.kr/recruit/', 
+                    specs: { 
+                        language: '[사무직] 토익 750점 이상\n[혈액관리] 토익 700점 이상', 
+                        cert: '[공통] ★헌혈(다회) 및 봉사시간(100시간 이상) 필수적, 컴활 1급', 
+                        license: '[혈액관리] 간호사/임상병리사 면허\n* 임상 경력 1년 이상 가점', 
+                        salary: '신입 약 3,500 / 평균 약 6,200', 
+                        parentalLeave: '최대 3년. 법정 휴직은 보장되나 혈액원 등 소속 기관에 따라 3교대 등 스케줄 근무가 있을 수 있습니다.', 
+                        summary: '공공기관 중에서도 적십자 정신(봉사/헌혈 활동 경험)이 합격에 큰 영향을 줍니다.' 
+                    } 
+                },
+                { 
+                    id: 'mohw', name: '보건복지부', shortName: '보건복지부', url: 'https://www.mohw.go.kr', 
+                    specs: { 
+                        language: '[공무직/임기제] 직무별 상이하나 어학성적보다 실무경력 중시', 
+                        cert: '[공통] 직무 관련 국가기술자격증 및 보건의료정보관리사 우대', 
+                        license: '[공무직] 의료인 면허\n* 관련 실무경력 1~3년 필수', 
+                        salary: '공무직/공무원 보수규정별 상이', 
+                        parentalLeave: '최대 3년. 국가공무원법에 따라 제도를 철저히 보장하며 휴직 사용에 대한 불이익은 없는 분위기입니다.', 
+                        summary: '본부 및 소속기관의 다양한 공무직 채용이 수시 진행됩니다.' 
+                    } 
+                },
             ];
 
             useEffect(() => {
@@ -94,7 +198,8 @@
                         const seenTitles = new Set(); 
                         snap.forEach(doc => {
                             const data = doc.data();
-                            const compareTitle = (data.title || '').replace(/\s+/g, '');
+                            const title = data.title || '';
+                            const compareTitle = title.replace(/\s+/g, '');
                             if (!seenTitles.has(compareTitle)) {
                                 seenTitles.add(compareTitle);
                                 list.push({ id: doc.id, ...data });
@@ -180,7 +285,6 @@
                                                 <div className="space-y-2.5 flex-1">
                                                     <div className="flex gap-2 items-center">
                                                         <span className="text-[10px] font-black px-1.5 py-0.5 bg-slate-100 rounded text-slate-500 uppercase">{institutions.find(i => i.id === job.instId)?.shortName || job.instId}</span>
-                                                        {/* 🔥 동적 상태 배지 */}
                                                         <span className={`text-[10px] font-bold px-1.5 rounded ${isClosed ? 'text-red-600 bg-red-50' : 'text-blue-600 bg-blue-50'}`}>
                                                             {isClosed ? '서류접수마감' : '채용진행중'}
                                                         </span>
@@ -219,16 +323,32 @@
                                                 <p className="text-sm font-bold text-slate-800 font-bold">{showSpecInfo.specs.salary}</p>
                                             </div>
                                             <div className="p-3.5 bg-purple-50 border border-purple-100 rounded-xl">
-                                                <p className="text-[10px] font-black text-purple-500 mb-0.5 uppercase tracking-widest font-bold">복지 및 육아</p>
+                                                <p className="text-[10px] font-black text-purple-500 mb-0.5 uppercase tracking-widest font-bold">복지 및 육아휴직 분위기</p>
                                                 <p className="text-sm font-bold text-slate-800 font-bold leading-relaxed">{showSpecInfo.specs.parentalLeave}</p>
                                             </div>
                                         </div>
-                                        <div className="p-4 bg-slate-50 rounded-2xl border-l-4 border-blue-400">
-                                            <p className="text-[10px] font-black text-slate-400 mb-1 uppercase tracking-widest">기관 요약</p>
-                                            <p className="text-sm font-bold text-slate-700 leading-relaxed font-bold">{showSpecInfo.specs.summary}</p>
+                                        <div className="pt-1 border-t border-slate-100"></div>
+                                        <div className="space-y-3">
+                                            {/* 🔥 whitespace-pre-line 클래스 추가로 줄바꿈 자동 적용 */}
+                                            <div className="p-3.5 bg-slate-50 rounded-xl">
+                                                <p className="text-[10px] font-black text-slate-400 mb-1 uppercase tracking-widest">어학 성적</p>
+                                                <p className="text-[13px] font-bold text-slate-700 whitespace-pre-line leading-relaxed">{showSpecInfo.specs.language}</p>
+                                            </div>
+                                            <div className="p-3.5 bg-slate-50 rounded-xl">
+                                                <p className="text-[10px] font-black text-slate-400 mb-1 uppercase tracking-widest">자격 사항</p>
+                                                <p className="text-[13px] font-bold text-slate-700 whitespace-pre-line leading-relaxed">{showSpecInfo.specs.cert}</p>
+                                            </div>
+                                            <div className="p-3.5 bg-slate-50 rounded-xl">
+                                                <p className="text-[10px] font-black text-slate-400 mb-1 uppercase tracking-widest">면허/학위</p>
+                                                <p className="text-[13px] font-bold text-slate-700 whitespace-pre-line leading-relaxed">{showSpecInfo.specs.license}</p>
+                                            </div>
+                                            <div className="p-3.5 bg-blue-50/30 rounded-xl border-l-4 border-blue-400">
+                                                <p className="text-[10px] font-black text-slate-400 mb-1 uppercase tracking-widest">기관 요약</p>
+                                                <p className="text-[13px] font-bold text-slate-700 leading-relaxed">{showSpecInfo.specs.summary}</p>
+                                            </div>
                                         </div>
                                     </div>
-                                    <button onClick={() => setShowSpecInfo(null)} className="w-full py-4 bg-slate-900 text-white rounded-2xl font-bold hover:bg-blue-600 transition-colors shadow-lg">닫기</button>
+                                    <button onClick={() => setShowSpecInfo(null)} className="w-full py-3.5 bg-slate-900 text-white rounded-xl font-bold hover:bg-blue-600 transition-colors shadow-lg">닫기</button>
                                 </div>
                             </div>
                         </div>
@@ -242,4 +362,5 @@
     </script>
 </body>
 </html>
+
 
