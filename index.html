@@ -75,16 +75,107 @@
             const [showSpecInfo, setShowSpecInfo] = useState(null);
             const [todayVisitors, setTodayVisitors] = useState(0);
 
+            // 🔥 복지 혜택 내용을 명시적으로 추가하고 내용을 세분화함
             const institutions = [
-                { id: 'nhis', name: '국민건강보험공단', shortName: '건보공단', url: 'https://nhis.kpcice.kr', specs: { language: '[행정직] 토익 850점 이상 안정권\n[건강/요양직] 토익 750점 이상', cert: '[공통] 컴활 1급, 한국사 1급 필수\n[행정/요양] 사회복지사 1급 (서류 만점 필수)', license: '[건강직] 간호사/영양사/방사선사 등\n[요양직] 간호사/물리치료사/사복 등', salary: '신입 약 4,000 / 평균 약 7,500', parentalLeave: '최대 3년(법정1+자체2). 남녀불문 눈치 보지 않고 육아휴직 및 유연근무를 사용하는 최상의 워라밸 분위기입니다.', summary: '서류 가점을 최대로 채우는 것이 기본이며, 최근 건강직은 병원 임상경력 1년 이상자 강세입니다.' } },
-                { id: 'hira', name: '건강보험심사평가원', shortName: '심평원', url: 'https://hira.recruitlab.co.kr', specs: { language: '[행정직] 토익 850점 이상\n[심사직] 토익 700점 이상 기본', cert: '[공통] 컴활 1급, 한국사 1급 가점\n[행정직] ADsP, SQLD 등 데이터 자격증 가점 트렌드', license: '[심사직] 간호사 등 면허 필수\n* 종합병원 이상 임상경력 1~3년 이상 필수 및 강세', salary: '신입 약 4,100 / 평균 약 7,800', parentalLeave: '최대 3년. 여성 비율이 높아 육아휴직과 단축근무가 매우 당연시되며 대체인력 제도도 잘 되어 있습니다.', summary: '심사직은 임상경력이 합격의 핵심 열쇠이며, 행정직은 데이터/IT 관련 자격증이 트렌드입니다.' } },
-                { id: 'nps', name: '국민연금공단', shortName: '국민연금', url: 'https://nps.saramin.co.kr', specs: { language: '[사무직] 토익 800점 이상\n[심사직] 토익 700점 이상', cert: '[공통] 컴활 1급, 한국사 1급, 사복 1급\n* 가점 최대치(자격증 3개)를 꽉 채우는 추세', license: '[심사직] 간호사 면허 및 종합병원 임상경력 1년 이상 우대\n[사무직] 직렬별 무관 (전공자 우대)', salary: '신입 약 3,800 / 평균 약 7,100', parentalLeave: '최대 3년. 휴직은 자유롭게 쓰는 분위기이나 전국 단위 순환근무가 있어 육아 시 거주지 이동을 고려해야 합니다.', summary: 'NCS 및 전공 필기 난이도가 최상위 수준이며, 서류 가점 관리가 매우 중요합니다.' } },
-                { id: 'comwel', name: '근로복지공단', shortName: '근로복지', url: 'https://www.comwel.or.kr/recruit', specs: { language: '[일반직] 토익 750점 이상 (어학 가점제)\n[의료사업직] 어학 무관', cert: '[공통] 컴활 1급, 한국사 1급\n[일반직] 사회복지사 1급 등 직무 자격증', license: '[의료사업] 간호사 면허 필수, 임상 경력 우대\n[재활직] 물리치료사/작업치료사 면허', salary: '신입 약 3,600 / 평균 약 6,500', parentalLeave: '자녀당 최대 3년. 여성 직원이 많아 휴직은 자유로운 편이지만 소속 지사/병원별로 업무 강도 편차가 큽니다.', summary: '블라인드 채용을 철저히 준수하며 필기 비중이 압도적으로 높습니다.' } },
-                { id: 'neca', name: '한국보건의료연구원', shortName: '보의연', url: 'https://www.neca.re.kr', specs: { language: '[연구직/행정직] 토익 800점 이상 (영어 논문 및 문서 작업 다수)', cert: '[연구직] ADsP, 사회조사분석사\n[행정직] 컴활, 회계/기획 관련 자격', license: '[연구직] 보건/의학/통계 석사 학위 이상 필수\n* SCI급 논문 실적 강세', salary: '신입 약 3,900 / 평균 약 7,200', parentalLeave: '법정 1년+연장. 연구 중심이라 조직 문화가 수평적이고 유연근무를 활발히 사용하는 분위기입니다.', summary: '연구직 중심이므로 학술 실적과 전문 역량을 매우 중시합니다.' } },
-                { id: 'kuksiwon', name: '한국보건의료인국가시험원', shortName: '국시원', url: 'https://dware.intojob.co.kr', specs: { language: '[행정직] 토익 750점 이상 권장 (서류 배수 높음)', cert: '[행정직] 정보처리기사, 컴활 1급, 한국사 1급 가점', license: '[공통] 직렬별 특별한 면허 제한 없음', salary: '신입 약 3,700 / 평균 약 6,900', parentalLeave: '기본 1년. 국가시험 비수기에는 연차 및 유연근무 사용이 매우 자유롭고 눈치 보지 않는 편입니다.', summary: '서류보다는 필기와 국가시험 주관 기관에 맞는 행정/기획 면접 역량이 절대적입니다.' } },
-                { id: 'koiha', name: '의료기관평가인증원', shortName: '인증원', url: 'https://koiha.recruiter.co.kr', specs: { language: '[연구/심사직] 공인영어성적 제출 필수 (점수대 무관)', cert: '[공통] 보건교육사, 보건의료정보관리사 우대', license: '[심사직] 의료인 면허 필수\n* 병원 인증평가 및 QPS 실무 경력(3년 이상)자 초강세', salary: '신입 약 3,800 / 평균 약 6,800', parentalLeave: '기본 1년. 제도적으론 잘 되어있으나 병원 현장 평가 출장이 잦아 육아 시 체력적 부담이 있을 수 있습니다.', summary: '인증 심사 및 현장 실무 경험자를 압도적으로 선호합니다.' } },
-                { id: 'redcross', name: '대한적십자사', shortName: '적십자사', url: 'https://www.redcross.or.kr/recruit/', specs: { language: '[사무직] 토익 750점 이상\n[혈액관리] 토익 700점 이상', cert: '[공통] ★헌혈(다회) 및 봉사시간(100시간 이상) 필수적, 컴활 1급', license: '[혈액관리] 간호사/임상병리사 면허\n* 임상 경력 1년 이상 가점', salary: '신입 약 3,500 / 평균 약 6,200', parentalLeave: '최대 3년. 법정 휴직은 보장되나 혈액원 등 소속 기관에 따라 3교대 등 스케줄 근무가 있을 수 있습니다.', summary: '공공기관 중에서도 적십자 정신(봉사/헌혈 활동 경험)이 합격에 큰 영향을 줍니다.' } },
-                { id: 'mohw', name: '보건복지부 및 소속기관', shortName: '보건복지부', url: 'https://www.mohw.go.kr', specs: { language: '[공무직/임기제] 직무별 상이하나 어학성적보다 실무경력 중시', cert: '[공통] 직무 관련 국가기술자격증 및 보건의료정보관리사 우대', license: '[공무직] 의료인 면허\n* 관련 실무경력 1~3년 필수', salary: '공무직/공무원 보수규정별 상이', parentalLeave: '최대 3년. 국가공무원법에 따라 제도를 철저히 보장하며 휴직 사용에 대한 불이익은 없는 분위기입니다.', summary: '본부 및 소속기관의 다양한 공무직 채용이 수시 진행됩니다.' } },
+                { 
+                    id: 'nhis', name: '국민건강보험공단', shortName: '건보공단', url: 'https://nhis.kpcice.kr', 
+                    specs: { 
+                        language: '[행정직] 토익 850점 이상 안정권\n[건강/요양직] 토익 750점 이상', 
+                        cert: '[공통] 컴활 1급, 한국사 1급 필수\n[행정/요양] 사회복지사 1급 (서류 만점 필수)', 
+                        license: '[건강직] 간호사/영양사/방사선사 등\n[요양직] 간호사/물리치료사/사복 등', 
+                        salary: '신입 약 4,000 / 평균 약 7,500', 
+                        parentalLeave: '[복지] 복지포인트, 전국 휴양소 제휴, 사내 대출 등\n[육아] 최대 3년(법정1+자체2). 남녀불문 눈치 보지 않고 육아휴직 및 유연근무를 사용하는 최상의 워라밸 분위기입니다.', 
+                        summary: '서류 가점을 최대로 채우는 것이 기본이며, 최근 건강직은 병원 임상경력 1년 이상자 강세입니다.' 
+                    } 
+                },
+                { 
+                    id: 'hira', name: '건강보험심사평가원', shortName: '심평원', url: 'https://hira.recruitlab.co.kr', 
+                    specs: { 
+                        language: '[행정직] 토익 850점 이상\n[심사직] 토익 700점 이상 기본', 
+                        cert: '[공통] 컴활 1급, 한국사 1급 가점\n[행정직] ADsP, SQLD 등 데이터 자격증 가점 트렌드', 
+                        license: '[심사직] 간호사 등 면허 필수\n* 종합병원 이상 임상경력 1~3년 이상 필수 및 강세', 
+                        salary: '신입 약 4,100 / 평균 약 7,800', 
+                        parentalLeave: '[복지] 복지포인트, 사내 어린이집(본원), 동호회 지원 등\n[육아] 최대 3년. 여성 비율이 높아 육아휴직과 단축근무가 매우 당연시되며 대체인력 제도가 탄탄합니다.', 
+                        summary: '심사직은 임상경력이 합격의 핵심 열쇠이며, 행정직은 데이터/IT 관련 자격증이 트렌드입니다.' 
+                    } 
+                },
+                { 
+                    id: 'nps', name: '국민연금공단', shortName: '국민연금', url: 'https://nps.saramin.co.kr', 
+                    specs: { 
+                        language: '[사무직] 토익 800점 이상\n[심사직] 토익 700점 이상', 
+                        cert: '[공통] 컴활 1급, 한국사 1급, 사복 1급\n* 가점 최대치(자격증 3개)를 꽉 채우는 추세', 
+                        license: '[심사직] 간호사 면허 및 종합병원 임상경력 1년 이상 우대\n[사무직] 직렬별 무관 (전공자 우대)', 
+                        salary: '신입 약 3,800 / 평균 약 7,100', 
+                        parentalLeave: '[복지] 복지포인트, 사택/주택자금 대출(순환근무 시), 체력단련비\n[육아] 최대 3년. 휴직은 자유롭게 쓰는 분위기이나 전국 순환근무가 있어 육아 시 거주지 이동을 고려해야 합니다.', 
+                        summary: 'NCS 및 전공 필기 난이도가 최상위 수준이며, 서류 가점 관리가 매우 중요합니다.' 
+                    } 
+                },
+                { 
+                    id: 'comwel', name: '근로복지공단', shortName: '근로복지', url: 'https://www.comwel.or.kr/recruit', 
+                    specs: { 
+                        language: '[일반직] 토익 750점 이상 (어학 가점제)\n[의료사업직] 어학 무관', 
+                        cert: '[공통] 컴활 1급, 한국사 1급\n[일반직] 사회복지사 1급 등 직무 자격증', 
+                        license: '[의료사업] 간호사 면허 필수, 임상 경력 우대\n[재활직] 물리치료사/작업치료사 면허', 
+                        salary: '신입 약 3,600 / 평균 약 6,500', 
+                        parentalLeave: '[복지] 복지포인트, 소속 직영병원 이용 시 의료비 감면 등\n[육아] 자녀당 최대 3년. 여성 직원이 많아 휴직은 자유로운 편이지만 소속 지사/병원별로 업무 강도 편차가 큽니다.', 
+                        summary: '블라인드 채용을 철저히 준수하며 필기 비중이 압도적으로 높습니다.' 
+                    } 
+                },
+                { 
+                    id: 'neca', name: '한국보건의료연구원', shortName: '보의연', url: 'https://www.neca.re.kr', 
+                    specs: { 
+                        language: '[연구직/행정직] 토익 800점 이상 (영어 논문 및 문서 작업 다수)', 
+                        cert: '[연구직] ADsP, 사회조사분석사\n[행정직] 컴활, 회계/기획 관련 자격', 
+                        license: '[연구직] 보건/의학/통계 석사 학위 이상 필수\n* SCI급 논문 실적 강세', 
+                        salary: '신입 약 3,900 / 평균 약 7,200', 
+                        parentalLeave: '[복지] 맞춤형 복지포인트, 자기계발비(도서/교육) 지원\n[육아] 법정 1년+연장. 연구 중심 기관으로 수평적 조직문화와 시차출퇴근제(유연근무)를 적극 활용합니다.', 
+                        summary: '연구직 중심이므로 학술 실적과 전문 역량을 매우 중시합니다.' 
+                    } 
+                },
+                { 
+                    id: 'kuksiwon', name: '한국보건의료인국가시험원', shortName: '국시원', url: 'https://dware.intojob.co.kr', 
+                    specs: { 
+                        language: '[행정직] 토익 750점 이상 권장 (서류 배수 높음)', 
+                        cert: '[행정직] 정보처리기사, 컴활 1급, 한국사 1급 가점', 
+                        license: '[공통] 직렬별 특별한 면허 제한 없음', 
+                        salary: '신입 약 3,700 / 평균 약 6,900', 
+                        parentalLeave: '[복지] 복지포인트, 종합건강검진 지원, 명절 상여금\n[육아] 기본 1년. 국가시험 일정이 없는 비수기에는 연차 및 육아기 단축근무 사용이 매우 자유롭습니다.', 
+                        summary: '서류보다는 필기와 국가시험 주관 기관에 맞는 행정/기획 면접 역량이 절대적입니다.' 
+                    } 
+                },
+                { 
+                    id: 'koiha', name: '의료기관평가인증원', shortName: '인증원', url: 'https://koiha.recruiter.co.kr', 
+                    specs: { 
+                        language: '[연구/심사직] 공인영어성적 제출 필수 (점수대 무관)', 
+                        cert: '[공통] 보건교육사, 보건의료정보관리사 우대', 
+                        license: '[심사직] 의료인 면허 필수\n* 병원 인증평가 및 QPS 실무 경력(3년 이상)자 초강세', 
+                        salary: '신입 약 3,800 / 평균 약 6,800', 
+                        parentalLeave: '[복지] 복지포인트, 넉넉한 출장비 및 교통비 지원(외근 잦음)\n[육아] 기본 1년. 휴직은 보장되나 현장 평가 출장이 잦은 직무 특성상 육아 시 체력적 부담이 있을 수 있습니다.', 
+                        summary: '인증 심사 및 현장 실무 경험자를 압도적으로 선호합니다.' 
+                    } 
+                },
+                { 
+                    id: 'redcross', name: '대한적십자사', shortName: '적십자사', url: 'https://www.redcross.or.kr/recruit/', 
+                    specs: { 
+                        language: '[사무직] 토익 750점 이상\n[혈액관리] 토익 700점 이상', 
+                        cert: '[공통] ★헌혈(다회) 및 봉사시간(100시간 이상) 필수적, 컴활 1급', 
+                        license: '[혈액관리] 간호사/임상병리사 면허\n* 임상 경력 1년 이상 가점', 
+                        salary: '신입 약 3,500 / 평균 약 6,200', 
+                        parentalLeave: '[복지] 복지포인트, 자녀 학자금 지원, 산하 병원 의료비 감면\n[육아] 최대 3년. 법정 휴직은 보장되나 혈액원 등 소속 기관에 따라 스케줄(교대) 근무가 있을 수 있습니다.', 
+                        summary: '공공기관 중에서도 적십자 정신(봉사/헌혈 활동 경험)이 합격에 큰 영향을 줍니다.' 
+                    } 
+                },
+                { 
+                    id: 'mohw', name: '보건복지부 및 소속기관', shortName: '보건복지부', url: 'https://www.mohw.go.kr', 
+                    specs: { 
+                        language: '[공무직/임기제] 직무별 상이하나 어학성적보다 실무경력 중시', 
+                        cert: '[공통] 직무 관련 국가기술자격증 및 보건의료정보관리사 우대', 
+                        license: '[공무직] 의료인 면허\n* 관련 실무경력 1~3년 필수', 
+                        salary: '공무직/공무원 보수규정별 상이', 
+                        parentalLeave: '[복지] 공무원 복지포인트, 연금, 소속기관 관사(일부) 지원\n[육아] 최대 3년. 국가공무원법에 따라 제도를 철저히 보장하며 육아휴직 사용에 대한 불이익은 없는 분위기입니다.', 
+                        summary: '본부 및 소속기관의 다양한 공무직 채용이 수시 진행됩니다.' 
+                    } 
+                },
             ];
 
             useEffect(() => {
@@ -104,7 +195,6 @@
                             }
                         });
                         
-                        // 시작일 기준으로 내림차순 정렬
                         list.sort((a, b) => new Date(b.startDate || b.postedDate || 0) - new Date(a.startDate || a.postedDate || 0));
                         setJobs(list);
                         setLoading(false);
@@ -211,7 +301,6 @@
                                     <div className="py-20 text-center text-slate-300 animate-pulse font-bold text-sm">데이터 로딩 중...</div>
                                 ) : filteredJobs.length > 0 ? (
                                     filteredJobs.map(job => {
-                                        // 🔥 Python 로봇이 계산해서 넘겨준 status 값을 사용 (시간 지나면 "마감" 처리됨)
                                         const isClosed = job.status === "마감";
                                         const displayJobType = job.jobType || "정규직";
                                         const displayStartDate = job.startDate || job.postedDate || "상세참조";
@@ -231,7 +320,6 @@
                                                     </div>
                                                     <h3 className={`text-[16px] md:text-[18px] font-bold leading-snug break-keep ${isClosed ? 'text-slate-400' : 'text-slate-800 group-hover:text-blue-700'} transition-colors`}>{job.title}</h3>
                                                     <div className="flex gap-4 text-[11px] font-bold text-slate-400">
-                                                        {/* 🔥 게시일 대신 서류접수기간 포맷으로 완벽 적용 */}
                                                         <span className="flex items-center gap-1">
                                                             <Icon name="calendar" className="w-3 h-3" /> 
                                                             서류접수기간 : {displayStartDate} ~ <span className={isClosed ? 'text-slate-300' : 'text-red-400'}>{displayEndDate}</span>
@@ -255,9 +343,9 @@
 
                     {showSpecInfo && (
                         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
-                            <div className="bg-white w-full max-w-md rounded-[2rem] p-7 shadow-2xl relative text-left animate-in zoom-in duration-300 max-h-[90vh] overflow-y-auto no-scrollbar">
+                            <div className="bg-white w-full max-w-md rounded-[2rem] p-7 shadow-2xl relative text-left animate-in zoom-in duration-300 max-h-[90vh] overflow-y-auto no-scrollbar flex flex-col">
                                 <button onClick={() => setShowSpecInfo(null)} className="absolute top-6 right-6 text-slate-300 hover:text-slate-900 transition-colors"><Icon name="x" /></button>
-                                <div className="space-y-5">
+                                <div className="space-y-5 flex-1">
                                     <h2 className="text-xl font-black text-slate-900">{showSpecInfo.name} 상세 정보</h2>
                                     <div className="space-y-4">
                                         <div className="grid grid-cols-1 gap-3">
@@ -266,8 +354,8 @@
                                                 <p className="text-sm font-bold text-slate-800 font-bold">{showSpecInfo.specs.salary}</p>
                                             </div>
                                             <div className="p-3.5 bg-purple-50 border border-purple-100 rounded-xl">
-                                                <p className="text-[10px] font-black text-purple-500 mb-0.5 uppercase tracking-widest font-bold">복지 및 육아휴직 분위기</p>
-                                                <p className="text-sm font-bold text-slate-800 font-bold leading-relaxed">{showSpecInfo.specs.parentalLeave}</p>
+                                                <p className="text-[10px] font-black text-purple-500 mb-0.5 uppercase tracking-widest font-bold">복지 및 육아휴직</p>
+                                                <p className="text-sm font-bold text-slate-800 font-bold leading-relaxed whitespace-pre-line">{showSpecInfo.specs.parentalLeave}</p>
                                             </div>
                                         </div>
                                         <div className="pt-1 border-t border-slate-100"></div>
@@ -290,7 +378,13 @@
                                             </div>
                                         </div>
                                     </div>
-                                    <button onClick={() => setShowSpecInfo(null)} className="w-full py-3.5 bg-slate-900 text-white rounded-xl font-bold hover:bg-blue-600 transition-colors shadow-lg">닫기</button>
+                                </div>
+                                {/* 🔥 부가 정보 출처 안내 문구 추가 */}
+                                <div className="mt-5 pt-4 border-t border-slate-100">
+                                    <p className="text-[10.5px] text-slate-400 text-center leading-snug font-medium">
+                                        ※ 위 기관별 부가 정보(스펙, 복지 등)는 인터넷 검색 및 취업 커뮤니티 리뷰를 바탕으로 요약된 참고용 데이터이므로, 실제 규정 및 채용 기준과 다를 수 있습니다.
+                                    </p>
+                                    <button onClick={() => setShowSpecInfo(null)} className="w-full mt-4 py-3.5 bg-slate-900 text-white rounded-xl font-bold hover:bg-blue-600 transition-colors shadow-lg">확인 완료</button>
                                 </div>
                             </div>
                         </div>
