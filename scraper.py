@@ -84,6 +84,8 @@ async def scrape_site(browser, inst_id, url):
         for row in rows[:15]: 
             try:
                 row_text = (await row.inner_text()).strip()
+                row_html = await row.inner_html() # 마감 아이콘(이미지) 판별용
+                
                 link_el = await row.query_selector("a")
                 if not link_el:
                     if await row.evaluate("node => node.tagName") == "A": link_el = row
@@ -92,21 +94,25 @@ async def scrape_site(browser, inst_id, url):
                 raw_title = (await link_el.inner_text()).strip()
                 if len(raw_title) < 5: continue
 
+                # 🔥 대괄호 [] 삭제 로직 제거 (지역본부, 병원명 보존)
                 clean_title = raw_title
+                
+                # 끝에 지저분하게 붙은 날짜만 제거
                 date_match = re.search(r'(?:(?:20)?\d{2}\s*[-./]\s*)?\d{1,2}\s*[-./]\s*\d{1,2}', clean_title)
                 if date_match and date_match.start() > len(clean_title) / 2:
                     clean_title = clean_title[:date_match.start()]
-                clean_title = re.sub(r'\[.*?\]', '', clean_title).replace('~', '').replace('새글', '').strip()
+                    
+                clean_title = clean_title.replace('[마감]', '').replace('[새글]', '').replace('새글', '').replace('~', '').strip()
                 clean_title = re.sub(r'\s+', ' ', clean_title)
 
-                # 🔥 적십자사 소속기관명(병원, 혈액원 등) 추출하여 제목 앞에 붙이기
-                if inst_id == 'redcross':
-                    branch_match = re.search(r'([가-힣]+(?:적십자병원|혈액원|지사|본부|원))', row_text)
-                    if branch_match and branch_match.group(1) not in clean_title:
-                        clean_title = f"[{branch_match.group(1)}] {clean_title}"
+                # 🔥 소속기관명이 제목엔 없고 본문에만 있는 경우 낚아채서 제목 앞에 붙이기
+                branch_match = re.search(r'([가-힣]+(?:적십자병원|혈액원|혈액검사센터|지역본부|지사))', row_text)
+                if branch_match:
+                    b_name = branch_match.group(1)
+                    if b_name not in clean_title:
+                        clean_title = f"[{b_name}] {clean_title}"
 
                 if "채용" not in clean_title or "공고" not in clean_title: continue
-
                 exclude_words = ["발표", "변호사", "합격자", "면접", "약사", "약무직", "의사", "의무직", "사전공개", "채용계획", "계획", "안내"]
                 if any(ex in clean_title for ex in exclude_words): continue
 
@@ -125,6 +131,7 @@ async def scrape_site(browser, inst_id, url):
                     "title": clean_title,
                     "raw_title": raw_title,
                     "row_text": row_text,
+                    "row_html": row_html, # HTML 보존
                     "jobType": job_type,
                     "raw_href": raw_href,
                     "base_url": url 
@@ -165,15 +172,33 @@ async def scrape_site(browser, inst_id, url):
             except Exception as e:
                 pass
 
-            # 🔥 지역(시/도) 키워드 추출 로직
-            regions_list = ["서울", "부산", "대구", "인천", "광주", "대전", "울산", "세종", "경기", "강원", "충북", "충남", "전북", "전남", "경북", "경남", "제주"]
-            detected_region = "전국" # 기본값 설정
-            for r in regions_list:
-                if r in combined_text:
-                    detected_region = r
-                    break # 첫 번째로 발견된 지역을 할당
+            # 🔥 맞춤형 지역(시/도) 추출 규칙 적용
+            region_set = set()
             
-            # 지역이 특정되지 않은 기관별 본사 기본값 보정
+            # 1. 특수 키워드 매핑
+            if "남부혈액검사센터" in combined_text: region_set.add("부산")
+            if "혈액관리본부" in combined_text: region_set.add("강원")
+            if "경인" in combined_text: 
+                region_set.add("경기")
+                region_set.add("인천")
+            
+            # 2. 대전/세종/충남 묶음 처리
+            if any(k in combined_text for k in ["대전", "세종", "충남"]):
+                region_set.add("대전충남")
+                
+            # 3. 일반 시도 매핑
+            general_regions = ["서울", "부산", "대구", "인천", "광주", "울산", "경기", "강원", "충북", "전북", "전남", "경북", "경남", "제주"]
+            for r in general_regions:
+                if r in combined_text:
+                    # 경인이 이미 인천/경기를 넣었으므로 중복 방지 (set이 알아서 처리하지만 명시적으로)
+                    region_set.add(r)
+            
+            if len(region_set) > 0:
+                detected_region = ", ".join(sorted(list(region_set)))
+            else:
+                detected_region = "전국"
+            
+            # 기관별 기본 지역 처리
             if detected_region == "전국":
                 if job['instId'] in ["neca", "kuksiwon", "koiha"]: detected_region = "서울"
                 elif job['instId'] == "hira": detected_region = "강원"
@@ -207,7 +232,8 @@ async def scrape_site(browser, inst_id, url):
                     status = "마감"
                     if (now_kst - end_item['dt']).days > 30: is_too_old = True
 
-            if "[마감]" in job['raw_title'] or "접수마감" in combined_text or "접수종료" in combined_text:
+            # 🔥 건보 등 숨겨진 아이콘/텍스트로 마감 확인 (강력한 폴백)
+            if "마감" in job['raw_title'] or "마감" in job['row_html'] or "접수종료" in job['row_html'] or "end" in job['row_html'].lower():
                 status = "마감"
                 if parsed_dates and (now_kst - parsed_dates[-1]['dt']).days > 30:
                     is_too_old = True
@@ -220,7 +246,7 @@ async def scrape_site(browser, inst_id, url):
                     "endDate": end_str,
                     "status": status,
                     "jobType": job['jobType'],
-                    "region": detected_region, # DB에 지역 정보 저장
+                    "region": detected_region,
                     "link": safe_link
                 })
         
