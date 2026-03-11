@@ -22,11 +22,9 @@ if not firebase_admin._apps:
 
 db = firestore.client()
 APP_ID = "recruitment-portal-v3"
-
 KST = timezone(timedelta(hours=9))
 
 def extract_dates(text, current_year):
-    """ 본문 텍스트에서 연도가 생략된 날짜와 시간까지 모두 찾아내는 초정밀 판독기 """
     pattern = r'(?:((?:20)?\d{2})\s*[-./]\s*)?(\d{1,2})\s*[-./]\s*(\d{1,2})(?!\d)'
     matches = list(re.finditer(pattern, text))
     
@@ -44,7 +42,6 @@ def extract_dates(text, current_year):
         
         if not (1 <= mo <= 12 and 1 <= d <= 31): continue
         
-        # 날짜 주변 25글자 이내에 HH:MM 형식의 시간이 있는지 탐색
         end_idx = m.end()
         lookahead = text[end_idx:end_idx+25]
         time_m = re.search(r'(\d{1,2})\s*:\s*(\d{2})', lookahead)
@@ -84,7 +81,6 @@ async def scrape_site(browser, inst_id, url):
 
         now = datetime.now(KST)
 
-        # 1차: 목록에서 기본 정보와 Javascript 접속 링크 수집
         for row in rows[:15]: 
             try:
                 row_text = (await row.inner_text()).strip()
@@ -96,13 +92,18 @@ async def scrape_site(browser, inst_id, url):
                 raw_title = (await link_el.inner_text()).strip()
                 if len(raw_title) < 5: continue
 
-                # 제목 청소 및 필터링
                 clean_title = raw_title
                 date_match = re.search(r'(?:(?:20)?\d{2}\s*[-./]\s*)?\d{1,2}\s*[-./]\s*\d{1,2}', clean_title)
                 if date_match and date_match.start() > len(clean_title) / 2:
                     clean_title = clean_title[:date_match.start()]
                 clean_title = re.sub(r'\[.*?\]', '', clean_title).replace('~', '').replace('새글', '').strip()
                 clean_title = re.sub(r'\s+', ' ', clean_title)
+
+                # 🔥 적십자사 소속기관명(병원, 혈액원 등) 추출하여 제목 앞에 붙이기
+                if inst_id == 'redcross':
+                    branch_match = re.search(r'([가-힣]+(?:적십자병원|혈액원|지사|본부|원))', row_text)
+                    if branch_match and branch_match.group(1) not in clean_title:
+                        clean_title = f"[{branch_match.group(1)}] {clean_title}"
 
                 if "채용" not in clean_title or "공고" not in clean_title: continue
 
@@ -117,7 +118,7 @@ async def scrape_site(browser, inst_id, url):
                 elif "인턴" in clean_title: job_type = "인턴"
 
                 raw_href = await link_el.get_attribute("href")
-                if not raw_href or raw_href == "#": continue
+                if not raw_href or raw_href == "#" or "javascript:void" in raw_href: continue
 
                 job_candidates.append({
                     "instId": inst_id,
@@ -125,39 +126,36 @@ async def scrape_site(browser, inst_id, url):
                     "raw_title": raw_title,
                     "row_text": row_text,
                     "jobType": job_type,
-                    "raw_href": raw_href, # 본문 접속용 (Javascript 포함)
-                    "base_url": url # 사용자 제공용 안전 링크
+                    "raw_href": raw_href,
+                    "base_url": url 
                 })
             except: continue
 
         found_jobs = []
         
-        # 🔥 2차: 딥 스크래핑 (본문 잠입 및 날짜 추출)
         for job in job_candidates:
             combined_text = job['raw_title'] + " " + job['row_text']
             href_val = job['raw_href']
-            safe_link = job['base_url'] # 유저에게는 무조건 안전한 게시판 링크 제공
+            safe_link = job['base_url'] 
 
             try:
-                # 🛡️ Javascript 링크인 경우 (건보 등) 가상 클릭으로 본문 진입
                 if "javascript:" in href_val:
                     js_code = href_val.replace("javascript:", "")
                     detail_page = await browser.new_page()
                     await detail_page.goto(job['base_url'], wait_until="domcontentloaded", timeout=10000)
-                    await detail_page.evaluate(js_code) # 스크립트 강제 실행
+                    await detail_page.evaluate(js_code) 
                     await detail_page.wait_for_load_state("domcontentloaded", timeout=10000)
                     await asyncio.sleep(1.5)
                     body_text = await detail_page.inner_text("body")
                     combined_text += " " + body_text
                     await detail_page.close()
                 
-                # 일반 HTTP 링크인 경우 직접 진입
                 elif href_val.startswith("http") or href_val.startswith("/"):
                     if href_val.startswith("/"):
                         target_url = job['base_url'].split("/")[0] + "//" + job['base_url'].split("/")[2] + href_val
                     else:
                         target_url = href_val
-                    safe_link = target_url # 일반 링크는 유저에게 직접 제공해도 안전함
+                    safe_link = target_url 
                     
                     detail_page = await browser.new_page()
                     await detail_page.goto(target_url, wait_until="domcontentloaded", timeout=10000)
@@ -165,10 +163,21 @@ async def scrape_site(browser, inst_id, url):
                     combined_text += " " + body_text
                     await detail_page.close()
             except Exception as e:
-                # 본문 접근 실패 시 목록 텍스트만 사용 (에러로 멈추지 않음)
                 pass
 
-            # 수집된 모든 텍스트에서 날짜 정밀 분석
+            # 🔥 지역(시/도) 키워드 추출 로직
+            regions_list = ["서울", "부산", "대구", "인천", "광주", "대전", "울산", "세종", "경기", "강원", "충북", "충남", "전북", "전남", "경북", "경남", "제주"]
+            detected_region = "전국" # 기본값 설정
+            for r in regions_list:
+                if r in combined_text:
+                    detected_region = r
+                    break # 첫 번째로 발견된 지역을 할당
+            
+            # 지역이 특정되지 않은 기관별 본사 기본값 보정
+            if detected_region == "전국":
+                if job['instId'] in ["neca", "kuksiwon", "koiha"]: detected_region = "서울"
+                elif job['instId'] == "hira": detected_region = "강원"
+
             parsed_dates = extract_dates(combined_text, now.year)
 
             start_str, end_str = "상세참조", "상세참조"
@@ -180,7 +189,6 @@ async def scrape_site(browser, inst_id, url):
                 start_item = parsed_dates[0]
                 if not start_item['has_time']: start_item['dt'] = start_item['dt'].replace(hour=0, minute=0)
                 start_str = start_item['dt'].strftime("%y.%m.%d")
-                
                 if (now_kst - start_item['dt']).days > 30:
                     status = "마감"
                     is_too_old = True
@@ -195,19 +203,15 @@ async def scrape_site(browser, inst_id, url):
                 start_str = start_item['dt'].strftime("%y.%m.%d %H:%M")
                 end_str = end_item['dt'].strftime("%y.%m.%d %H:%M")
                 
-                # 마감일과 현재 시간 정밀 비교
                 if now_kst > end_item['dt']: 
                     status = "마감"
-                    if (now_kst - end_item['dt']).days > 30:
-                        is_too_old = True
+                    if (now_kst - end_item['dt']).days > 30: is_too_old = True
 
-            # 대놓고 마감이라고 적힌 경우
             if "[마감]" in job['raw_title'] or "접수마감" in combined_text or "접수종료" in combined_text:
                 status = "마감"
                 if parsed_dates and (now_kst - parsed_dates[-1]['dt']).days > 30:
                     is_too_old = True
 
-            # 30일 지난 공고 스킵
             if not is_too_old:
                 found_jobs.append({
                     "instId": job['instId'],
@@ -216,10 +220,10 @@ async def scrape_site(browser, inst_id, url):
                     "endDate": end_str,
                     "status": status,
                     "jobType": job['jobType'],
-                    "link": safe_link # 🔥 유저용 안전 링크 적용
+                    "region": detected_region, # DB에 지역 정보 저장
+                    "link": safe_link
                 })
         
-        # 중복 제거
         unique_jobs = []
         seen = set()
         for job in found_jobs:
@@ -273,5 +277,3 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
-
-
