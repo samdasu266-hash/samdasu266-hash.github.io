@@ -94,7 +94,7 @@ async def scrape_site(browser, inst_id, url):
                 raw_title = (await link_el.inner_text()).strip()
                 if len(raw_title) < 5: continue
 
-                # 🔥 대괄호 [] 삭제 방지 및 날짜 꼬리만 제거
+                # 제목 정리 (대괄호 보존)
                 clean_title = raw_title
                 date_match = re.search(r'(?:(?:20)?\d{2}\s*[-./]\s*)?\d{1,2}\s*[-./]\s*\d{1,2}', clean_title)
                 if date_match and date_match.start() > len(clean_title) / 2:
@@ -103,19 +103,21 @@ async def scrape_site(browser, inst_id, url):
                 clean_title = clean_title.replace('[마감]', '').replace('[새글]', '').replace('새글', '').replace('~', '').strip()
                 clean_title = re.sub(r'\s+', ' ', clean_title)
 
-                # 🔥 소속기관명이 제목엔 없고 본문에만 있는 경우 낚아채서 제목 앞에 붙이기
-                branch_match = re.search(r'([가-힣]+(?:적십자병원|혈액원|혈액검사센터|지역본부|지사|본부))', row_text)
-                if branch_match:
-                    b_name = branch_match.group(1)
-                    if b_name not in clean_title:
-                        clean_title = f"[{b_name}] {clean_title}"
+                # 🔥 적십자사: 본문에 있는 소속기관명을 낚아채서 제목 앞에 붙이기
+                if inst_id == 'redcross':
+                    branch_match = re.search(r'([가-힣]+(?:적십자병원|혈액원|혈액검사센터|지역본부|지사|본부|센터))', row_text)
+                    if branch_match:
+                        b_name = branch_match.group(1)
+                        if b_name not in clean_title:
+                            clean_title = f"[{b_name}] {clean_title}"
 
-                # 🔥 조건 완화: 적십자사는 직무명만 덜렁 있는 경우가 많아 무조건 통과시키고, 나머지도 직무 키워드 추가 허용
-                valid_keywords = ["채용", "공고", "모집", "선발", "초빙", "정규직", "계약직", "공무직", "간호사", "의료기사", "보건", "행정", "인턴", "기간제"]
-                if inst_id != 'redcross' and not any(keyword in clean_title for keyword in valid_keywords): 
-                    continue
+                # 🔥 필터링 완화: 적십자사는 무조건 통과! 다른 기관도 널널하게!
+                if inst_id != 'redcross':
+                    valid_keywords = ["채용", "공고", "모집", "선발", "정규직", "계약직", "무기계약직", "간호사", "보조원", "의사", "약사", "행정", "촉탁직", "기간제"]
+                    if not any(k in clean_title for k in valid_keywords):
+                        continue
                     
-                exclude_words = ["발표", "변호사", "합격자", "면접", "약사", "약무직", "의사", "의무직", "사전공개", "채용계획", "계획", "안내"]
+                exclude_words = ["발표", "변호사", "합격자", "면접", "약사", "약무직", "의무직", "사전공개", "채용계획", "계획", "안내"]
                 if any(ex in clean_title for ex in exclude_words): continue
 
                 job_type = "정규직"
@@ -125,8 +127,19 @@ async def scrape_site(browser, inst_id, url):
                 elif "비정규직" in clean_title: job_type = "비정규직"
                 elif "인턴" in clean_title: job_type = "인턴"
 
+                # 🔥 숨겨진 링크(onclick) 추출 로직 강화
                 raw_href = await link_el.get_attribute("href")
-                if not raw_href or raw_href == "#" or "javascript:void" in raw_href: continue
+                onclick_val = await link_el.get_attribute("onclick")
+                
+                js_code = ""
+                if raw_href and "javascript:" in raw_href and "void" not in raw_href:
+                    js_code = raw_href.replace("javascript:", "")
+                elif onclick_val:
+                    js_code = onclick_val
+
+                # href도 쓸모없고 onclick도 없으면 진짜 빈 링크이므로 버림
+                if (not raw_href or raw_href == "#" or "javascript:void" in raw_href) and not js_code:
+                    continue
 
                 job_candidates.append({
                     "instId": inst_id,
@@ -136,6 +149,7 @@ async def scrape_site(browser, inst_id, url):
                     "row_html": row_html,
                     "jobType": job_type,
                     "raw_href": raw_href,
+                    "js_code": js_code,
                     "base_url": url 
                 })
             except: continue
@@ -145,11 +159,12 @@ async def scrape_site(browser, inst_id, url):
         for job in job_candidates:
             combined_text = job['raw_title'] + " " + job['row_text']
             href_val = job['raw_href']
-            safe_link = job['base_url'] 
+            js_code = job['js_code']
+            safe_link = job['base_url'] # 유저에게 제공할 안전한 게시판 링크
 
             try:
-                if "javascript:" in href_val:
-                    js_code = href_val.replace("javascript:", "")
+                # 1. 자바스크립트 코드가 있으면 강제로 실행해서 본문 진입
+                if js_code:
                     detail_page = await browser.new_page()
                     await detail_page.goto(job['base_url'], wait_until="domcontentloaded", timeout=10000)
                     await detail_page.evaluate(js_code) 
@@ -159,7 +174,8 @@ async def scrape_site(browser, inst_id, url):
                     combined_text += " " + body_text
                     await detail_page.close()
                 
-                elif href_val.startswith("http") or href_val.startswith("/"):
+                # 2. 일반 링크면 링크 타고 본문 진입
+                elif href_val and (href_val.startswith("http") or href_val.startswith("/")):
                     if href_val.startswith("/"):
                         target_url = job['base_url'].split("/")[0] + "//" + job['base_url'].split("/")[2] + href_val
                     else:
@@ -174,12 +190,12 @@ async def scrape_site(browser, inst_id, url):
             except Exception as e:
                 pass
 
-            # 🔥 맞춤형 지역 추출: '제목(Title)'에서 먼저 찾고, 없으면 본문 검색 (본사 주소에 의한 오염 방지)
+            # 🔥 맞춤형 지역(시/도) 추출 (제목 우선 적용)
             region_set = set()
             title_region_set = set()
             general_regions = ["서울", "부산", "대구", "인천", "광주", "울산", "경기", "강원", "충북", "전북", "전남", "경북", "경남", "제주"]
             
-            # 1. 제목 기반 지역 추출 (최우선순위)
+            # 1. 제목에서 먼저 지역 찾기 (광주지사 공고가 본사 주소인 전북으로 잡히는 것 방지)
             if "남부혈액검사센터" in job['title']: title_region_set.add("부산")
             if "혈액관리본부" in job['title']: title_region_set.add("강원")
             if "경인" in job['title']: title_region_set.update(["경기", "인천"])
@@ -190,7 +206,7 @@ async def scrape_site(browser, inst_id, url):
             if title_region_set:
                 region_set = title_region_set
             else:
-                # 2. 제목에 지역이 없을 때만 본문 전체(combined_text)에서 검색
+                # 2. 제목에 없으면 본문 전체에서 검색
                 if "남부혈액검사센터" in combined_text: region_set.add("부산")
                 if "혈액관리본부" in combined_text: region_set.add("강원")
                 if "경인" in combined_text: region_set.update(["경기", "인천"])
@@ -203,7 +219,7 @@ async def scrape_site(browser, inst_id, url):
             else:
                 detected_region = "전국"
             
-            # 3. 아무것도 발견되지 않은 경우 기관별 본사 기준 할당
+            # 기관별 기본 지역 처리 (지역 정보가 없을 때만)
             if detected_region == "전국":
                 if job['instId'] in ["neca", "kuksiwon", "koiha"]: detected_region = "서울"
                 elif job['instId'] in ["hira", "nhis"]: detected_region = "강원"
