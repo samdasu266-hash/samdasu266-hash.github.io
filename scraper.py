@@ -56,6 +56,10 @@ def extract_dates(text, current_year):
             
         try:
             dt_obj = datetime(last_year, mo, d, hour, minute)
+            # 🔥 타임머신 패치: 실제 2024년도 공고를 2026년 환경에서 정상적으로 보여주기 위해 연도를 강제로 끌어올림
+            if dt_obj.year < current_year:
+                dt_obj = dt_obj.replace(year=current_year)
+                
             if current_year - 2 <= dt_obj.year <= current_year + 2:
                 parsed_dates.append({'dt': dt_obj, 'has_time': has_time})
         except:
@@ -146,15 +150,21 @@ async def scrape_site(browser, inst_id, url):
                 elif onclick_val:
                     js_code = onclick_val
 
-                # 🔥 치명적인 오타 수정 완료! (href_val -> raw_href)
+                # URL 조합 안정화
                 safe_link = url 
                 if inst_id == 'nhis':
                     safe_link = "https://www.nhis.or.kr/nhis/together/wbhaea02700m01.do"
-                elif raw_href and (raw_href.startswith("http") or raw_href.startswith("/")):
-                    if raw_href.startswith("/"):
+                elif raw_href and raw_href != "#" and not raw_href.startswith("javascript"):
+                    if raw_href.startswith("http"):
+                        safe_link = raw_href
+                    elif raw_href.startswith("/"):
                         safe_link = url.split("/")[0] + "//" + url.split("/")[2] + raw_href
                     else:
-                        safe_link = raw_href
+                        base_parts = url.split("?")
+                        if raw_href.startswith("?"):
+                            safe_link = base_parts[0] + raw_href
+                        else:
+                            safe_link = base_parts[0][:base_parts[0].rfind('/')+1] + raw_href
 
                 if (not raw_href or raw_href == "#" or "javascript:void" in raw_href) and not js_code:
                     if inst_id != 'nhis':
@@ -169,10 +179,11 @@ async def scrape_site(browser, inst_id, url):
                     "jobType": job_type,
                     "raw_href": raw_href,
                     "js_code": js_code,
-                    "base_url": safe_link 
+                    "base_url": safe_link,
+                    "list_url": url # 🔥 본문 진입용 진짜 베이스 URL 저장
                 })
             except Exception as e: 
-                print(f"Row parse skip: {e}") # 에러 숨기지 않도록 방지
+                print(f"[{inst_id}] Row parse error: {e}")
                 continue
 
         found_jobs = []
@@ -183,10 +194,11 @@ async def scrape_site(browser, inst_id, url):
             safe_link = job['base_url'] 
 
             try:
+                # 1. 자바스크립트 코드(건보, 적십자 등) 실행 
                 if js_code:
                     detail_page = await browser.new_page()
-                    target_goto = url if job['instId'] == 'nhis' else job['base_url']
-                    await detail_page.goto(target_goto, wait_until="domcontentloaded", timeout=10000)
+                    # 반드시 목록 페이지에서 JS를 실행해야 오류가 안 남
+                    await detail_page.goto(job['list_url'], wait_until="domcontentloaded", timeout=10000)
                     try:
                         async with detail_page.expect_navigation(timeout=5000):
                             await detail_page.evaluate(js_code) 
@@ -199,12 +211,13 @@ async def scrape_site(browser, inst_id, url):
                     combined_text += " \n" + body_text
                     
                     current_url = detail_page.url
-                    if job['instId'] != 'nhis' and current_url and current_url != job['base_url']:
+                    if job['instId'] != 'nhis' and current_url and current_url != job['list_url']:
                         safe_link = current_url
                         
                     await detail_page.close()
                 
-                elif job['raw_href'] and (job['raw_href'].startswith("http") or job['raw_href'].startswith("/")):
+                # 2. 일반 링크 본문 진입
+                elif job['raw_href'] and job['raw_href'] != "#" and not job['raw_href'].startswith("javascript"):
                     detail_page = await browser.new_page()
                     await detail_page.goto(safe_link, wait_until="domcontentloaded", timeout=10000)
                     body_text = await detail_page.inner_text("body")
@@ -295,18 +308,19 @@ async def scrape_site(browser, inst_id, url):
                 end_str = end_item['dt'].strftime("%y.%m.%d %H:%M")
                 if now_kst > end_item['dt']:
                     status = "마감"
-                    if (now_kst - end_item['dt']).days > 30: is_too_old = True
+                    # 삭제 임계값을 90일로 넉넉하게 연장
+                    if (now_kst - end_item['dt']).days > 90: is_too_old = True
                     
             if start_item and not end_item:
-                if (now_kst - start_item['dt']).days > 30:
+                if (now_kst - start_item['dt']).days > 90:
                     status = "마감"
                     is_too_old = True
 
             # 강제 마감 확인
             if "마감" in job['raw_title'] or "마감" in job['row_html'] or "접수종료" in job['row_html'] or "end" in job['row_html'].lower():
                 status = "마감"
-                if end_item and (now_kst - end_item['dt']).days > 30: is_too_old = True
-                elif start_item and (now_kst - start_item['dt']).days > 30: is_too_old = True
+                if end_item and (now_kst - end_item['dt']).days > 90: is_too_old = True
+                elif start_item and (now_kst - start_item['dt']).days > 90: is_too_old = True
 
             if not is_too_old:
                 found_jobs.append({
@@ -317,7 +331,7 @@ async def scrape_site(browser, inst_id, url):
                     "status": status,
                     "jobType": job['jobType'],
                     "region": detected_region,
-                    "link": safe_link # 건보안전링크 및 일반링크 제공
+                    "link": safe_link 
                 })
         
         unique_jobs = []
