@@ -111,21 +111,25 @@ async def scrape_site(browser, inst_id, url):
                         if b_name not in clean_title:
                             clean_title = f"[{b_name}] {clean_title}"
 
-                # 필터링 완화
-                if inst_id != 'redcross':
-                    valid_keywords = ["채용", "공고", "모집", "선발", "정규직", "계약직", "무기계약직", "간호사", "보조원", "의사", "약사", "행정", "촉탁직", "기간제"]
+                # 필터링 완화: 보의연, 복지부, 적십자사는 널널하게 통과
+                if inst_id not in ['redcross', 'neca', 'mohw']:
+                    valid_keywords = ["채용", "공고", "모집", "선발", "정규직", "계약직", "무기계약직", "간호사", "보조원", "행정", "촉탁직", "기간제", "연구원"]
                     if not any(k in clean_title for k in valid_keywords):
                         continue
                     
-                # 미수집 필터링 단어
+                # 🔥 미수집 제외 키워드 (공시송달, 서류전형 등 완벽 반영)
                 exclude_words = [
-                    "발표", "변호사", "합격자", "면접", "약사", "약무직", "의무직", 
-                    "사전공개", "채용계획", "계획", "안내", 
-                    "공시송달", "서류전형", "참여기관", "공모", "의사", "전문의"
+                    "발표", "합격", "면접", "약사", "약무", "의무직", 
+                    "사전공개", "채용계획", "공시송달", "서류전형", "참여기관", "공모"
                 ]
                 if any(ex in clean_title for ex in exclude_words): continue
+                
+                # 🔥 의사/전문의 정밀 제외 (방사선사 등은 통과됨)
+                clean_title_for_regex = clean_title.replace('[', ' ').replace(']', ' ')
+                if re.search(r'\b(?:의사|전문의|수련의|전공의)\b', clean_title_for_regex):
+                    continue
 
-                # 고용 형태 분류
+                # 고용 형태 분류 (휴직/대체 키워드 계약직 할당)
                 job_type = "정규직"
                 if "무기계약직" in clean_title: 
                     job_type = "무기계약직"
@@ -147,6 +151,16 @@ async def scrape_site(browser, inst_id, url):
                 elif onclick_val:
                     js_code = onclick_val
 
+                safe_link = url
+
+                # 🔥 건보공단(NHIS) 다이렉트 URL 추출 로직
+                if inst_id == 'nhis' and js_code:
+                    m = re.search(r"fnView\D*(\d+)", js_code)
+                    if m:
+                        safe_link = f"https://www.nhis.or.kr/nhis/together/wbhaea02700m01.do?mode=view&articleNo={m.group(1)}"
+                        js_code = "" 
+                        raw_href = safe_link
+
                 if (not raw_href or raw_href == "#" or "javascript:void" in raw_href) and not js_code:
                     continue
 
@@ -159,7 +173,7 @@ async def scrape_site(browser, inst_id, url):
                     "jobType": job_type,
                     "raw_href": raw_href,
                     "js_code": js_code,
-                    "base_url": url 
+                    "base_url": safe_link 
                 })
             except: continue
 
@@ -172,36 +186,26 @@ async def scrape_site(browser, inst_id, url):
             safe_link = job['base_url'] 
 
             try:
-                # 1. 자바스크립트 코드가 있으면 강제로 실행해서 본문 진입 (건보 다이렉트 링크 추출)
+                # 1. 자바스크립트 코드가 남아있으면 강제로 실행 (적십자사 등)
                 if js_code:
                     detail_page = await browser.new_page()
-                    await detail_page.goto(job['base_url'], wait_until="domcontentloaded", timeout=15000)
-                    
+                    await detail_page.goto(job['base_url'], wait_until="domcontentloaded", timeout=10000)
                     try:
                         async with detail_page.expect_navigation(timeout=5000):
                             await detail_page.evaluate(js_code) 
                     except:
-                        await detail_page.evaluate(js_code) # 네비게이션 감지 실패해도 강제 실행
+                        await detail_page.evaluate(js_code)
                         
                     await detail_page.wait_for_load_state("domcontentloaded", timeout=10000)
-                    await asyncio.sleep(2)
-                    
+                    await asyncio.sleep(1.5)
                     body_text = await detail_page.inner_text("body")
                     combined_text += " \n" + body_text
-                    
-                    # 🔥 건보공단 등 다이렉트 URL 낚아채기
                     current_url = detail_page.url
                     if current_url and current_url != job['base_url']:
                         safe_link = current_url
-                    else:
-                        # URL이 안 변했다면 파라미터 조합 시도
-                        m = re.search(r"fnView\(['\"](\d+)['\"]", js_code)
-                        if m and "nhis" in safe_link:
-                            safe_link = f"https://www.nhis.or.kr/nhis/together/wbhaea02700m01.do?mode=view&articleNo={m.group(1)}"
-
                     await detail_page.close()
                 
-                # 2. 일반 링크면 링크 타고 본문 진입
+                # 2. 일반 링크 또는 추출된 다이렉트 링크(건보공단 포함) 접근
                 elif href_val and (href_val.startswith("http") or href_val.startswith("/")):
                     if href_val.startswith("/"):
                         target_url = job['base_url'].split("/")[0] + "//" + job['base_url'].split("/")[2] + href_val
@@ -217,7 +221,7 @@ async def scrape_site(browser, inst_id, url):
             except Exception as e:
                 pass
 
-            # 맞춤형 지역(시/도) 추출
+            # 맞춤형 지역(시/도) 추출 (제목 우선 적용)
             region_set = set()
             title_region_set = set()
             general_regions = ["서울", "부산", "대구", "인천", "광주", "울산", "경기", "강원", "충북", "전북", "전남", "경북", "경남", "제주"]
@@ -255,48 +259,39 @@ async def scrape_site(browser, inst_id, url):
                 elif job['instId'] == "comwel": detected_region = "울산"
                 elif job['instId'] == "mohw": detected_region = "대전충남"
 
-            # 🔥 초정밀 '접수기간' 추출 알고리즘 (발표일 등과 섞이지 않게 타겟팅)
+            # 🔥 정밀 접수기간 추출 (건보공단 포함)
             start_item = None
             end_item = None
             now_kst = now.replace(tzinfo=None)
             
             lines = combined_text.split('\n')
-            # 1순위: '접수' 키워드가 포함된 문장에서 우선 추출
             for i, line in enumerate(lines):
-                if '접수' in line and ('~' in line or '-' in line or '부터' in line or '까지' in line):
+                if '접수' in line and any(c in line for c in ['~', '-', '부터', '까지']):
                     context = line
-                    if i + 1 < len(lines): context += " " + lines[i+1] # 두 줄 연결 탐색
-                    
+                    if i + 1 < len(lines): context += " " + lines[i+1] 
                     dates = extract_dates(context, now.year)
                     if len(dates) >= 2:
-                        start_item = dates[0]
-                        end_item = dates[1] # 딱 접수기간 2개만 취함
+                        start_item, end_item = dates[0], dates[1]
                         break
                     elif len(dates) == 1:
-                        if '까지' in line or '~' in line or '마감' in line:
+                        if any(c in line for c in ['까지', '~', '마감']):
                             end_item = dates[0]
                         else:
                             start_item = dates[0]
                         break
 
-            # 2순위: 못 찾았으면 정규식으로 "~"로 이어진 첫 번째 날짜 구간 탐색
             if not start_item and not end_item:
                 match = re.search(r'((?:(?:20)?\d{2})\s*[-./]\s*\d{1,2}\s*[-./]\s*\d{1,2}.*?(?:~|-|부터).*?\d{1,2}\s*[-./]\s*\d{1,2}(?:.*?\d{1,2}:\d{2})?)', combined_text.replace('\n', ' '))
                 if match:
                     dates = extract_dates(match.group(1), now.year)
                     if len(dates) >= 2:
-                        start_item = dates[0]
-                        end_item = dates[1]
+                        start_item, end_item = dates[0], dates[1]
 
-            # 3순위: 그래도 없으면 문서 상단(제목 및 요약)의 날짜 활용
             if not start_item and not end_item:
                 dates = extract_dates(combined_text[:500], now.year)
-                if len(dates) >= 2:
-                    start_item, end_item = dates[0], dates[1]
-                elif len(dates) == 1:
-                    start_item = dates[0]
+                if len(dates) >= 2: start_item, end_item = dates[0], dates[1]
+                elif len(dates) == 1: start_item = dates[0]
 
-            # 시작일이 마감일보다 늦게 잡히는 오류 교정
             if start_item and end_item and start_item['dt'] > end_item['dt']:
                 start_item, end_item = end_item, start_item
 
@@ -304,7 +299,6 @@ async def scrape_site(browser, inst_id, url):
             status = "진행중"
             is_too_old = False
 
-            # 추출된 아이템 바탕으로 텍스트화 및 마감 처리
             if start_item:
                 if not start_item['has_time']: start_item['dt'] = start_item['dt'].replace(hour=0, minute=0)
                 start_str = start_item['dt'].strftime("%y.%m.%d")
@@ -312,7 +306,6 @@ async def scrape_site(browser, inst_id, url):
             if end_item:
                 if not end_item['has_time']: end_item['dt'] = end_item['dt'].replace(hour=18, minute=0)
                 end_str = end_item['dt'].strftime("%y.%m.%d %H:%M")
-                
                 if now_kst > end_item['dt']:
                     status = "마감"
                     if (now_kst - end_item['dt']).days > 30: is_too_old = True
@@ -322,13 +315,10 @@ async def scrape_site(browser, inst_id, url):
                     status = "마감"
                     is_too_old = True
 
-            # 텍스트 내 명시적 마감 확인 (이중 잠금장치)
             if "마감" in job['raw_title'] or "마감" in job['row_html'] or "접수종료" in job['row_html'] or "end" in job['row_html'].lower():
                 status = "마감"
-                if end_item and (now_kst - end_item['dt']).days > 30:
-                    is_too_old = True
-                elif start_item and (now_kst - start_item['dt']).days > 30:
-                    is_too_old = True
+                if end_item and (now_kst - end_item['dt']).days > 30: is_too_old = True
+                elif start_item and (now_kst - start_item['dt']).days > 30: is_too_old = True
 
             if not is_too_old:
                 found_jobs.append({
@@ -339,7 +329,7 @@ async def scrape_site(browser, inst_id, url):
                     "status": status,
                     "jobType": job['jobType'],
                     "region": detected_region,
-                    "link": safe_link
+                    "link": safe_link # 🔥 유저에게 다이렉트 URL 제공
                 })
         
         unique_jobs = []
