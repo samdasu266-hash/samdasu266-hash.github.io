@@ -146,18 +146,18 @@ async def scrape_site(browser, inst_id, url):
                 elif onclick_val:
                     js_code = onclick_val
 
-                # 🔥 건보공단(nhis) 링크 타협점: 에러 나는 다이렉트 링크 대신 무조건 '안전한 메인 게시판 주소' 제공
+                # 🔥 치명적인 오타 수정 완료! (href_val -> raw_href)
                 safe_link = url 
                 if inst_id == 'nhis':
                     safe_link = "https://www.nhis.or.kr/nhis/together/wbhaea02700m01.do"
-                elif href_val and (href_val.startswith("http") or href_val.startswith("/")):
-                    if href_val.startswith("/"):
-                        safe_link = url.split("/")[0] + "//" + url.split("/")[2] + href_val
+                elif raw_href and (raw_href.startswith("http") or raw_href.startswith("/")):
+                    if raw_href.startswith("/"):
+                        safe_link = url.split("/")[0] + "//" + url.split("/")[2] + raw_href
                     else:
-                        safe_link = href_val
+                        safe_link = raw_href
 
                 if (not raw_href or raw_href == "#" or "javascript:void" in raw_href) and not js_code:
-                    if inst_id != 'nhis': # 건보는 js_code로 들어가야하므로 통과시킴
+                    if inst_id != 'nhis':
                         continue
 
                 job_candidates.append({
@@ -171,7 +171,9 @@ async def scrape_site(browser, inst_id, url):
                     "js_code": js_code,
                     "base_url": safe_link 
                 })
-            except: continue
+            except Exception as e: 
+                print(f"Row parse skip: {e}") # 에러 숨기지 않도록 방지
+                continue
 
         found_jobs = []
         
@@ -181,10 +183,8 @@ async def scrape_site(browser, inst_id, url):
             safe_link = job['base_url'] 
 
             try:
-                # 1. 자바스크립트 코드(건보, 적십자 등) 은밀하게 실행해서 본문 날짜만 빼오기
                 if js_code:
                     detail_page = await browser.new_page()
-                    # 건보 게시판에서 스크립트 실행
                     target_goto = url if job['instId'] == 'nhis' else job['base_url']
                     await detail_page.goto(target_goto, wait_until="domcontentloaded", timeout=10000)
                     try:
@@ -198,14 +198,12 @@ async def scrape_site(browser, inst_id, url):
                     body_text = await detail_page.inner_text("body")
                     combined_text += " \n" + body_text
                     
-                    # URL 추출 시도 (건보 외 기관용)
                     current_url = detail_page.url
                     if job['instId'] != 'nhis' and current_url and current_url != job['base_url']:
                         safe_link = current_url
                         
                     await detail_page.close()
                 
-                # 2. 일반 링크 본문 진입
                 elif job['raw_href'] and (job['raw_href'].startswith("http") or job['raw_href'].startswith("/")):
                     detail_page = await browser.new_page()
                     await detail_page.goto(safe_link, wait_until="domcontentloaded", timeout=10000)
@@ -319,7 +317,7 @@ async def scrape_site(browser, inst_id, url):
                     "status": status,
                     "jobType": job['jobType'],
                     "region": detected_region,
-                    "link": safe_link # 🔥 건보는 안전한 게시판 링크로 제공됨
+                    "link": safe_link # 건보안전링크 및 일반링크 제공
                 })
         
         unique_jobs = []
