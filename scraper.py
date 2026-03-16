@@ -103,7 +103,7 @@ async def scrape_site(browser, inst_id, url):
                 clean_title = clean_title.replace('[마감]', '').replace('[새글]', '').replace('새글', '').replace('~', '').strip()
                 clean_title = re.sub(r'\s+', ' ', clean_title)
 
-                # 🔥 적십자사: 본문에 있는 소속기관명을 낚아채서 제목 앞에 붙이기
+                # 적십자사: 본문에 있는 소속기관명을 낚아채서 제목 앞에 붙이기
                 if inst_id == 'redcross':
                     branch_match = re.search(r'([가-힣]+(?:적십자병원|혈액원|혈액검사센터|지역본부|지사|본부|센터))', row_text)
                     if branch_match:
@@ -111,23 +111,33 @@ async def scrape_site(browser, inst_id, url):
                         if b_name not in clean_title:
                             clean_title = f"[{b_name}] {clean_title}"
 
-                # 🔥 필터링 완화: 적십자사는 무조건 통과! 다른 기관도 널널하게!
+                # 필터링 완화
                 if inst_id != 'redcross':
                     valid_keywords = ["채용", "공고", "모집", "선발", "정규직", "계약직", "무기계약직", "간호사", "보조원", "의사", "약사", "행정", "촉탁직", "기간제"]
                     if not any(k in clean_title for k in valid_keywords):
                         continue
                     
-                exclude_words = ["발표", "변호사", "합격자", "면접", "약사", "약무직", "의무직", "사전공개", "채용계획", "계획", "안내"]
+                # 미수집 필터링 단어
+                exclude_words = [
+                    "발표", "변호사", "합격자", "면접", "약사", "약무직", "의무직", 
+                    "사전공개", "채용계획", "계획", "안내", 
+                    "공시송달", "서류전형", "참여기관", "공모", "의사", "전문의"
+                ]
                 if any(ex in clean_title for ex in exclude_words): continue
 
+                # 고용 형태 분류
                 job_type = "정규직"
-                if "무기계약직" in clean_title: job_type = "무기계약직"
-                elif "공무직" in clean_title: job_type = "공무직"
-                elif "기간제" in clean_title or "계약직" in clean_title or "촉탁직" in clean_title: job_type = "계약직/기간제"
-                elif "비정규직" in clean_title: job_type = "비정규직"
-                elif "인턴" in clean_title: job_type = "인턴"
+                if "무기계약직" in clean_title: 
+                    job_type = "무기계약직"
+                elif "공무직" in clean_title: 
+                    job_type = "공무직"
+                elif any(k in clean_title for k in ["기간제", "계약직", "촉탁직", "휴직", "대체"]): 
+                    job_type = "계약직/기간제"
+                elif "비정규직" in clean_title: 
+                    job_type = "비정규직"
+                elif "인턴" in clean_title: 
+                    job_type = "인턴"
 
-                # 🔥 숨겨진 링크(onclick) 추출 로직 강화
                 raw_href = await link_el.get_attribute("href")
                 onclick_val = await link_el.get_attribute("onclick")
                 
@@ -137,7 +147,6 @@ async def scrape_site(browser, inst_id, url):
                 elif onclick_val:
                     js_code = onclick_val
 
-                # href도 쓸모없고 onclick도 없으면 진짜 빈 링크이므로 버림
                 if (not raw_href or raw_href == "#" or "javascript:void" in raw_href) and not js_code:
                     continue
 
@@ -157,21 +166,39 @@ async def scrape_site(browser, inst_id, url):
         found_jobs = []
         
         for job in job_candidates:
-            combined_text = job['raw_title'] + " " + job['row_text']
+            combined_text = job['raw_title'] + " \n" + job['row_text']
             href_val = job['raw_href']
             js_code = job['js_code']
-            safe_link = job['base_url'] # 유저에게 제공할 안전한 게시판 링크
+            safe_link = job['base_url'] 
 
             try:
-                # 1. 자바스크립트 코드가 있으면 강제로 실행해서 본문 진입
+                # 1. 자바스크립트 코드가 있으면 강제로 실행해서 본문 진입 (건보 다이렉트 링크 추출)
                 if js_code:
                     detail_page = await browser.new_page()
-                    await detail_page.goto(job['base_url'], wait_until="domcontentloaded", timeout=10000)
-                    await detail_page.evaluate(js_code) 
+                    await detail_page.goto(job['base_url'], wait_until="domcontentloaded", timeout=15000)
+                    
+                    try:
+                        async with detail_page.expect_navigation(timeout=5000):
+                            await detail_page.evaluate(js_code) 
+                    except:
+                        await detail_page.evaluate(js_code) # 네비게이션 감지 실패해도 강제 실행
+                        
                     await detail_page.wait_for_load_state("domcontentloaded", timeout=10000)
-                    await asyncio.sleep(1.5)
+                    await asyncio.sleep(2)
+                    
                     body_text = await detail_page.inner_text("body")
-                    combined_text += " " + body_text
+                    combined_text += " \n" + body_text
+                    
+                    # 🔥 건보공단 등 다이렉트 URL 낚아채기
+                    current_url = detail_page.url
+                    if current_url and current_url != job['base_url']:
+                        safe_link = current_url
+                    else:
+                        # URL이 안 변했다면 파라미터 조합 시도
+                        m = re.search(r"fnView\(['\"](\d+)['\"]", js_code)
+                        if m and "nhis" in safe_link:
+                            safe_link = f"https://www.nhis.or.kr/nhis/together/wbhaea02700m01.do?mode=view&articleNo={m.group(1)}"
+
                     await detail_page.close()
                 
                 # 2. 일반 링크면 링크 타고 본문 진입
@@ -185,17 +212,16 @@ async def scrape_site(browser, inst_id, url):
                     detail_page = await browser.new_page()
                     await detail_page.goto(target_url, wait_until="domcontentloaded", timeout=10000)
                     body_text = await detail_page.inner_text("body")
-                    combined_text += " " + body_text
+                    combined_text += " \n" + body_text
                     await detail_page.close()
             except Exception as e:
                 pass
 
-            # 🔥 맞춤형 지역(시/도) 추출 (제목 우선 적용)
+            # 맞춤형 지역(시/도) 추출
             region_set = set()
             title_region_set = set()
             general_regions = ["서울", "부산", "대구", "인천", "광주", "울산", "경기", "강원", "충북", "전북", "전남", "경북", "경남", "제주"]
             
-            # 1. 제목에서 먼저 지역 찾기 (광주지사 공고가 본사 주소인 전북으로 잡히는 것 방지)
             if "거창" in job['title']: title_region_set.add("경남")
             if "상주" in job['title']: title_region_set.add("경북")
             if "남부혈액검사센터" in job['title']: title_region_set.add("부산")
@@ -208,7 +234,6 @@ async def scrape_site(browser, inst_id, url):
             if title_region_set:
                 region_set = title_region_set
             else:
-                # 2. 제목에 없으면 본문 전체에서 검색
                 if "거창" in combined_text: region_set.add("경남")
                 if "상주" in combined_text: region_set.add("경북")
                 if "남부혈액검사센터" in combined_text: region_set.add("부산")
@@ -223,7 +248,6 @@ async def scrape_site(browser, inst_id, url):
             else:
                 detected_region = "전국"
             
-            # 3. 기관별 기본 지역 처리 (지역 정보가 전혀 없을 때 본사 지역으로 표시)
             if detected_region == "전국":
                 if job['instId'] in ["neca", "kuksiwon", "koiha"]: detected_region = "서울"
                 elif job['instId'] in ["hira", "nhis", "redcross"]: detected_region = "강원"
@@ -231,38 +255,79 @@ async def scrape_site(browser, inst_id, url):
                 elif job['instId'] == "comwel": detected_region = "울산"
                 elif job['instId'] == "mohw": detected_region = "대전충남"
 
-            parsed_dates = extract_dates(combined_text, now.year)
+            # 🔥 초정밀 '접수기간' 추출 알고리즘 (발표일 등과 섞이지 않게 타겟팅)
+            start_item = None
+            end_item = None
+            now_kst = now.replace(tzinfo=None)
+            
+            lines = combined_text.split('\n')
+            # 1순위: '접수' 키워드가 포함된 문장에서 우선 추출
+            for i, line in enumerate(lines):
+                if '접수' in line and ('~' in line or '-' in line or '부터' in line or '까지' in line):
+                    context = line
+                    if i + 1 < len(lines): context += " " + lines[i+1] # 두 줄 연결 탐색
+                    
+                    dates = extract_dates(context, now.year)
+                    if len(dates) >= 2:
+                        start_item = dates[0]
+                        end_item = dates[1] # 딱 접수기간 2개만 취함
+                        break
+                    elif len(dates) == 1:
+                        if '까지' in line or '~' in line or '마감' in line:
+                            end_item = dates[0]
+                        else:
+                            start_item = dates[0]
+                        break
+
+            # 2순위: 못 찾았으면 정규식으로 "~"로 이어진 첫 번째 날짜 구간 탐색
+            if not start_item and not end_item:
+                match = re.search(r'((?:(?:20)?\d{2})\s*[-./]\s*\d{1,2}\s*[-./]\s*\d{1,2}.*?(?:~|-|부터).*?\d{1,2}\s*[-./]\s*\d{1,2}(?:.*?\d{1,2}:\d{2})?)', combined_text.replace('\n', ' '))
+                if match:
+                    dates = extract_dates(match.group(1), now.year)
+                    if len(dates) >= 2:
+                        start_item = dates[0]
+                        end_item = dates[1]
+
+            # 3순위: 그래도 없으면 문서 상단(제목 및 요약)의 날짜 활용
+            if not start_item and not end_item:
+                dates = extract_dates(combined_text[:500], now.year)
+                if len(dates) >= 2:
+                    start_item, end_item = dates[0], dates[1]
+                elif len(dates) == 1:
+                    start_item = dates[0]
+
+            # 시작일이 마감일보다 늦게 잡히는 오류 교정
+            if start_item and end_item and start_item['dt'] > end_item['dt']:
+                start_item, end_item = end_item, start_item
 
             start_str, end_str = "상세참조", "상세참조"
             status = "진행중"
             is_too_old = False
-            now_kst = now.replace(tzinfo=None)
 
-            if len(parsed_dates) == 1:
-                start_item = parsed_dates[0]
+            # 추출된 아이템 바탕으로 텍스트화 및 마감 처리
+            if start_item:
                 if not start_item['has_time']: start_item['dt'] = start_item['dt'].replace(hour=0, minute=0)
                 start_str = start_item['dt'].strftime("%y.%m.%d")
+                
+            if end_item:
+                if not end_item['has_time']: end_item['dt'] = end_item['dt'].replace(hour=18, minute=0)
+                end_str = end_item['dt'].strftime("%y.%m.%d %H:%M")
+                
+                if now_kst > end_item['dt']:
+                    status = "마감"
+                    if (now_kst - end_item['dt']).days > 30: is_too_old = True
+                    
+            if start_item and not end_item:
                 if (now_kst - start_item['dt']).days > 30:
                     status = "마감"
                     is_too_old = True
 
-            elif len(parsed_dates) >= 2:
-                start_item = parsed_dates[0]
-                end_item = parsed_dates[-1]
-                
-                if not start_item['has_time']: start_item['dt'] = start_item['dt'].replace(hour=0, minute=0)
-                if not end_item['has_time']: end_item['dt'] = end_item['dt'].replace(hour=18, minute=0)
-                    
-                start_str = start_item['dt'].strftime("%y.%m.%d %H:%M")
-                end_str = end_item['dt'].strftime("%y.%m.%d %H:%M")
-                
-                if now_kst > end_item['dt']: 
-                    status = "마감"
-                    if (now_kst - end_item['dt']).days > 30: is_too_old = True
-
+            # 텍스트 내 명시적 마감 확인 (이중 잠금장치)
             if "마감" in job['raw_title'] or "마감" in job['row_html'] or "접수종료" in job['row_html'] or "end" in job['row_html'].lower():
                 status = "마감"
-                if parsed_dates and (now_kst - parsed_dates[-1]['dt']).days > 30:
+                if end_item and (now_kst - end_item['dt']).days > 30:
+                    is_too_old = True
+                elif start_item and (now_kst - start_item['dt']).days > 30:
                     is_too_old = True
 
             if not is_too_old:
@@ -330,3 +395,5 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+
+
