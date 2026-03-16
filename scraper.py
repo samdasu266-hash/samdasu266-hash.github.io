@@ -103,15 +103,16 @@ async def scrape_site(browser, inst_id, url):
                 clean_title = clean_title.replace('[마감]', '').replace('[새글]', '').replace('새글', '').replace('~', '').strip()
                 clean_title = re.sub(r'\s+', ' ', clean_title)
 
-                # 소속기관명이 본문에만 있는 경우 (적십자병원 등) 제목 앞으로 끌어올리기
+                # 🔥 소속기관명이 제목엔 없고 본문에만 있는 경우 낚아채서 제목 앞에 붙이기
                 branch_match = re.search(r'([가-힣]+(?:적십자병원|혈액원|혈액검사센터|지역본부|지사|본부))', row_text)
                 if branch_match:
                     b_name = branch_match.group(1)
                     if b_name not in clean_title:
                         clean_title = f"[{b_name}] {clean_title}"
 
-                # 🔥 조건 완화: '채용', '공고', '모집' 중 하나라도 있으면 패스 (적십자사 누락 방지)
-                if not any(keyword in clean_title for keyword in ["채용", "공고", "모집"]): 
+                # 🔥 조건 완화: 적십자사는 직무명만 덜렁 있는 경우가 많아 무조건 통과시키고, 나머지도 직무 키워드 추가 허용
+                valid_keywords = ["채용", "공고", "모집", "선발", "초빙", "정규직", "계약직", "공무직", "간호사", "의료기사", "보건", "행정", "인턴", "기간제"]
+                if inst_id != 'redcross' and not any(keyword in clean_title for keyword in valid_keywords): 
                     continue
                     
                 exclude_words = ["발표", "변호사", "합격자", "면접", "약사", "약무직", "의사", "의무직", "사전공개", "채용계획", "계획", "안내"]
