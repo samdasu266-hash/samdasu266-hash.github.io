@@ -196,6 +196,8 @@ async def scrape_site(browser, inst_id, url):
             general_regions = ["서울", "부산", "대구", "인천", "광주", "울산", "경기", "강원", "충북", "전북", "전남", "경북", "경남", "제주"]
             
             # 1. 제목에서 먼저 지역 찾기 (광주지사 공고가 본사 주소인 전북으로 잡히는 것 방지)
+            if "거창" in job['title']: title_region_set.add("경남")
+            if "상주" in job['title']: title_region_set.add("경북")
             if "남부혈액검사센터" in job['title']: title_region_set.add("부산")
             if "혈액관리본부" in job['title']: title_region_set.add("강원")
             if "경인" in job['title']: title_region_set.update(["경기", "인천"])
@@ -207,6 +209,8 @@ async def scrape_site(browser, inst_id, url):
                 region_set = title_region_set
             else:
                 # 2. 제목에 없으면 본문 전체에서 검색
+                if "거창" in combined_text: region_set.add("경남")
+                if "상주" in combined_text: region_set.add("경북")
                 if "남부혈액검사센터" in combined_text: region_set.add("부산")
                 if "혈액관리본부" in combined_text: region_set.add("강원")
                 if "경인" in combined_text: region_set.update(["경기", "인천"])
@@ -219,11 +223,13 @@ async def scrape_site(browser, inst_id, url):
             else:
                 detected_region = "전국"
             
-            # 기관별 기본 지역 처리 (지역 정보가 없을 때만)
+            # 3. 기관별 기본 지역 처리 (지역 정보가 전혀 없을 때 본사 지역으로 표시)
             if detected_region == "전국":
                 if job['instId'] in ["neca", "kuksiwon", "koiha"]: detected_region = "서울"
-                elif job['instId'] in ["hira", "nhis"]: detected_region = "강원"
+                elif job['instId'] in ["hira", "nhis", "redcross"]: detected_region = "강원"
                 elif job['instId'] == "nps": detected_region = "전북"
+                elif job['instId'] == "comwel": detected_region = "울산"
+                elif job['instId'] == "mohw": detected_region = "대전충남"
 
             parsed_dates = extract_dates(combined_text, now.year)
 
