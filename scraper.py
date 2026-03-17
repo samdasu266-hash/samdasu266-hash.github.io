@@ -25,7 +25,8 @@ APP_ID = "recruitment-portal-v3"
 KST = timezone(timedelta(hours=9))
 
 def extract_dates(text, current_year):
-    pattern = r'(?:((?:20)?\d{2})\s*[-./]\s*)?(\d{1,2})\s*[-./]\s*(\d{1,2})(?!\d)'
+    # 년, 월, 일 한글 표기 및 -, ., / 모두 지원
+    pattern = r'(?:((?:20)?\d{2})\s*(?:[-./]|년)\s*)?(\d{1,2})\s*(?:[-./]|월)\s*(\d{1,2})\s*일?(?!\d)'
     matches = list(re.finditer(pattern, text))
     
     parsed_dates = []
@@ -56,7 +57,7 @@ def extract_dates(text, current_year):
             
         try:
             dt_obj = datetime(last_year, mo, d, hour, minute)
-            # 🔥 타임머신 패치: 실제 2024년도 공고를 2026년 환경에서 정상적으로 보여주기 위해 연도를 강제로 끌어올림
+            # 타임머신 패치
             if dt_obj.year < current_year:
                 dt_obj = dt_obj.replace(year=current_year)
                 
@@ -98,10 +99,12 @@ async def scrape_site(browser, inst_id, url):
                 raw_title = (await link_el.inner_text()).strip()
                 if len(raw_title) < 5: continue
 
-                # 제목 정리 (대괄호 보존)
                 clean_title = raw_title
-                date_match = re.search(r'(?:(?:20)?\d{2}\s*[-./]\s*)?\d{1,2}\s*[-./]\s*\d{1,2}', clean_title)
-                if date_match and date_match.start() > len(clean_title) / 2:
+                
+                # 🔥 제목에 붙어있는 날짜 꼬리표 깔끔하게 날리기 (ex. 2026-03-11(수) 17:00 ~ ...)
+                date_suffix_pattern = r'\s*\(?(?:(?:20)?\d{2}[-./]\d{1,2}[-./]\d{1,2}).*$'
+                date_match = re.search(date_suffix_pattern, clean_title)
+                if date_match and date_match.start() > 5: # 제목 전체가 지워지는 것 방지
                     clean_title = clean_title[:date_match.start()]
                     
                 clean_title = clean_title.replace('[마감]', '').replace('[새글]', '').replace('새글', '').replace('~', '').strip()
@@ -121,10 +124,11 @@ async def scrape_site(browser, inst_id, url):
                     if not any(k in clean_title for k in valid_keywords):
                         continue
                     
-                # 미수집 제외 키워드
+                # 🔥 미수집 제외 키워드 대폭 강화
                 exclude_words = [
                     "발표", "합격", "면접", "약사", "약무", "의무직", 
-                    "사전공개", "채용계획", "공시송달", "서류전형", "참여기관", "공모"
+                    "사전공개", "채용계획", "공시송달", "서류전형", "참여기관", "공모",
+                    "재직", "상임", "고령", "장애", "보훈", "친인척"
                 ]
                 if any(ex in clean_title for ex in exclude_words): continue
                 
@@ -150,7 +154,6 @@ async def scrape_site(browser, inst_id, url):
                 elif onclick_val:
                     js_code = onclick_val
 
-                # URL 조합 안정화
                 safe_link = url 
                 if inst_id == 'nhis':
                     safe_link = "https://www.nhis.or.kr/nhis/together/wbhaea02700m01.do"
@@ -180,7 +183,7 @@ async def scrape_site(browser, inst_id, url):
                     "raw_href": raw_href,
                     "js_code": js_code,
                     "base_url": safe_link,
-                    "list_url": url # 🔥 본문 진입용 진짜 베이스 URL 저장
+                    "list_url": url 
                 })
             except Exception as e: 
                 print(f"[{inst_id}] Row parse error: {e}")
@@ -194,10 +197,8 @@ async def scrape_site(browser, inst_id, url):
             safe_link = job['base_url'] 
 
             try:
-                # 1. 자바스크립트 코드(건보, 적십자 등) 실행 
                 if js_code:
                     detail_page = await browser.new_page()
-                    # 반드시 목록 페이지에서 JS를 실행해야 오류가 안 남
                     await detail_page.goto(job['list_url'], wait_until="domcontentloaded", timeout=10000)
                     try:
                         async with detail_page.expect_navigation(timeout=5000):
@@ -216,7 +217,6 @@ async def scrape_site(browser, inst_id, url):
                         
                     await detail_page.close()
                 
-                # 2. 일반 링크 본문 진입
                 elif job['raw_href'] and job['raw_href'] != "#" and not job['raw_href'].startswith("javascript"):
                     detail_page = await browser.new_page()
                     await detail_page.goto(safe_link, wait_until="domcontentloaded", timeout=10000)
@@ -262,19 +262,19 @@ async def scrape_site(browser, inst_id, url):
                 elif job['instId'] == "comwel": detected_region = "울산"
                 elif job['instId'] == "mohw": detected_region = "대전충남"
 
-            # 정밀 접수기간 추출
+            # 🔥 기간 탐색 키워드 확대 (지원, 기간, 기한 등 추가)
             start_item = None
             end_item = None
             now_kst = now.replace(tzinfo=None)
             
             lines = combined_text.split('\n')
             for i, line in enumerate(lines):
-                if '접수' in line and any(c in line for c in ['~', '-', '부터', '까지']):
+                if any(k in line for k in ['접수', '지원', '기간', '기한', '모집', '일정']) and any(c in line for c in ['~', '-', '부터', '까지']):
                     context = line
                     if i + 1 < len(lines): context += " " + lines[i+1] 
                     dates = extract_dates(context, now.year)
                     if len(dates) >= 2:
-                        start_item, end_item = dates[0], dates[1]
+                        start_item, end_item = dates[0], dates[-1] # 여러 날짜가 나와도 첫날과 마지막 날만 잡음
                         break
                     elif len(dates) == 1:
                         if any(c in line for c in ['까지', '~', '마감']): end_item = dates[0]
@@ -285,11 +285,11 @@ async def scrape_site(browser, inst_id, url):
                 match = re.search(r'((?:(?:20)?\d{2})\s*[-./]\s*\d{1,2}\s*[-./]\s*\d{1,2}.*?(?:~|-|부터).*?\d{1,2}\s*[-./]\s*\d{1,2}(?:.*?\d{1,2}:\d{2})?)', combined_text.replace('\n', ' '))
                 if match:
                     dates = extract_dates(match.group(1), now.year)
-                    if len(dates) >= 2: start_item, end_item = dates[0], dates[1]
+                    if len(dates) >= 2: start_item, end_item = dates[0], dates[-1]
 
             if not start_item and not end_item:
                 dates = extract_dates(combined_text[:500], now.year)
-                if len(dates) >= 2: start_item, end_item = dates[0], dates[1]
+                if len(dates) >= 2: start_item, end_item = dates[0], dates[-1]
                 elif len(dates) == 1: start_item = dates[0]
 
             if start_item and end_item and start_item['dt'] > end_item['dt']:
@@ -308,7 +308,6 @@ async def scrape_site(browser, inst_id, url):
                 end_str = end_item['dt'].strftime("%y.%m.%d %H:%M")
                 if now_kst > end_item['dt']:
                     status = "마감"
-                    # 삭제 임계값을 90일로 넉넉하게 연장
                     if (now_kst - end_item['dt']).days > 90: is_too_old = True
                     
             if start_item and not end_item:
@@ -316,7 +315,6 @@ async def scrape_site(browser, inst_id, url):
                     status = "마감"
                     is_too_old = True
 
-            # 강제 마감 확인
             if "마감" in job['raw_title'] or "마감" in job['row_html'] or "접수종료" in job['row_html'] or "end" in job['row_html'].lower():
                 status = "마감"
                 if end_item and (now_kst - end_item['dt']).days > 90: is_too_old = True
@@ -387,5 +385,3 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
-
-
