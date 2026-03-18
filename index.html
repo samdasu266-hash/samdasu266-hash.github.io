@@ -69,7 +69,7 @@
         .no-scrollbar::-webkit-scrollbar { display: none; }
     </style>
 </head>
-<body class="bg-slate-50 text-left">
+<body class="bg-slate-50 text-left relative">
 
     <div id="root">
         <div style="display:none;">
@@ -398,6 +398,17 @@
                             <p className="text-[10px] text-slate-300">모든 채용 정보는 실시간 수집 데이터로, 정확한 내용은 반드시 각 기관의 공식 공고문을 확인하시기 바랍니다.</p>
                         </div>
                     </footer>
+
+                    {/* --- AI 탈임상 도우미 챗봇 플로팅 버튼 --- */}
+                    <button 
+                        onClick={() => window.open('https://gemini.google.com/u/1/gem/fc7395093acc', '_blank')}
+                        className="fixed bottom-6 right-6 md:bottom-8 md:right-8 bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-5 py-3.5 rounded-full font-black shadow-2xl hover:shadow-blue-500/30 hover:-translate-y-1 transition-all flex items-center gap-2.5 z-50 border-2 border-white/20 group"
+                        title="AI 탈임상 도우미에게 물어보세요!"
+                    >
+                        <Icon name="bot" className="w-5 h-5 group-hover:animate-bounce" />
+                        <span className="hidden md:inline">탈임상 AI 챗봇</span>
+                        <span className="md:hidden">AI 챗봇</span>
+                    </button>
 
                     {showPrivacy && (
                         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
