@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://samdasu266-hash.github.io/sitemap.xml
