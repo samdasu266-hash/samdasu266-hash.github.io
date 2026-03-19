@@ -399,16 +399,24 @@
                         </div>
                     </footer>
 
-                    {/* --- AI 탈임상 도우미 챗봇 플로팅 버튼 --- */}
-                    <button 
-                        onClick={() => window.open('https://gemini.google.com/gem/1ehAKI98f7tQPD3UjfiEGuL-nXJNPyeSf?usp=sharing', '_blank')}
-                        className="fixed bottom-6 right-6 md:bottom-8 md:right-8 bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-5 py-3.5 rounded-full font-black shadow-2xl hover:shadow-blue-500/30 hover:-translate-y-1 transition-all flex items-center gap-2.5 z-50 border-2 border-white/20 group"
-                        title="AI 탈임상 도우미에게 물어보세요!"
-                    >
-                        <Icon name="bot" className="w-5 h-5 group-hover:animate-bounce" />
-                        <span className="hidden md:inline">탈임상 AI 챗봇</span>
-                        <span className="md:hidden">AI 챗봇</span>
-                    </button>
+                    {/* --- AI 탈임상 도우미 챗봇 플로팅 버튼 영역 --- */}
+                    <div className="fixed bottom-6 right-6 md:bottom-8 md:right-8 z-50 flex flex-col items-end animate-in fade-in duration-500">
+                        {/* 말풍선 안내창 */}
+                        <div className="bg-slate-800 text-white text-[11px] font-bold px-3.5 py-2 rounded-xl shadow-lg mb-3 relative animate-bounce">
+                            ※ 구글 로그인이 필요해요!
+                            <div className="absolute -bottom-1.5 right-6 w-3 h-3 bg-slate-800 rotate-45"></div>
+                        </div>
+                        {/* 챗봇 버튼 */}
+                        <button 
+                            onClick={() => window.open('https://gemini.google.com/gem/1ehAKI98f7tQPD3UjfiEGuL-nXJNPyeSf?usp=sharing', '_blank')}
+                            className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-5 py-3.5 rounded-full font-black shadow-2xl hover:shadow-blue-500/30 hover:-translate-y-1 transition-all flex items-center gap-2.5 border-2 border-white/20 group"
+                            title="AI 탈임상 도우미에게 물어보세요!"
+                        >
+                            <Icon name="bot" className="w-5 h-5 group-hover:animate-bounce" />
+                            <span className="hidden md:inline">탈임상 AI 챗봇</span>
+                            <span className="md:hidden">AI 챗봇</span>
+                        </button>
+                    </div>
 
                     {showPrivacy && (
                         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
