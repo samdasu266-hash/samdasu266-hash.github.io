@@ -118,11 +118,12 @@ async def scrape_site(browser, inst_id, url):
                         if b_name not in clean_title:
                             clean_title = f"[{b_name}] {clean_title}"
 
-                # 필터링 완화
-                if inst_id not in ['redcross', 'neca', 'mohw']:
-                    valid_keywords = ["채용", "공고", "모집", "선발", "정규직", "계약직", "무기계약직", "간호사", "보조원", "행정", "촉탁직", "기간제", "연구원"]
-                    if not any(k in clean_title for k in valid_keywords):
-                        continue
+
+                if inst_id not in ['redcross', 'neca']:  # mohw 제거
+                  valid_keywords = ["채용", "공고", "모집", "선발", "정규직", "계약직", "무기계약직", "간호사", "보조원", "행정", "촉탁직", "기간제", "연구원"]
+                if not any(k in clean_title for k in valid_keywords):
+                   continue
+               
                     
                 # 🔥 미수집 제외 키워드 대폭 강화
                 exclude_words = [
