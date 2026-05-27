@@ -110,12 +110,14 @@ async def scrape_site(browser, inst_id, url):
                 clean_title = clean_title.replace('[마감]', '').replace('[새글]', '').replace('새글', '').replace('~', '').strip()
                 clean_title = re.sub(r'\s+', ' ', clean_title)
 
+                # 적십자사: 본문에 있는 소속기관명 낚아채기
                 if inst_id == 'redcross':
                     branch_match = re.search(r'([가-힣]+(?:적십자병원|혈액원|혈액검사센터|지역본부|지사|본부|센터))', row_text)
                     if branch_match:
                         b_name = branch_match.group(1)
                         if b_name not in clean_title:
                             clean_title = f"[{b_name}] {clean_title}"
+
 
                 if inst_id == 'mohw':
                     mohw_keywords = ["채용", "모집", "선발", "공무직", "기간제"]
@@ -130,9 +132,12 @@ async def scrape_site(browser, inst_id, url):
                     
                 # 🔥 미수집 제외 키워드 대폭 강화
                 exclude_words = [
-                        "발표", "합격", "면접", "약사", "약무", "의무직", "사전공개", "채용계획", "공시송달", "서류전형", "참여기관", "공모",
-                        "재직", "상임", "고령", "장애", "보훈", "친인척", "계획 공고", "실습 인정", "교육훈련기관", "법률 공고", "등록폐지", "윤리위원회", "기준보험료", "심사위원", "변호사"
-                 ]
+                    "발표", "합격", "면접", "약사", "약무", "의무직",
+                    "사전공개", "채용계획", "공시송달", "서류전형", "참여기관", "공모",
+                    "재직", "상임", "고령", "장애", "보훈", "친인척",
+                    "계획 공고", "실습 인정", "교육훈련기관",
+                    "등록폐지", "윤리위원회", "기준보험료", "심사위원", "변호사"
+                ]
                 if any(ex in clean_title for ex in exclude_words): continue
                 
                 # 의사/전문의 정밀 제외
