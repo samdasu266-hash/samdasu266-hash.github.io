@@ -110,7 +110,6 @@ async def scrape_site(browser, inst_id, url):
                 clean_title = clean_title.replace('[마감]', '').replace('[새글]', '').replace('새글', '').replace('~', '').strip()
                 clean_title = re.sub(r'\s+', ' ', clean_title)
 
-                # 적십자사: 본문에 있는 소속기관명 낚아채기
                 if inst_id == 'redcross':
                     branch_match = re.search(r'([가-힣]+(?:적십자병원|혈액원|혈액검사센터|지역본부|지사|본부|센터))', row_text)
                     if branch_match:
@@ -118,18 +117,16 @@ async def scrape_site(browser, inst_id, url):
                         if b_name not in clean_title:
                             clean_title = f"[{b_name}] {clean_title}"
 
-
-if inst_id == 'mohw':
-    # 보건복지부는 "채용" 또는 "모집"만 허용 (공고 제외)
-    mohw_keywords = ["채용", "모집", "선발", "공무직", "기간제"]
-    if not any(k in clean_title for k in mohw_keywords):
-        continue
-elif inst_id not in ['redcross', 'neca']:
-    valid_keywords = ["채용", "공고", "모집", "선발", "정규직",
-                      "계약직", "무기계약직", "간호사", "보조원",
-                      "행정", "촉탁직", "기간제", "연구원"]
-    if not any(k in clean_title for k in valid_keywords):
-        continue
+                if inst_id == 'mohw':
+                    mohw_keywords = ["채용", "모집", "선발", "공무직", "기간제"]
+                    if not any(k in clean_title for k in mohw_keywords):
+                        continue
+                elif inst_id not in ['redcross', 'neca']:
+                    valid_keywords = ["채용", "공고", "모집", "선발", "정규직",
+                                      "계약직", "무기계약직", "간호사", "보조원",
+                                      "행정", "촉탁직", "기간제", "연구원"]
+                    if not any(k in clean_title for k in valid_keywords):
+                        continue
                     
                 # 🔥 미수집 제외 키워드 대폭 강화
                 exclude_words = [
