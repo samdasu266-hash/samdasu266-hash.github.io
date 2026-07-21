@@ -4,25 +4,10 @@ import asyncio
 import re
 from datetime import datetime, timedelta, timezone
 from urllib.parse import urljoin
-import firebase_admin
-from firebase_admin import credentials
-from firebase_admin import firestore
 from playwright.async_api import async_playwright
 
-# 1. Firebase 인증
-firebase_json = os.environ.get('FIREBASE_CONFIG_JSON')
-if not firebase_json:
-    print("Error: FIREBASE_CONFIG_JSON 설정 없음")
-    exit(1)
-
-cred_dict = json.loads(firebase_json)
-cred = credentials.Certificate(cred_dict)
-
-if not firebase_admin._apps:
-    firebase_admin.initialize_app(cred)
-
-db = firestore.client()
-APP_ID = "recruitment-portal-v3"
+# 수집 결과는 저장소의 jobs.json에 저장하고, 커밋되면 GitHub Pages가 서빙한다
+JOBS_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "jobs.json")
 KST = timezone(timedelta(hours=9))
 
 def extract_dates(text, current_year):
@@ -422,13 +407,15 @@ async def main():
             print("모든 사이트 수집 실패 - 기존 데이터를 유지합니다.")
             return
 
-        # 수집에 성공한 기관의 문서만 교체하고, 실패한 기관의 기존 공고는 보존
-        batch = db.batch()
-        jobs_path = db.collection('artifacts').document(APP_ID).collection('public').document('data').collection('jobs')
-
-        for doc in jobs_path.get():
-            if doc.to_dict().get('instId') in succeeded:
-                batch.delete(doc.reference)
+        # 수집에 실패한 기관은 기존 jobs.json의 데이터를 보존
+        try:
+            with open(JOBS_FILE, encoding="utf-8") as f:
+                old_jobs = json.load(f).get("jobs", [])
+        except Exception:
+            old_jobs = []
+        for job in old_jobs:
+            if job.get("instId") not in succeeded:
+                all_jobs.append(job)
 
         # 같은 기관을 여러 사이트에서 수집하는 경우(적십자사 본사 + 혈액관리본부) 중복 제거
         deduped_jobs = []
@@ -441,16 +428,10 @@ async def main():
             deduped_jobs.append(job)
         all_jobs = deduped_jobs
 
-        counters = {}
-        for job in all_jobs:
-            n = counters.get(job['instId'], 0)
-            counters[job['instId']] = n + 1
-            batch.set(jobs_path.document(f"{job['instId']}_{n}"), job)
-
-        meta_ref = db.collection('artifacts').document(APP_ID).collection('public').document('data').collection('metadata').document('sync')
-        batch.set(meta_ref, {"lastSync": datetime.now(KST).isoformat()})
-        batch.commit()
-        print(f"🚀 성공: {len(succeeded)}개 기관에서 {len(all_jobs)}개의 공고 저장 완료!")
+        payload = {"lastSync": datetime.now(KST).isoformat(), "jobs": all_jobs}
+        with open(JOBS_FILE, "w", encoding="utf-8") as f:
+            json.dump(payload, f, ensure_ascii=False, indent=1)
+        print(f"🚀 성공: {len(succeeded)}개 기관, 총 {len(all_jobs)}개의 공고를 jobs.json에 저장!")
 
 if __name__ == "__main__":
     asyncio.run(main())
