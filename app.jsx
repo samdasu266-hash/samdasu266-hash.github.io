@@ -7,6 +7,31 @@ const Icon = ({ name, className = "w-5 h-5" }) => {
 
 const REQUEST_FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLSe8gTQy9ECOAzh-Qw33t_SeHqmwXZRm-WIu1qXOO1qOcsYsTQ/viewform";
 
+// 가로 스크롤 필터 줄: 오른쪽에 더 있을 때만 그라데이션+화살표 힌트를 보여준다
+const ScrollRow = ({ children }) => {
+    const ref = React.useRef(null);
+    const [more, setMore] = useState(false);
+    const check = () => {
+        const el = ref.current;
+        if (el) setMore(el.scrollWidth - el.clientWidth - el.scrollLeft > 8);
+    };
+    useEffect(() => {
+        check();
+        window.addEventListener('resize', check);
+        return () => window.removeEventListener('resize', check);
+    }, []);
+    return (
+        <div className="relative">
+            <div ref={ref} onScroll={check} className="flex items-center gap-2 overflow-x-auto filter-scroll-container pb-2">
+                {children}
+            </div>
+            <div className={`pointer-events-none absolute right-0 top-0 bottom-2 w-10 bg-gradient-to-l from-white to-transparent flex items-center justify-end pr-0.5 transition-opacity ${more ? 'opacity-100' : 'opacity-0'}`}>
+                <Icon name="chevron-right" className="w-4 h-4 text-slate-400 animate-pulse" />
+            </div>
+        </div>
+    );
+};
+
 // "26.03.11" 또는 "26.03.11 18:00" 형식 파싱 (그 외 형식은 null)
 const parseDotDate = (s) => {
     if (!s) return null;
@@ -21,9 +46,10 @@ const App = () => {
     const [jobs, setJobs] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
-    const [activeTab, setActiveTab] = useState('all');
-    const [activeJobType, setActiveJobType] = useState('all'); 
-    const [activeRegion, setActiveRegion] = useState('all'); 
+    const [activeTabs, setActiveTabs] = useState([]);       // [] = 전체
+    const [activeJobTypes, setActiveJobTypes] = useState([]);
+    const [activeRegions, setActiveRegions] = useState([]);
+    const [sortBy, setSortBy] = useState('latest'); // 'latest' | 'deadline'
     const [lastSync, setLastSync] = useState(null);
     const [mainView, setMainView] = useState('jobs'); 
     const [showPrivacy, setShowPrivacy] = useState(false);
@@ -61,43 +87,77 @@ const App = () => {
     }, []);
 
     const filteredJobs = useMemo(() => {
-        return jobs.filter(job => {
+        let result = jobs.filter(job => {
             // 마감되었거나 접수기한이 지난 공고는 화면에서 숨김
             if (job.status === '마감') return false;
             const endDt = parseDotDate(job.endDate);
             if (endDt && endDt < new Date()) return false;
 
             const matchesSearch = job.title?.toLowerCase().includes(searchTerm.toLowerCase());
-            const matchesInst = activeTab === 'all' || job.instId === activeTab;
-            
+            const matchesInst = activeTabs.length === 0 || activeTabs.includes(job.instId);
+
             const actualJobType = job.jobType || "정규직";
-            let matchesType = false;
-            if (activeJobType === 'all') {
-                matchesType = true;
-            } else if (activeJobType === '계약직') {
-                matchesType = actualJobType.includes('계약직') || actualJobType.includes('기간제');
-            } else {
-                matchesType = actualJobType.includes(activeJobType);
-            }
+            const matchesType = activeJobTypes.length === 0 || activeJobTypes.some(t => matchType(t, actualJobType));
 
             const actualRegion = job.region || "전국";
-            let matchesRegion = false;
-            if (activeRegion === 'all') {
-                matchesRegion = true;
-            } else if (activeRegion === '경인') {
-                matchesRegion = actualRegion.includes('경기') || actualRegion.includes('인천');
-            } else if (activeRegion === '대전충남') {
-                matchesRegion = actualRegion.includes('대전') || actualRegion.includes('세종') || actualRegion.includes('충남') || actualRegion.includes('대전충남');
-            } else {
-                matchesRegion = actualRegion.includes(activeRegion);
-            }
+            const matchesRegion = activeRegions.length === 0 || activeRegions.some(r => matchRegion(r, actualRegion));
 
             return matchesSearch && matchesInst && matchesType && matchesRegion;
         });
-    }, [jobs, searchTerm, activeTab, activeJobType, activeRegion]);
+        if (sortBy === 'deadline') {
+            result = [...result].sort((a, b) => {
+                const da = parseDotDate(a.endDate);
+                const db = parseDotDate(b.endDate);
+                if (!da && !db) return 0;
+                if (!da) return 1;   // 마감일 미상은 뒤로
+                if (!db) return -1;
+                return da - db;
+            });
+        }
+        return result;
+    }, [jobs, searchTerm, activeTabs, activeJobTypes, activeRegions, sortBy]);
 
-    const formatDate = (d) => d ? `${d.getFullYear()}년 ${d.getMonth()+1}월 ${d.getDate()}일` : '확인 중...';
-    const formatTime = (d) => d ? `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}` : '';
+    // 다중 선택 토글: 'all'을 누르면 전체(빈 배열)로 초기화, 그 외에는 켜고 끄기
+    const toggleFilter = (setter, value) => {
+        if (value === 'all') { setter([]); return; }
+        setter(prev => prev.includes(value) ? prev.filter(v => v !== value) : [...prev, value]);
+    };
+    const matchType = (sel, actual) => sel === '계약직'
+        ? (actual.includes('계약직') || actual.includes('기간제'))
+        : actual.includes(sel);
+    const matchRegion = (sel, actual) => {
+        if (sel === '경인') return actual.includes('경기') || actual.includes('인천');
+        if (sel === '대전충남') return actual.includes('대전') || actual.includes('세종') || actual.includes('충남');
+        return actual.includes(sel);
+    };
+
+    // 수집 시각은 항상 한국 표준시(KST)로 표기
+    const formatDate = (d) => d ? d.toLocaleDateString('ko-KR', { timeZone: 'Asia/Seoul', year: 'numeric', month: 'long', day: 'numeric' }) : '확인 중...';
+    const formatTime = (d) => d ? d.toLocaleTimeString('ko-KR', { timeZone: 'Asia/Seoul', hour: '2-digit', minute: '2-digit', hour12: false }) : '';
+
+    // 접수 시작일이 오늘 포함 2일 이내면 NEW 배지 (날짜 단위 비교)
+    const isNew = (job) => {
+        const start = parseDotDate(job.startDate);
+        if (!start) return false;
+        const s = new Date(start); s.setHours(0, 0, 0, 0);
+        const today = new Date(); today.setHours(0, 0, 0, 0);
+        const diffDays = Math.round((today - s) / 86400000);
+        return diffDays >= 0 && diffDays <= 2;
+    };
+
+    // 마감까지 남은 날짜 (7일 이내만 배지로 표시)
+    const getDday = (job) => {
+        const end = parseDotDate(job.endDate);
+        if (!end) return null;
+        const today = new Date(); today.setHours(0, 0, 0, 0);
+        const endDay = new Date(end); endDay.setHours(0, 0, 0, 0);
+        const diff = Math.round((endDay - today) / 86400000);
+        if (diff < 0) return null;
+        if (diff === 0) return { label: '오늘 마감', urgent: true };
+        if (diff <= 3) return { label: `마감 D-${diff}`, urgent: true };
+        if (diff <= 7) return { label: `마감 D-${diff}`, urgent: false };
+        return null;
+    };
 
     return (
         <div className="max-w-5xl mx-auto p-4 md:p-8 flex flex-col min-h-[100dvh]">
@@ -116,7 +176,7 @@ const App = () => {
                 <div className="flex flex-wrap gap-2">
                     <span className="bg-blue-600 text-white px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider">1시간 주기 자동 업데이트</span>
                     <span className="bg-white border border-slate-200 text-slate-600 px-2.5 py-0.5 rounded-full text-[10px] font-bold shadow-sm flex items-center gap-1"><Icon name="calendar" className="w-3 h-3 text-blue-500" /> 기준일자: {formatDate(lastSync)}</span>
-                    <span className="bg-white border border-slate-200 text-slate-500 px-2.5 py-0.5 rounded-full text-[10px] font-bold shadow-sm flex items-center gap-1"><Icon name="clock" className="w-3 h-3" /> 최근 수집: {formatTime(lastSync)}</span>
+                    <span className="bg-white border border-slate-200 text-slate-500 px-2.5 py-0.5 rounded-full text-[10px] font-bold shadow-sm flex items-center gap-1"><Icon name="clock" className="w-3 h-3" /> 최근 수집: {formatTime(lastSync)} KST</span>
                     <a href={REQUEST_FORM_URL} target="_blank" rel="noopener noreferrer" className="bg-white border border-blue-200 text-blue-600 px-2.5 py-0.5 rounded-full text-[10px] font-bold shadow-sm flex items-center gap-1 hover:bg-blue-50 transition-colors"><Icon name="plus-circle" className="w-3 h-3" /> 기관 추가 요청</a>
                 </div>
                 <h1 className="text-2xl md:text-3xl font-black text-slate-900 leading-tight">
@@ -126,7 +186,7 @@ const App = () => {
 
             {mainView === 'jobs' ? (
                 <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 md:gap-8">
-                    <aside className="lg:col-span-1 space-y-6">
+                    <aside className="lg:col-span-1 space-y-6 order-2 lg:order-1">
                         <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm text-left">
                             <h2 className="text-[11px] font-black text-slate-400 uppercase mb-4 tracking-widest flex items-center gap-1">
                                 <Icon name="link" className="w-3 h-3" /> 기관별 채용 사이트
@@ -150,7 +210,7 @@ const App = () => {
                         </div>
                     </aside>
                     
-                    <main className="lg:col-span-3 space-y-6">
+                    <main className="lg:col-span-3 space-y-6 order-1 lg:order-2">
                         <div className="bg-white p-4 md:p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col gap-4">
                             <div className="relative">
                                 <Icon name="search" className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
@@ -158,33 +218,42 @@ const App = () => {
                             </div>
 
                             <div className="flex flex-col gap-3">
-                                <div className="flex items-center gap-2 overflow-x-auto filter-scroll-container pb-2">
+                                <p className="text-[10.5px] text-slate-400 font-medium flex items-center gap-1 -mb-1"><Icon name="mouse-pointer-click" className="w-3 h-3" /> 여러 개를 선택하면 함께 볼 수 있어요</p>
+                                <ScrollRow>
                                     <span className="text-[11px] font-black text-slate-400 uppercase tracking-widest mr-1 shrink-0 flex items-center gap-1 w-12"><Icon name="building" className="w-3 h-3"/> 기관</span>
-                                    <button onClick={() => setActiveTab('all')} className={`flex-shrink-0 px-3.5 py-1.5 rounded-lg text-xs font-bold border transition-all ${activeTab === 'all' ? 'bg-slate-900 text-white border-slate-900 shadow-md' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50 hover:text-slate-800'}`}>전체</button>
+                                    <button onClick={() => toggleFilter(setActiveTabs, 'all')} className={`flex-shrink-0 px-3.5 py-1.5 rounded-lg text-xs font-bold border transition-all ${activeTabs.length === 0 ? 'bg-slate-900 text-white border-slate-900 shadow-md' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50 hover:text-slate-800'}`}>전체</button>
                                     {institutions.map(inst => (
-                                        <button key={inst.id} onClick={() => setActiveTab(inst.id)} className={`flex-shrink-0 px-3.5 py-1.5 rounded-lg text-xs font-bold border transition-all ${activeTab === inst.id ? 'bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-100' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50 hover:text-blue-600'}`}>
+                                        <button key={inst.id} onClick={() => toggleFilter(setActiveTabs, inst.id)} className={`flex-shrink-0 px-3.5 py-1.5 rounded-lg text-xs font-bold border transition-all ${activeTabs.includes(inst.id) ? 'bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-100' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50 hover:text-blue-600'}`}>
                                             {inst.shortName}
                                         </button>
                                     ))}
-                                </div>
+                                </ScrollRow>
 
-                                <div className="flex items-center gap-2 overflow-x-auto filter-scroll-container pb-2">
+                                <ScrollRow>
                                     <span className="text-[11px] font-black text-slate-400 uppercase tracking-widest mr-1 shrink-0 flex items-center gap-1 w-12"><Icon name="briefcase" className="w-3 h-3"/> 계약</span>
                                     {[ { id: 'all', label: '전체' }, { id: '정규직', label: '정규직' }, { id: '무기계약직', label: '무기계약직' }, { id: '계약직', label: '계약직/기간제' }, { id: '비정규직', label: '비정규직' }, { id: '인턴', label: '체험형 인턴' }].map(type => (
-                                        <button key={type.id} onClick={() => setActiveJobType(type.id)} className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-[11.5px] font-bold border transition-all ${activeJobType === type.id ? 'bg-purple-600 text-white border-purple-600 shadow-md shadow-purple-100' : 'bg-white text-slate-500 border-slate-200 hover:bg-purple-50 hover:text-purple-700 hover:border-purple-200'}`}>
+                                        <button key={type.id} onClick={() => toggleFilter(setActiveJobTypes, type.id)} className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-[11.5px] font-bold border transition-all ${(type.id === 'all' ? activeJobTypes.length === 0 : activeJobTypes.includes(type.id)) ? 'bg-purple-600 text-white border-purple-600 shadow-md shadow-purple-100' : 'bg-white text-slate-500 border-slate-200 hover:bg-purple-50 hover:text-purple-700 hover:border-purple-200'}`}>
                                             {type.label}
                                         </button>
                                     ))}
-                                </div>
+                                </ScrollRow>
 
-                                <div className="flex items-center gap-2 overflow-x-auto filter-scroll-container pb-2">
+                                <ScrollRow>
                                     <span className="text-[11px] font-black text-slate-400 uppercase tracking-widest mr-1 shrink-0 flex items-center gap-1 w-12"><Icon name="map-pin" className="w-3 h-3"/> 지역</span>
                                     {[ { id: 'all', label: '전체' }, { id: '전국', label: '전국' }, { id: '서울', label: '서울' }, { id: '경인', label: '경기·인천' }, { id: '강원', label: '강원' }, { id: '대전충남', label: '대전·세종·충남' }, { id: '충북', label: '충북' }, { id: '광주', label: '광주' }, { id: '전북', label: '전북' }, { id: '전남', label: '전남' }, { id: '부산', label: '부산' }, { id: '대구', label: '대구' }, { id: '울산', label: '울산' }, { id: '경북', label: '경북' }, { id: '경남', label: '경남' }, { id: '제주', label: '제주' } ].map(reg => (
-                                        <button key={reg.id} onClick={() => setActiveRegion(reg.id)} className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-[11.5px] font-bold border transition-all ${activeRegion === reg.id ? 'bg-emerald-600 text-white border-emerald-600 shadow-md shadow-emerald-100' : 'bg-white text-slate-500 border-slate-200 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-200'}`}>
+                                        <button key={reg.id} onClick={() => toggleFilter(setActiveRegions, reg.id)} className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-[11.5px] font-bold border transition-all ${(reg.id === 'all' ? activeRegions.length === 0 : activeRegions.includes(reg.id)) ? 'bg-emerald-600 text-white border-emerald-600 shadow-md shadow-emerald-100' : 'bg-white text-slate-500 border-slate-200 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-200'}`}>
                                             {reg.label}
                                         </button>
                                     ))}
-                                </div>
+                                </ScrollRow>
+                            </div>
+                        </div>
+
+                        <div className="flex items-center justify-between px-1">
+                            <p className="text-xs font-bold text-slate-500">진행중 공고 <span className="text-blue-600">{filteredJobs.length}</span>건</p>
+                            <div className="flex gap-1">
+                                <button onClick={() => setSortBy('latest')} className={`px-3 py-1.5 rounded-lg text-[11px] font-bold border transition-all ${sortBy === 'latest' ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'}`}>최신순</button>
+                                <button onClick={() => setSortBy('deadline')} className={`px-3 py-1.5 rounded-lg text-[11px] font-bold border transition-all ${sortBy === 'deadline' ? 'bg-red-500 text-white border-red-500' : 'bg-white text-slate-500 border-slate-200 hover:bg-red-50 hover:text-red-500'}`}>마감임박순</button>
                             </div>
                         </div>
 
@@ -194,10 +263,13 @@ const App = () => {
                                     filteredJobs.map(job => {
                                         const instInfo = institutions.find(i => i.id === job.instId) || { shortName: (job.instId || '').toUpperCase() };
                                         const isClosed = job.status === '마감';
+                                        const dday = getDday(job);
                                         return (
-                                            <div key={job.id} className="job-card bg-white p-5 md:p-6 rounded-2xl border border-slate-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 text-left">
+                                            <a key={job.id} href={job.link || '#'} target="_blank" rel="noopener noreferrer" aria-label={`${instInfo.shortName} ${job.title} 공고 보기`} className="job-card group block bg-white p-5 md:p-6 rounded-2xl border border-slate-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 text-left focus:outline-none focus:ring-2 focus:ring-blue-500">
                                                 <div className="flex-1">
                                                     <div className="flex gap-1.5 mb-2 flex-wrap">
+                                                        {isNew(job) && <span className="text-[10px] font-black px-2 py-0.5 rounded bg-emerald-500 text-white">NEW</span>}
+                                                        {dday && <span className={`text-[10px] font-black px-2 py-0.5 rounded ${dday.urgent ? 'bg-red-500 text-white' : 'bg-orange-100 text-orange-600 border border-orange-200'}`}>{dday.label}</span>}
                                                         <span className="text-[10px] font-black px-2 py-0.5 bg-slate-100 rounded text-slate-500 uppercase tracking-tight">{instInfo.shortName}</span>
                                                         <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${isClosed ? 'text-red-600 bg-red-50 border-red-100' : 'text-blue-600 bg-blue-50 border-blue-100'}`}>{isClosed ? '서류접수마감' : '채용진행중'}</span>
                                                         <span className="text-[10px] font-bold px-2 py-0.5 rounded border text-purple-600 bg-purple-50 border-purple-100">{job.jobType || "정규직"}</span>
@@ -208,15 +280,15 @@ const App = () => {
                                                     <h3 className={`text-[16px] md:text-[17px] font-bold text-slate-800 mb-2 leading-snug break-keep`}>{job.title}</h3>
                                                     <p className="text-[11px] font-bold text-slate-400 flex items-center gap-1"><Icon name="calendar" className="w-3 h-3" /> 접수기간: {job.startDate} ~ <span className={isClosed ? 'text-slate-300' : 'text-red-400'}>{job.endDate}</span></p>
                                                 </div>
-                                                <button onClick={() => window.open(job.link, '_blank')} className={`w-full md:w-auto px-7 py-2.5 rounded-xl font-bold text-xs shadow-sm transition-all ${isClosed ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-slate-900 text-white hover:bg-blue-600'}`}>{isClosed ? '모집종료' : '지원하기'}</button>
-                                            </div>
+                                                <span className={`w-full md:w-auto px-7 py-2.5 rounded-xl font-bold text-xs shadow-sm transition-all text-center ${isClosed ? 'bg-slate-100 text-slate-400' : 'bg-slate-900 text-white group-hover:bg-blue-600'}`}>{isClosed ? '모집종료' : '지원하기 →'}</span>
+                                            </a>
                                         );
                                     })
                                 ) : (
                                     <div className="py-20 text-center bg-white rounded-3xl border border-dashed border-slate-200 flex flex-col items-center justify-center gap-3">
                                         <Icon name="search-x" className="w-10 h-10 text-slate-300" />
                                         <p className="text-slate-400 text-sm font-bold">현재 필터 조건에 맞는 공고가 없습니다.</p>
-                                        <button onClick={() => { setActiveTab('all'); setActiveJobType('all'); setActiveRegion('all'); setSearchTerm(''); }} className="mt-2 text-[11px] text-blue-600 font-bold hover:underline">필터 전체 초기화</button>
+                                        <button onClick={() => { setActiveTabs([]); setActiveJobTypes([]); setActiveRegions([]); setSearchTerm(''); }} className="mt-2 text-[11px] text-blue-600 font-bold hover:underline">필터 전체 초기화</button>
                                     </div>
                                 )
                             }

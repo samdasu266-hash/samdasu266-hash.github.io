@@ -17,6 +17,35 @@ const Icon = ({
 };
 const REQUEST_FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLSe8gTQy9ECOAzh-Qw33t_SeHqmwXZRm-WIu1qXOO1qOcsYsTQ/viewform";
 
+// 가로 스크롤 필터 줄: 오른쪽에 더 있을 때만 그라데이션+화살표 힌트를 보여준다
+const ScrollRow = ({
+  children
+}) => {
+  const ref = React.useRef(null);
+  const [more, setMore] = useState(false);
+  const check = () => {
+    const el = ref.current;
+    if (el) setMore(el.scrollWidth - el.clientWidth - el.scrollLeft > 8);
+  };
+  useEffect(() => {
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
+  return /*#__PURE__*/React.createElement("div", {
+    className: "relative"
+  }, /*#__PURE__*/React.createElement("div", {
+    ref: ref,
+    onScroll: check,
+    className: "flex items-center gap-2 overflow-x-auto filter-scroll-container pb-2"
+  }, children), /*#__PURE__*/React.createElement("div", {
+    className: `pointer-events-none absolute right-0 top-0 bottom-2 w-10 bg-gradient-to-l from-white to-transparent flex items-center justify-end pr-0.5 transition-opacity ${more ? 'opacity-100' : 'opacity-0'}`
+  }, /*#__PURE__*/React.createElement(Icon, {
+    name: "chevron-right",
+    className: "w-4 h-4 text-slate-400 animate-pulse"
+  })));
+};
+
 // "26.03.11" 또는 "26.03.11 18:00" 형식 파싱 (그 외 형식은 null)
 const parseDotDate = s => {
   if (!s) return null;
@@ -30,9 +59,10 @@ const App = () => {
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [activeTab, setActiveTab] = useState('all');
-  const [activeJobType, setActiveJobType] = useState('all');
-  const [activeRegion, setActiveRegion] = useState('all');
+  const [activeTabs, setActiveTabs] = useState([]); // [] = 전체
+  const [activeJobTypes, setActiveJobTypes] = useState([]);
+  const [activeRegions, setActiveRegions] = useState([]);
+  const [sortBy, setSortBy] = useState('latest'); // 'latest' | 'deadline'
   const [lastSync, setLastSync] = useState(null);
   const [mainView, setMainView] = useState('jobs');
   const [showPrivacy, setShowPrivacy] = useState(false);
@@ -170,38 +200,97 @@ const App = () => {
     return () => clearInterval(timer);
   }, []);
   const filteredJobs = useMemo(() => {
-    return jobs.filter(job => {
+    let result = jobs.filter(job => {
       // 마감되었거나 접수기한이 지난 공고는 화면에서 숨김
       if (job.status === '마감') return false;
       const endDt = parseDotDate(job.endDate);
       if (endDt && endDt < new Date()) return false;
       const matchesSearch = job.title?.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesInst = activeTab === 'all' || job.instId === activeTab;
+      const matchesInst = activeTabs.length === 0 || activeTabs.includes(job.instId);
       const actualJobType = job.jobType || "정규직";
-      let matchesType = false;
-      if (activeJobType === 'all') {
-        matchesType = true;
-      } else if (activeJobType === '계약직') {
-        matchesType = actualJobType.includes('계약직') || actualJobType.includes('기간제');
-      } else {
-        matchesType = actualJobType.includes(activeJobType);
-      }
+      const matchesType = activeJobTypes.length === 0 || activeJobTypes.some(t => matchType(t, actualJobType));
       const actualRegion = job.region || "전국";
-      let matchesRegion = false;
-      if (activeRegion === 'all') {
-        matchesRegion = true;
-      } else if (activeRegion === '경인') {
-        matchesRegion = actualRegion.includes('경기') || actualRegion.includes('인천');
-      } else if (activeRegion === '대전충남') {
-        matchesRegion = actualRegion.includes('대전') || actualRegion.includes('세종') || actualRegion.includes('충남') || actualRegion.includes('대전충남');
-      } else {
-        matchesRegion = actualRegion.includes(activeRegion);
-      }
+      const matchesRegion = activeRegions.length === 0 || activeRegions.some(r => matchRegion(r, actualRegion));
       return matchesSearch && matchesInst && matchesType && matchesRegion;
     });
-  }, [jobs, searchTerm, activeTab, activeJobType, activeRegion]);
-  const formatDate = d => d ? `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일` : '확인 중...';
-  const formatTime = d => d ? `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}` : '';
+    if (sortBy === 'deadline') {
+      result = [...result].sort((a, b) => {
+        const da = parseDotDate(a.endDate);
+        const db = parseDotDate(b.endDate);
+        if (!da && !db) return 0;
+        if (!da) return 1; // 마감일 미상은 뒤로
+        if (!db) return -1;
+        return da - db;
+      });
+    }
+    return result;
+  }, [jobs, searchTerm, activeTabs, activeJobTypes, activeRegions, sortBy]);
+
+  // 다중 선택 토글: 'all'을 누르면 전체(빈 배열)로 초기화, 그 외에는 켜고 끄기
+  const toggleFilter = (setter, value) => {
+    if (value === 'all') {
+      setter([]);
+      return;
+    }
+    setter(prev => prev.includes(value) ? prev.filter(v => v !== value) : [...prev, value]);
+  };
+  const matchType = (sel, actual) => sel === '계약직' ? actual.includes('계약직') || actual.includes('기간제') : actual.includes(sel);
+  const matchRegion = (sel, actual) => {
+    if (sel === '경인') return actual.includes('경기') || actual.includes('인천');
+    if (sel === '대전충남') return actual.includes('대전') || actual.includes('세종') || actual.includes('충남');
+    return actual.includes(sel);
+  };
+
+  // 수집 시각은 항상 한국 표준시(KST)로 표기
+  const formatDate = d => d ? d.toLocaleDateString('ko-KR', {
+    timeZone: 'Asia/Seoul',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  }) : '확인 중...';
+  const formatTime = d => d ? d.toLocaleTimeString('ko-KR', {
+    timeZone: 'Asia/Seoul',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false
+  }) : '';
+
+  // 접수 시작일이 오늘 포함 2일 이내면 NEW 배지 (날짜 단위 비교)
+  const isNew = job => {
+    const start = parseDotDate(job.startDate);
+    if (!start) return false;
+    const s = new Date(start);
+    s.setHours(0, 0, 0, 0);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const diffDays = Math.round((today - s) / 86400000);
+    return diffDays >= 0 && diffDays <= 2;
+  };
+
+  // 마감까지 남은 날짜 (7일 이내만 배지로 표시)
+  const getDday = job => {
+    const end = parseDotDate(job.endDate);
+    if (!end) return null;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const endDay = new Date(end);
+    endDay.setHours(0, 0, 0, 0);
+    const diff = Math.round((endDay - today) / 86400000);
+    if (diff < 0) return null;
+    if (diff === 0) return {
+      label: '오늘 마감',
+      urgent: true
+    };
+    if (diff <= 3) return {
+      label: `마감 D-${diff}`,
+      urgent: true
+    };
+    if (diff <= 7) return {
+      label: `마감 D-${diff}`,
+      urgent: false
+    };
+    return null;
+  };
   return /*#__PURE__*/React.createElement("div", {
     className: "max-w-5xl mx-auto p-4 md:p-8 flex flex-col min-h-[100dvh]"
   }, /*#__PURE__*/React.createElement("nav", {
@@ -242,7 +331,7 @@ const App = () => {
   }, /*#__PURE__*/React.createElement(Icon, {
     name: "clock",
     className: "w-3 h-3"
-  }), " 최근 수집: ", formatTime(lastSync)), /*#__PURE__*/React.createElement("a", {
+  }), " 최근 수집: ", formatTime(lastSync), " KST"), /*#__PURE__*/React.createElement("a", {
     href: REQUEST_FORM_URL,
     target: "_blank",
     rel: "noopener noreferrer",
@@ -257,7 +346,7 @@ const App = () => {
   }, "채용 통합 포털"))), mainView === 'jobs' ? /*#__PURE__*/React.createElement("div", {
     className: "grid grid-cols-1 lg:grid-cols-4 gap-6 md:gap-8"
   }, /*#__PURE__*/React.createElement("aside", {
-    className: "lg:col-span-1 space-y-6"
+    className: "lg:col-span-1 space-y-6 order-2 lg:order-1"
   }, /*#__PURE__*/React.createElement("div", {
     className: "bg-white p-5 rounded-2xl border border-slate-200 shadow-sm text-left"
   }, /*#__PURE__*/React.createElement("h2", {
@@ -290,7 +379,7 @@ const App = () => {
     rel: "noopener noreferrer",
     className: "mt-4 block w-full text-center py-2.5 rounded-xl border border-dashed border-blue-300 text-blue-600 text-xs font-bold hover:bg-blue-50 transition-colors"
   }, "+ 원하는 기관이 없나요? 추가 요청하기"))), /*#__PURE__*/React.createElement("main", {
-    className: "lg:col-span-3 space-y-6"
+    className: "lg:col-span-3 space-y-6 order-1 lg:order-2"
   }, /*#__PURE__*/React.createElement("div", {
     className: "bg-white p-4 md:p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col gap-4"
   }, /*#__PURE__*/React.createElement("div", {
@@ -305,23 +394,24 @@ const App = () => {
     className: "w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium transition-all"
   })), /*#__PURE__*/React.createElement("div", {
     className: "flex flex-col gap-3"
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "flex items-center gap-2 overflow-x-auto filter-scroll-container pb-2"
-  }, /*#__PURE__*/React.createElement("span", {
+  }, /*#__PURE__*/React.createElement("p", {
+    className: "text-[10.5px] text-slate-400 font-medium flex items-center gap-1 -mb-1"
+  }, /*#__PURE__*/React.createElement(Icon, {
+    name: "mouse-pointer-click",
+    className: "w-3 h-3"
+  }), " 여러 개를 선택하면 함께 볼 수 있어요"), /*#__PURE__*/React.createElement(ScrollRow, null, /*#__PURE__*/React.createElement("span", {
     className: "text-[11px] font-black text-slate-400 uppercase tracking-widest mr-1 shrink-0 flex items-center gap-1 w-12"
   }, /*#__PURE__*/React.createElement(Icon, {
     name: "building",
     className: "w-3 h-3"
   }), " 기관"), /*#__PURE__*/React.createElement("button", {
-    onClick: () => setActiveTab('all'),
-    className: `flex-shrink-0 px-3.5 py-1.5 rounded-lg text-xs font-bold border transition-all ${activeTab === 'all' ? 'bg-slate-900 text-white border-slate-900 shadow-md' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50 hover:text-slate-800'}`
+    onClick: () => toggleFilter(setActiveTabs, 'all'),
+    className: `flex-shrink-0 px-3.5 py-1.5 rounded-lg text-xs font-bold border transition-all ${activeTabs.length === 0 ? 'bg-slate-900 text-white border-slate-900 shadow-md' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50 hover:text-slate-800'}`
   }, "전체"), institutions.map(inst => /*#__PURE__*/React.createElement("button", {
     key: inst.id,
-    onClick: () => setActiveTab(inst.id),
-    className: `flex-shrink-0 px-3.5 py-1.5 rounded-lg text-xs font-bold border transition-all ${activeTab === inst.id ? 'bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-100' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50 hover:text-blue-600'}`
-  }, inst.shortName))), /*#__PURE__*/React.createElement("div", {
-    className: "flex items-center gap-2 overflow-x-auto filter-scroll-container pb-2"
-  }, /*#__PURE__*/React.createElement("span", {
+    onClick: () => toggleFilter(setActiveTabs, inst.id),
+    className: `flex-shrink-0 px-3.5 py-1.5 rounded-lg text-xs font-bold border transition-all ${activeTabs.includes(inst.id) ? 'bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-100' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50 hover:text-blue-600'}`
+  }, inst.shortName))), /*#__PURE__*/React.createElement(ScrollRow, null, /*#__PURE__*/React.createElement("span", {
     className: "text-[11px] font-black text-slate-400 uppercase tracking-widest mr-1 shrink-0 flex items-center gap-1 w-12"
   }, /*#__PURE__*/React.createElement(Icon, {
     name: "briefcase",
@@ -346,11 +436,9 @@ const App = () => {
     label: '체험형 인턴'
   }].map(type => /*#__PURE__*/React.createElement("button", {
     key: type.id,
-    onClick: () => setActiveJobType(type.id),
-    className: `flex-shrink-0 px-3 py-1.5 rounded-lg text-[11.5px] font-bold border transition-all ${activeJobType === type.id ? 'bg-purple-600 text-white border-purple-600 shadow-md shadow-purple-100' : 'bg-white text-slate-500 border-slate-200 hover:bg-purple-50 hover:text-purple-700 hover:border-purple-200'}`
-  }, type.label))), /*#__PURE__*/React.createElement("div", {
-    className: "flex items-center gap-2 overflow-x-auto filter-scroll-container pb-2"
-  }, /*#__PURE__*/React.createElement("span", {
+    onClick: () => toggleFilter(setActiveJobTypes, type.id),
+    className: `flex-shrink-0 px-3 py-1.5 rounded-lg text-[11.5px] font-bold border transition-all ${(type.id === 'all' ? activeJobTypes.length === 0 : activeJobTypes.includes(type.id)) ? 'bg-purple-600 text-white border-purple-600 shadow-md shadow-purple-100' : 'bg-white text-slate-500 border-slate-200 hover:bg-purple-50 hover:text-purple-700 hover:border-purple-200'}`
+  }, type.label))), /*#__PURE__*/React.createElement(ScrollRow, null, /*#__PURE__*/React.createElement("span", {
     className: "text-[11px] font-black text-slate-400 uppercase tracking-widest mr-1 shrink-0 flex items-center gap-1 w-12"
   }, /*#__PURE__*/React.createElement(Icon, {
     name: "map-pin",
@@ -405,9 +493,23 @@ const App = () => {
     label: '제주'
   }].map(reg => /*#__PURE__*/React.createElement("button", {
     key: reg.id,
-    onClick: () => setActiveRegion(reg.id),
-    className: `flex-shrink-0 px-3 py-1.5 rounded-lg text-[11.5px] font-bold border transition-all ${activeRegion === reg.id ? 'bg-emerald-600 text-white border-emerald-600 shadow-md shadow-emerald-100' : 'bg-white text-slate-500 border-slate-200 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-200'}`
+    onClick: () => toggleFilter(setActiveRegions, reg.id),
+    className: `flex-shrink-0 px-3 py-1.5 rounded-lg text-[11.5px] font-bold border transition-all ${(reg.id === 'all' ? activeRegions.length === 0 : activeRegions.includes(reg.id)) ? 'bg-emerald-600 text-white border-emerald-600 shadow-md shadow-emerald-100' : 'bg-white text-slate-500 border-slate-200 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-200'}`
   }, reg.label))))), /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center justify-between px-1"
+  }, /*#__PURE__*/React.createElement("p", {
+    className: "text-xs font-bold text-slate-500"
+  }, "진행중 공고 ", /*#__PURE__*/React.createElement("span", {
+    className: "text-blue-600"
+  }, filteredJobs.length), "건"), /*#__PURE__*/React.createElement("div", {
+    className: "flex gap-1"
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: () => setSortBy('latest'),
+    className: `px-3 py-1.5 rounded-lg text-[11px] font-bold border transition-all ${sortBy === 'latest' ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'}`
+  }, "최신순"), /*#__PURE__*/React.createElement("button", {
+    onClick: () => setSortBy('deadline'),
+    className: `px-3 py-1.5 rounded-lg text-[11px] font-bold border transition-all ${sortBy === 'deadline' ? 'bg-red-500 text-white border-red-500' : 'bg-white text-slate-500 border-slate-200 hover:bg-red-50 hover:text-red-500'}`
+  }, "마감임박순"))), /*#__PURE__*/React.createElement("div", {
     className: "space-y-3"
   }, loading ? /*#__PURE__*/React.createElement("div", {
     className: "py-20 text-center text-slate-300 animate-pulse font-bold text-sm"
@@ -416,14 +518,23 @@ const App = () => {
       shortName: (job.instId || '').toUpperCase()
     };
     const isClosed = job.status === '마감';
-    return /*#__PURE__*/React.createElement("div", {
+    const dday = getDday(job);
+    return /*#__PURE__*/React.createElement("a", {
       key: job.id,
-      className: "job-card bg-white p-5 md:p-6 rounded-2xl border border-slate-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 text-left"
+      href: job.link || '#',
+      target: "_blank",
+      rel: "noopener noreferrer",
+      "aria-label": `${instInfo.shortName} ${job.title} 공고 보기`,
+      className: "job-card group block bg-white p-5 md:p-6 rounded-2xl border border-slate-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 text-left focus:outline-none focus:ring-2 focus:ring-blue-500"
     }, /*#__PURE__*/React.createElement("div", {
       className: "flex-1"
     }, /*#__PURE__*/React.createElement("div", {
       className: "flex gap-1.5 mb-2 flex-wrap"
-    }, /*#__PURE__*/React.createElement("span", {
+    }, isNew(job) && /*#__PURE__*/React.createElement("span", {
+      className: "text-[10px] font-black px-2 py-0.5 rounded bg-emerald-500 text-white"
+    }, "NEW"), dday && /*#__PURE__*/React.createElement("span", {
+      className: `text-[10px] font-black px-2 py-0.5 rounded ${dday.urgent ? 'bg-red-500 text-white' : 'bg-orange-100 text-orange-600 border border-orange-200'}`
+    }, dday.label), /*#__PURE__*/React.createElement("span", {
       className: "text-[10px] font-black px-2 py-0.5 bg-slate-100 rounded text-slate-500 uppercase tracking-tight"
     }, instInfo.shortName), /*#__PURE__*/React.createElement("span", {
       className: `text-[10px] font-bold px-2 py-0.5 rounded border ${isClosed ? 'text-red-600 bg-red-50 border-red-100' : 'text-blue-600 bg-blue-50 border-blue-100'}`
@@ -443,10 +554,9 @@ const App = () => {
       className: "w-3 h-3"
     }), " 접수기간: ", job.startDate, " ~ ", /*#__PURE__*/React.createElement("span", {
       className: isClosed ? 'text-slate-300' : 'text-red-400'
-    }, job.endDate))), /*#__PURE__*/React.createElement("button", {
-      onClick: () => window.open(job.link, '_blank'),
-      className: `w-full md:w-auto px-7 py-2.5 rounded-xl font-bold text-xs shadow-sm transition-all ${isClosed ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-slate-900 text-white hover:bg-blue-600'}`
-    }, isClosed ? '모집종료' : '지원하기'));
+    }, job.endDate))), /*#__PURE__*/React.createElement("span", {
+      className: `w-full md:w-auto px-7 py-2.5 rounded-xl font-bold text-xs shadow-sm transition-all text-center ${isClosed ? 'bg-slate-100 text-slate-400' : 'bg-slate-900 text-white group-hover:bg-blue-600'}`
+    }, isClosed ? '모집종료' : '지원하기 →'));
   }) : /*#__PURE__*/React.createElement("div", {
     className: "py-20 text-center bg-white rounded-3xl border border-dashed border-slate-200 flex flex-col items-center justify-center gap-3"
   }, /*#__PURE__*/React.createElement(Icon, {
@@ -456,9 +566,9 @@ const App = () => {
     className: "text-slate-400 text-sm font-bold"
   }, "현재 필터 조건에 맞는 공고가 없습니다."), /*#__PURE__*/React.createElement("button", {
     onClick: () => {
-      setActiveTab('all');
-      setActiveJobType('all');
-      setActiveRegion('all');
+      setActiveTabs([]);
+      setActiveJobTypes([]);
+      setActiveRegions([]);
       setSearchTerm('');
     },
     className: "mt-2 text-[11px] text-blue-600 font-bold hover:underline"
