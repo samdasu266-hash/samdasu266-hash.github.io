@@ -17,6 +17,35 @@ const Icon = ({
 };
 const REQUEST_FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLSe8gTQy9ECOAzh-Qw33t_SeHqmwXZRm-WIu1qXOO1qOcsYsTQ/viewform";
 
+// 가로 스크롤 필터 줄: 오른쪽에 더 있을 때만 그라데이션+화살표 힌트를 보여준다
+const ScrollRow = ({
+  children
+}) => {
+  const ref = React.useRef(null);
+  const [more, setMore] = useState(false);
+  const check = () => {
+    const el = ref.current;
+    if (el) setMore(el.scrollWidth - el.clientWidth - el.scrollLeft > 8);
+  };
+  useEffect(() => {
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
+  return /*#__PURE__*/React.createElement("div", {
+    className: "relative"
+  }, /*#__PURE__*/React.createElement("div", {
+    ref: ref,
+    onScroll: check,
+    className: "flex items-center gap-2 overflow-x-auto filter-scroll-container pb-2"
+  }, children), /*#__PURE__*/React.createElement("div", {
+    className: `pointer-events-none absolute right-0 top-0 bottom-2 w-10 bg-gradient-to-l from-white to-transparent flex items-center justify-end pr-0.5 transition-opacity ${more ? 'opacity-100' : 'opacity-0'}`
+  }, /*#__PURE__*/React.createElement(Icon, {
+    name: "chevron-right",
+    className: "w-4 h-4 text-slate-400 animate-pulse"
+  })));
+};
+
 // "26.03.11" 또는 "26.03.11 18:00" 형식 파싱 (그 외 형식은 null)
 const parseDotDate = s => {
   if (!s) return null;
@@ -342,9 +371,7 @@ const App = () => {
     className: "w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium transition-all"
   })), /*#__PURE__*/React.createElement("div", {
     className: "flex flex-col gap-3"
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "flex items-center gap-2 overflow-x-auto filter-scroll-container pb-2"
-  }, /*#__PURE__*/React.createElement("span", {
+  }, /*#__PURE__*/React.createElement(ScrollRow, null, /*#__PURE__*/React.createElement("span", {
     className: "text-[11px] font-black text-slate-400 uppercase tracking-widest mr-1 shrink-0 flex items-center gap-1 w-12"
   }, /*#__PURE__*/React.createElement(Icon, {
     name: "building",
@@ -356,9 +383,7 @@ const App = () => {
     key: inst.id,
     onClick: () => setActiveTab(inst.id),
     className: `flex-shrink-0 px-3.5 py-1.5 rounded-lg text-xs font-bold border transition-all ${activeTab === inst.id ? 'bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-100' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50 hover:text-blue-600'}`
-  }, inst.shortName))), /*#__PURE__*/React.createElement("div", {
-    className: "flex items-center gap-2 overflow-x-auto filter-scroll-container pb-2"
-  }, /*#__PURE__*/React.createElement("span", {
+  }, inst.shortName))), /*#__PURE__*/React.createElement(ScrollRow, null, /*#__PURE__*/React.createElement("span", {
     className: "text-[11px] font-black text-slate-400 uppercase tracking-widest mr-1 shrink-0 flex items-center gap-1 w-12"
   }, /*#__PURE__*/React.createElement(Icon, {
     name: "briefcase",
@@ -385,9 +410,7 @@ const App = () => {
     key: type.id,
     onClick: () => setActiveJobType(type.id),
     className: `flex-shrink-0 px-3 py-1.5 rounded-lg text-[11.5px] font-bold border transition-all ${activeJobType === type.id ? 'bg-purple-600 text-white border-purple-600 shadow-md shadow-purple-100' : 'bg-white text-slate-500 border-slate-200 hover:bg-purple-50 hover:text-purple-700 hover:border-purple-200'}`
-  }, type.label))), /*#__PURE__*/React.createElement("div", {
-    className: "flex items-center gap-2 overflow-x-auto filter-scroll-container pb-2"
-  }, /*#__PURE__*/React.createElement("span", {
+  }, type.label))), /*#__PURE__*/React.createElement(ScrollRow, null, /*#__PURE__*/React.createElement("span", {
     className: "text-[11px] font-black text-slate-400 uppercase tracking-widest mr-1 shrink-0 flex items-center gap-1 w-12"
   }, /*#__PURE__*/React.createElement(Icon, {
     name: "map-pin",

@@ -7,6 +7,31 @@ const Icon = ({ name, className = "w-5 h-5" }) => {
 
 const REQUEST_FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLSe8gTQy9ECOAzh-Qw33t_SeHqmwXZRm-WIu1qXOO1qOcsYsTQ/viewform";
 
+// 가로 스크롤 필터 줄: 오른쪽에 더 있을 때만 그라데이션+화살표 힌트를 보여준다
+const ScrollRow = ({ children }) => {
+    const ref = React.useRef(null);
+    const [more, setMore] = useState(false);
+    const check = () => {
+        const el = ref.current;
+        if (el) setMore(el.scrollWidth - el.clientWidth - el.scrollLeft > 8);
+    };
+    useEffect(() => {
+        check();
+        window.addEventListener('resize', check);
+        return () => window.removeEventListener('resize', check);
+    }, []);
+    return (
+        <div className="relative">
+            <div ref={ref} onScroll={check} className="flex items-center gap-2 overflow-x-auto filter-scroll-container pb-2">
+                {children}
+            </div>
+            <div className={`pointer-events-none absolute right-0 top-0 bottom-2 w-10 bg-gradient-to-l from-white to-transparent flex items-center justify-end pr-0.5 transition-opacity ${more ? 'opacity-100' : 'opacity-0'}`}>
+                <Icon name="chevron-right" className="w-4 h-4 text-slate-400 animate-pulse" />
+            </div>
+        </div>
+    );
+};
+
 // "26.03.11" 또는 "26.03.11 18:00" 형식 파싱 (그 외 형식은 null)
 const parseDotDate = (s) => {
     if (!s) return null;
@@ -184,7 +209,7 @@ const App = () => {
                             </div>
 
                             <div className="flex flex-col gap-3">
-                                <div className="flex items-center gap-2 overflow-x-auto filter-scroll-container pb-2">
+                                <ScrollRow>
                                     <span className="text-[11px] font-black text-slate-400 uppercase tracking-widest mr-1 shrink-0 flex items-center gap-1 w-12"><Icon name="building" className="w-3 h-3"/> 기관</span>
                                     <button onClick={() => setActiveTab('all')} className={`flex-shrink-0 px-3.5 py-1.5 rounded-lg text-xs font-bold border transition-all ${activeTab === 'all' ? 'bg-slate-900 text-white border-slate-900 shadow-md' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50 hover:text-slate-800'}`}>전체</button>
                                     {institutions.map(inst => (
@@ -192,25 +217,25 @@ const App = () => {
                                             {inst.shortName}
                                         </button>
                                     ))}
-                                </div>
+                                </ScrollRow>
 
-                                <div className="flex items-center gap-2 overflow-x-auto filter-scroll-container pb-2">
+                                <ScrollRow>
                                     <span className="text-[11px] font-black text-slate-400 uppercase tracking-widest mr-1 shrink-0 flex items-center gap-1 w-12"><Icon name="briefcase" className="w-3 h-3"/> 계약</span>
                                     {[ { id: 'all', label: '전체' }, { id: '정규직', label: '정규직' }, { id: '무기계약직', label: '무기계약직' }, { id: '계약직', label: '계약직/기간제' }, { id: '비정규직', label: '비정규직' }, { id: '인턴', label: '체험형 인턴' }].map(type => (
                                         <button key={type.id} onClick={() => setActiveJobType(type.id)} className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-[11.5px] font-bold border transition-all ${activeJobType === type.id ? 'bg-purple-600 text-white border-purple-600 shadow-md shadow-purple-100' : 'bg-white text-slate-500 border-slate-200 hover:bg-purple-50 hover:text-purple-700 hover:border-purple-200'}`}>
                                             {type.label}
                                         </button>
                                     ))}
-                                </div>
+                                </ScrollRow>
 
-                                <div className="flex items-center gap-2 overflow-x-auto filter-scroll-container pb-2">
+                                <ScrollRow>
                                     <span className="text-[11px] font-black text-slate-400 uppercase tracking-widest mr-1 shrink-0 flex items-center gap-1 w-12"><Icon name="map-pin" className="w-3 h-3"/> 지역</span>
                                     {[ { id: 'all', label: '전체' }, { id: '전국', label: '전국' }, { id: '서울', label: '서울' }, { id: '경인', label: '경기·인천' }, { id: '강원', label: '강원' }, { id: '대전충남', label: '대전·세종·충남' }, { id: '충북', label: '충북' }, { id: '광주', label: '광주' }, { id: '전북', label: '전북' }, { id: '전남', label: '전남' }, { id: '부산', label: '부산' }, { id: '대구', label: '대구' }, { id: '울산', label: '울산' }, { id: '경북', label: '경북' }, { id: '경남', label: '경남' }, { id: '제주', label: '제주' } ].map(reg => (
                                         <button key={reg.id} onClick={() => setActiveRegion(reg.id)} className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-[11.5px] font-bold border transition-all ${activeRegion === reg.id ? 'bg-emerald-600 text-white border-emerald-600 shadow-md shadow-emerald-100' : 'bg-white text-slate-500 border-slate-200 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-200'}`}>
                                             {reg.label}
                                         </button>
                                     ))}
-                                </div>
+                                </ScrollRow>
                             </div>
                         </div>
 
