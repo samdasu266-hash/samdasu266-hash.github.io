@@ -5,7 +5,92 @@ const Icon = ({ name, className = "w-5 h-5" }) => {
     return <i data-lucide={name} className={className}></i>;
 };
 
-const REQUEST_FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLSe8gTQy9ECOAzh-Qw33t_SeHqmwXZRm-WIu1qXOO1qOcsYsTQ/viewform";
+// 사이트 내 요청 팝업 → GAS 웹앱으로 제출 (스프레드시트 적재 + 자동 회신 메일은 GAS가 처리)
+const REQUEST_ENDPOINT = "https://script.google.com/macros/s/AKfycbxef_fTDTuHv2P4ORGhgIcZGxz2QbAAc-68AfdEV1Dx5YnhQs-_sozST89ik2_sUbB_uw/exec";
+const EMAIL_DOMAINS = ["naver.com", "gmail.com", "daum.net", "hanmail.net", "nate.com", "kakao.com", "icloud.com", "outlook.com"];
+
+const RequestModal = ({ open, onClose }) => {
+    const [type, setType] = useState("기관 추가 요청");
+    const [org, setOrg] = useState("");
+    const [url, setUrl] = useState("");
+    const [content, setContent] = useState("");
+    const [emailLocal, setEmailLocal] = useState("");
+    const [emailDomain, setEmailDomain] = useState("naver.com");
+    const [customDomain, setCustomDomain] = useState("");
+    const [status, setStatus] = useState("idle"); // idle | sending | done | error
+
+    if (!open) return null;
+
+    const domain = emailDomain === "__custom__" ? customDomain.trim() : emailDomain;
+    const email = emailLocal.trim() && domain ? `${emailLocal.trim()}@${domain}` : "";
+
+    const reset = () => {
+        setType("기관 추가 요청"); setOrg(""); setUrl(""); setContent("");
+        setEmailLocal(""); setEmailDomain("naver.com"); setCustomDomain(""); setStatus("idle");
+    };
+    const close = () => { reset(); onClose(); };
+
+    const submit = () => {
+        if (!content.trim()) { alert("내용을 입력해주세요."); return; }
+        setStatus("sending");
+        fetch(REQUEST_ENDPOINT, {
+            method: "POST",
+            mode: "no-cors",
+            headers: { "Content-Type": "text/plain;charset=utf-8" },
+            body: JSON.stringify({ type, org, url, content, email }),
+        }).then(() => setStatus("done")).catch(() => setStatus("error"));
+    };
+
+    return (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm" onClick={close}>
+            <div className="bg-white w-full max-w-md rounded-[2rem] p-7 shadow-2xl relative animate-in zoom-in duration-300 max-h-[90vh] overflow-y-auto no-scrollbar" onClick={e => e.stopPropagation()}>
+                <button onClick={close} className="absolute top-5 right-5 text-slate-300 hover:text-slate-900"><Icon name="x" /></button>
+                {status === "done" ? (
+                    <div className="text-center py-6">
+                        <div className="w-16 h-16 mx-auto rounded-full bg-emerald-50 text-emerald-500 flex items-center justify-center mb-4"><Icon name="check" className="w-8 h-8" /></div>
+                        <h2 className="text-lg font-black text-slate-900 mb-2">요청이 접수되었어요!</h2>
+                        <p className="text-sm text-slate-500 font-medium leading-relaxed mb-6">보내주신 의견을 검토 후 반영하겠습니다.{email ? " 입력하신 메일로 접수 확인 메일을 보내드렸어요." : ""}</p>
+                        <button onClick={close} className="w-full py-3.5 bg-slate-900 text-white rounded-2xl font-bold hover:bg-blue-600 transition-colors">닫기</button>
+                    </div>
+                ) : (
+                    <div>
+                        <h2 className="text-lg font-black text-slate-900 mb-1 flex items-center gap-2"><Icon name="plus-circle" className="text-blue-600 w-5 h-5" /> 기관 추가 · 건의하기</h2>
+                        <p className="text-[12px] text-slate-400 font-medium mb-5">원하는 기관이나 사이트 개선 의견을 남겨주세요.</p>
+                        <div className="space-y-3.5 text-left">
+                            <div>
+                                <label className="text-[11px] font-bold text-slate-500 mb-1.5 block">요청 유형</label>
+                                <div className="flex gap-1.5">
+                                    {["기관 추가 요청", "오류 제보", "기타 건의"].map(t => (
+                                        <button key={t} onClick={() => setType(t)} className={`flex-1 px-2 py-2 rounded-xl text-[11.5px] font-bold border transition-all ${type === t ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'}`}>{t}</button>
+                                    ))}
+                                </div>
+                            </div>
+                            <input value={org} onChange={e => setOrg(e.target.value)} placeholder="기관명 (예: 한국건강증진개발원)" className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium" />
+                            <input value={url} onChange={e => setUrl(e.target.value)} placeholder="채용 페이지 주소 (선택)" className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium" />
+                            <textarea value={content} onChange={e => setContent(e.target.value)} placeholder="내용을 입력해주세요" rows={3} className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium resize-none" />
+                            <div>
+                                <label className="text-[11px] font-bold text-slate-500 mb-1.5 block">회신 받을 이메일 <span className="text-slate-300 font-medium">(선택 · 접수 확인 메일 발송)</span></label>
+                                <div className="flex items-center gap-1.5">
+                                    <input value={emailLocal} onChange={e => setEmailLocal(e.target.value)} placeholder="아이디" className="flex-1 min-w-0 px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium" />
+                                    <span className="text-slate-400 font-bold shrink-0">@</span>
+                                    <select value={emailDomain} onChange={e => setEmailDomain(e.target.value)} className="shrink-0 px-2 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-[13px] focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium">
+                                        {EMAIL_DOMAINS.map(d => <option key={d} value={d}>{d}</option>)}
+                                        <option value="__custom__">직접입력</option>
+                                    </select>
+                                </div>
+                                {emailDomain === "__custom__" && (
+                                    <input value={customDomain} onChange={e => setCustomDomain(e.target.value)} placeholder="도메인 직접입력 (예: company.co.kr)" className="mt-1.5 w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium" />
+                                )}
+                            </div>
+                            {status === "error" && <p className="text-[12px] text-red-500 font-bold">전송에 실패했어요. 잠시 후 다시 시도해주세요.</p>}
+                            <button onClick={submit} disabled={status === "sending"} className="w-full py-3.5 bg-blue-600 text-white rounded-2xl font-bold hover:bg-blue-700 transition-colors shadow-lg disabled:opacity-60">{status === "sending" ? "전송 중..." : "요청 보내기"}</button>
+                        </div>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
 
 // 가로 스크롤 필터 줄: 오른쪽에 더 있을 때만 그라데이션+화살표 힌트를 보여준다
 const ScrollRow = ({ children }) => {
@@ -54,6 +139,8 @@ const App = () => {
     const [mainView, setMainView] = useState('jobs'); 
     const [showPrivacy, setShowPrivacy] = useState(false);
     const [showContact, setShowContact] = useState(false);
+    const [showRequest, setShowRequest] = useState(false);
+    const [copied, setCopied] = useState(false);
 
     const institutions = [
         { id: 'nhis', name: '국민건강보험공단', shortName: '건보공단', url: 'https://nhis.kpcice.kr', specs: { recruitSchedule: '연 2회 (상반기 3~4월, 하반기 8~9월)', salary: '신입 약 4,000 / 평균 약 7,500', language: '토익 850점 이상 안정권', cert: '컴활 1급, 한국사 1급 필수 수준', summary: '서류 가점을 만점으로 채우는 것이 기본 전제입니다.' } },
@@ -165,11 +252,6 @@ const App = () => {
             <nav className="mb-10 flex flex-wrap items-center gap-x-6 gap-y-1 border-b border-slate-200 text-[13px] md:text-sm font-bold overflow-x-auto no-scrollbar whitespace-nowrap pb-2">
                 <button onClick={() => setMainView('jobs')} className={`nav-link ${mainView === 'jobs' ? 'active' : 'text-slate-500 hover:text-slate-800'}`}>실시간 채용공고</button>
                 <button onClick={() => setMainView('guide')} className={`nav-link ${mainView === 'guide' ? 'active' : 'text-slate-500 hover:text-slate-800'}`}>기관별 합격 가이드</button>
-                <div className="flex-1 min-w-[20px]"></div>
-                <a href="tips.html" className="nav-link text-slate-500 hover:text-blue-600">채용 트렌드</a>
-                <a href="career.html" className="nav-link text-slate-500 hover:text-blue-600">임상경력 활용</a>
-                <a href="license.html" className="nav-link text-slate-500 hover:text-blue-600">서류 가점 전략</a>
-                <a href="interview.html" className="nav-link text-slate-500 hover:text-blue-600">면접 필승 가이드</a>
             </nav>
 
             <header className="mb-10 space-y-3">
@@ -177,7 +259,7 @@ const App = () => {
                     <span className="bg-blue-600 text-white px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider">1시간 주기 자동 업데이트</span>
                     <span className="bg-white border border-slate-200 text-slate-600 px-2.5 py-0.5 rounded-full text-[10px] font-bold shadow-sm flex items-center gap-1"><Icon name="calendar" className="w-3 h-3 text-blue-500" /> 기준일자: {formatDate(lastSync)}</span>
                     <span className="bg-white border border-slate-200 text-slate-500 px-2.5 py-0.5 rounded-full text-[10px] font-bold shadow-sm flex items-center gap-1"><Icon name="clock" className="w-3 h-3" /> 최근 수집: {formatTime(lastSync)} KST</span>
-                    <a href={REQUEST_FORM_URL} target="_blank" rel="noopener noreferrer" className="bg-white border border-blue-200 text-blue-600 px-2.5 py-0.5 rounded-full text-[10px] font-bold shadow-sm flex items-center gap-1 hover:bg-blue-50 transition-colors"><Icon name="plus-circle" className="w-3 h-3" /> 기관 추가 요청</a>
+                    <button onClick={() => setShowRequest(true)} className="bg-white border border-blue-200 text-blue-600 px-2.5 py-0.5 rounded-full text-[10px] font-bold shadow-sm flex items-center gap-1 hover:bg-blue-50 transition-colors"><Icon name="plus-circle" className="w-3 h-3" /> 기관 추가 요청</button>
                 </div>
                 <h1 className="text-2xl md:text-3xl font-black text-slate-900 leading-tight">
                     보건의료 공기업 <span className="text-blue-600">채용 통합 포털</span>
@@ -206,7 +288,7 @@ const App = () => {
                                     </div>
                                 ))}
                             </nav>
-                            <a href={REQUEST_FORM_URL} target="_blank" rel="noopener noreferrer" className="mt-4 block w-full text-center py-2.5 rounded-xl border border-dashed border-blue-300 text-blue-600 text-xs font-bold hover:bg-blue-50 transition-colors">+ 원하는 기관이 없나요? 추가 요청하기</a>
+                            <button onClick={() => setShowRequest(true)} className="mt-4 block w-full text-center py-2.5 rounded-xl border border-dashed border-blue-300 text-blue-600 text-xs font-bold hover:bg-blue-50 transition-colors">+ 원하는 기관이 없나요? 추가 요청하기</button>
                         </div>
                     </aside>
                     
@@ -320,27 +402,26 @@ const App = () => {
                 </div>
             )}
 
-            <section className="mt-24 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <a href="guide.html" className="bg-white p-6 rounded-2xl border border-slate-200 hover:border-blue-500 transition-all shadow-sm group">
-                    <Icon name="map-pin" className="text-blue-500 mb-3 group-hover:scale-110 transition-transform" />
-                    <h4 className="font-bold text-slate-900 text-sm mb-1">기관별 근무환경 비교</h4>
-                    <p className="text-[11px] text-slate-500">본사 위치 및 실질 워라밸 분석</p>
-                </a>
-                <a href="career.html" className="bg-white p-6 rounded-2xl border border-slate-200 hover:border-blue-500 transition-all shadow-sm group">
-                    <Icon name="award" className="text-orange-500 mb-3 group-hover:scale-110 transition-transform" />
-                    <h4 className="font-bold text-slate-900 text-sm mb-1">임상 경력 활용 가이드</h4>
-                    <p className="text-[11px] text-slate-500">경력이 합격에 미치는 영향 분석</p>
-                </a>
-                <a href="license.html" className="bg-white p-6 rounded-2xl border border-slate-200 hover:border-blue-500 transition-all shadow-sm group">
-                    <Icon name="check-circle" className="text-emerald-500 mb-3 group-hover:scale-110 transition-transform" />
-                    <h4 className="font-bold text-slate-900 text-sm mb-1">서류 만점 자격증 전략</h4>
-                    <p className="text-[11px] text-slate-500">직렬별 필수 가점 자격증 로드맵</p>
-                </a>
-                <a href="interview.html" className="bg-white p-6 rounded-2xl border border-slate-200 hover:border-blue-500 transition-all shadow-sm group">
-                    <Icon name="users" className="text-purple-500 mb-3 group-hover:scale-110 transition-transform" />
-                    <h4 className="font-bold text-slate-900 text-sm mb-1">블라인드 면접 필승법</h4>
-                    <p className="text-[11px] text-slate-500">실격 방지를 위한 필수 체크리스트</p>
-                </a>
+            <section className="mt-20">
+                <h2 className="text-lg font-black text-slate-900 mb-1 flex items-center gap-2"><Icon name="book-open" className="text-blue-600 w-5 h-5" /> 취업 준비 가이드</h2>
+                <p className="text-[12px] text-slate-400 font-medium mb-5">합격에 필요한 정보를 주제별로 정리했습니다.</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {[
+                        { href: 'guide.html', icon: 'map-pin', title: '기관별 근무환경·워라밸', desc: '본사 위치·복지·실질 워라밸 비교' },
+                        { href: 'tips.html', icon: 'trending-up', title: '채용 트렌드', desc: '2026년 채용 동향과 합격 전략' },
+                        { href: 'career.html', icon: 'briefcase', title: '임상경력 활용', desc: '경력이 합격에 미치는 영향 분석' },
+                        { href: 'license.html', icon: 'award', title: '서류 가점 전략', desc: '직렬별 필수 가점 자격증 로드맵' },
+                        { href: 'interview.html', icon: 'users', title: '면접 필승 가이드', desc: '블라인드 면접 필수 체크리스트' },
+                    ].map(p => (
+                        <a key={p.href} href={p.href} className="bg-white p-4 rounded-2xl border border-slate-200 hover:border-blue-500 hover:shadow-md transition-all flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0"><Icon name={p.icon} className="w-5 h-5" /></div>
+                            <div className="min-w-0">
+                                <h4 className="font-bold text-slate-900 text-[13.5px] leading-tight">{p.title}</h4>
+                                <p className="text-[11px] text-slate-500 mt-0.5 break-keep">{p.desc}</p>
+                            </div>
+                        </a>
+                    ))}
+                </div>
             </section>
 
             <section className="mt-12 bg-white p-8 rounded-3xl border border-slate-200 shadow-sm text-left">
@@ -390,11 +471,13 @@ const App = () => {
                         <button onClick={() => setShowPrivacy(false)} className="absolute top-6 right-6 text-slate-300 hover:text-slate-900"><Icon name="x" /></button>
                         <h2 className="text-xl font-black text-slate-900 mb-6 flex items-center gap-2"><Icon name="shield-check" className="text-blue-600"/> 개인정보처리방침</h2>
                         <div className="space-y-4 text-[13.5px] text-slate-600 font-medium leading-relaxed max-h-[50vh] overflow-y-auto pr-2 no-scrollbar">
-                            <p>본 사이트는 구글 애드센스(Google AdSense) 광고를 게재하며, 원활한 서비스 제공을 위해 쿠키를 활용합니다.</p>
-                            <h3 className="font-bold text-slate-900 mt-4">1. 쿠키 및 맞춤 광고 안내</h3>
-                            <p>구글을 포함한 제3자 공급업체는 사용자가 본 사이트 또는 다른 사이트를 방문한 내역을 기반으로 쿠키를 사용하여 맞춤형 광고를 제공합니다.</p>
-                            <h3 className="font-bold text-slate-900 mt-4">2. 쿠키 수집 거부 및 관리</h3>
-                            <p>사용자는 구글 광고 설정 페이지에서 맞춤 광고를 위한 쿠키 사용을 옵트아웃(거부)할 수 있습니다.</p>
+                            <p>본 사이트는 보건의료 공공기관 채용 정보를 제공하는 비상업 목적의 페이지입니다.</p>
+                            <h3 className="font-bold text-slate-900 mt-4">1. 수집하는 개인정보</h3>
+                            <p>사이트 이용만으로는 어떠한 개인정보도 수집하지 않습니다. 다만 '기관 추가·건의' 기능에서 회신용 이메일을 선택적으로 입력하실 수 있으며, 이는 접수 확인 및 답변 목적으로만 사용됩니다.</p>
+                            <h3 className="font-bold text-slate-900 mt-4">2. 방문 통계</h3>
+                            <p>서비스 개선을 위해 Google Analytics를 통해 익명의 방문 통계를 수집하며, 개인을 식별하지 않습니다.</p>
+                            <h3 className="font-bold text-slate-900 mt-4">3. 제3자 제공</h3>
+                            <p>입력하신 정보는 제3자에게 제공·판매되지 않습니다.</p>
                         </div>
                         <button onClick={() => setShowPrivacy(false)} className="w-full mt-8 py-4 bg-slate-900 text-white rounded-2xl font-bold hover:bg-blue-600 transition-colors shadow-lg">확인 완료</button>
                     </div>
@@ -407,15 +490,21 @@ const App = () => {
                         <button onClick={() => setShowContact(false)} className="absolute top-6 right-6 text-slate-300 hover:text-slate-900"><Icon name="x" /></button>
                         <Icon name="mail" className="w-14 h-14 mx-auto text-blue-500 mb-4" />
                         <h2 className="text-xl font-black text-slate-900 mb-3">운영자 문의하기</h2>
-                        <p className="text-sm text-slate-600 font-medium mb-6 leading-relaxed">기관 추가 요청, 오류 제보 및 각종 건의사항은 아래 요청 폼이나 메일로 보내주시기 바랍니다.</p>
-                        <a href={REQUEST_FORM_URL} target="_blank" rel="noopener noreferrer" className="block w-full py-4 bg-blue-600 text-white rounded-2xl font-bold hover:bg-blue-700 transition-colors shadow-lg mb-3">📝 기관 추가 요청 / 건의하기</a>
-                        <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 mb-6 flex justify-center items-center">
-                            <span className="font-bold text-blue-600 text-[15px] select-all tracking-tight">samdasu266@gmail.com</span>
+                        <p className="text-sm text-slate-600 font-medium mb-6 leading-relaxed">기관 추가 요청·오류 제보·건의사항은 아래 버튼으로 남겨주시거나, 메일로 보내주셔도 됩니다.</p>
+                        <button onClick={() => { setShowContact(false); setShowRequest(true); }} className="w-full py-4 bg-blue-600 text-white rounded-2xl font-bold hover:bg-blue-700 transition-colors shadow-lg mb-4 flex items-center justify-center gap-2"><Icon name="plus-circle" className="w-4 h-4" /> 기관 추가 · 건의하기</button>
+                        <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100 mb-6 flex items-center justify-between gap-2">
+                            <span className="font-bold text-blue-600 text-[14px] tracking-tight truncate">samdasu266@gmail.com</span>
+                            <div className="flex items-center gap-1 shrink-0">
+                                <button onClick={() => { navigator.clipboard.writeText("samdasu266@gmail.com"); setCopied(true); setTimeout(() => setCopied(false), 1500); }} title="주소 복사" className="w-9 h-9 rounded-xl bg-white border border-slate-200 text-slate-500 hover:text-blue-600 hover:border-blue-300 flex items-center justify-center transition-colors"><Icon name={copied ? "check" : "copy"} className="w-4 h-4" /></button>
+                                <a href="mailto:samdasu266@gmail.com" title="메일 보내기" className="w-9 h-9 rounded-xl bg-white border border-slate-200 text-slate-500 hover:text-blue-600 hover:border-blue-300 flex items-center justify-center transition-colors"><Icon name="mail" className="w-4 h-4" /></a>
+                            </div>
                         </div>
                         <button onClick={() => setShowContact(false)} className="w-full py-4 bg-slate-900 text-white rounded-2xl font-bold hover:bg-blue-600 transition-colors shadow-lg">닫기</button>
                     </div>
                 </div>
             )}
+
+            <RequestModal open={showRequest} onClose={() => setShowRequest(false)} />
         </div>
     );
 };
