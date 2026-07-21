@@ -1,5 +1,5 @@
 {
- "lastSync": "2026-07-21T23:08:22.335778+09:00",
+ "lastSync": "2026-07-21T23:39:55.804148+09:00",
  "jobs": [
   {
    "instId": "nhis",
@@ -33,13 +33,13 @@
   },
   {
    "instId": "nps",
-   "title": "국민연금연구원 임시 연구보조원 채용 공고",
-   "startDate": "26.07.08",
+   "title": "언론홍보전문가(전문계약직) 공개채용 공고",
+   "startDate": "26.07.02",
    "endDate": "상세참조",
    "status": "진행중",
-   "jobType": "정규직",
+   "jobType": "계약직/기간제",
    "region": "전북(본부·공고확인)",
-   "link": "https://www.nps.or.kr/pnsgdnc/hiregdnc/getOHAE0004M1.do?menuId=MN24000969&pstId=ZZ202600000000000782&hmpgCd=01&hmpgBbsCd=BS20240138&sortSe=FR&pageIndex=1&searchText=&searchGbu=&pstSeCd="
+   "link": "https://www.nps.or.kr/pnsgdnc/hiregdnc/getOHAE0004M1.do?menuId=MN24000969&pstId=ZZ202600000000000743&hmpgCd=01&hmpgBbsCd=BS20240138&sortSe=FR&pageIndex=1&searchText=&searchGbu=&pstSeCd="
   },
   {
    "instId": "nps",
@@ -70,16 +70,6 @@
    "jobType": "공무직",
    "region": "서울",
    "link": "https://www.nps.or.kr/pnsgdnc/hiregdnc/getOHAE0004M1.do?menuId=MN24000969&pstId=ZZ202600000000000682&hmpgCd=01&hmpgBbsCd=BS20240138&sortSe=FR&pageIndex=1&searchText=&searchGbu=&pstSeCd="
-  },
-  {
-   "instId": "nps",
-   "title": "국민연금공단 기금이사 초빙 공고",
-   "startDate": "26.06.11",
-   "endDate": "상세참조",
-   "status": "진행중",
-   "jobType": "정규직",
-   "region": "전북(본부·공고확인)",
-   "link": "https://www.nps.or.kr/pnsgdnc/hiregdnc/getOHAE0004M1.do?menuId=MN24000969&pstId=ZZ202600000000000652&hmpgCd=01&hmpgBbsCd=BS20240138&sortSe=FR&pageIndex=1&searchText=&searchGbu=&pstSeCd="
   },
   {
    "instId": "nps",
