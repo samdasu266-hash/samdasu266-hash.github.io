@@ -141,11 +141,18 @@ async def scrape_site(browser, inst_id, url):
         
         job_candidates = []
         row_limit = 15
-        rows = await page.query_selector_all("tbody tr, .board-list li, ul.list li, .recruitment-item")
-        if not rows:
-            # 링크 전체 폴백: 상단 내비게이션 링크가 많으므로 더 넓게 훑는다
-            rows = await page.query_selector_all("a")
-            row_limit = 60
+        if 'careeron' in url:
+            # careeron(혈액원 등)은 Vue SPA. 실제 공고는 #/recruitment/detail/{id} 링크이므로
+            # 상세 링크만 골라 잡는다. (범용 폴백은 상단 메뉴 '채용공고' 링크를 오인식함)
+            await asyncio.sleep(2)  # 목록 렌더링 추가 대기
+            rows = await page.query_selector_all('a[href*="recruitment/detail"]')
+            row_limit = 30
+        else:
+            rows = await page.query_selector_all("tbody tr, .board-list li, ul.list li, .recruitment-item")
+            if not rows:
+                # 링크 전체 폴백: 상단 내비게이션 링크가 많으므로 더 넓게 훑는다
+                rows = await page.query_selector_all("a")
+                row_limit = 60
 
         now = datetime.now(KST)
 
