@@ -3,6 +3,7 @@ import json
 import asyncio
 import re
 from datetime import datetime, timedelta, timezone
+from urllib.parse import urljoin
 import firebase_admin
 from firebase_admin import credentials
 from firebase_admin import firestore
@@ -57,13 +58,15 @@ def extract_dates(text, current_year):
             
         try:
             dt_obj = datetime(last_year, mo, d, hour, minute)
-            # 타임머신 패치
-            if dt_obj.year < current_year:
-                dt_obj = dt_obj.replace(year=current_year)
-                
+            # 연도 없는 날짜가 직전 날짜보다 한참 이전이면 해 넘김으로 간주 (ex. 12.20 ~ 01.05)
+            if not y_str and parsed_dates:
+                prev_dt = parsed_dates[-1]['dt']
+                if dt_obj < prev_dt and (prev_dt - dt_obj).days > 180:
+                    dt_obj = dt_obj.replace(year=dt_obj.year + 1)
+
             if current_year - 2 <= dt_obj.year <= current_year + 2:
                 parsed_dates.append({'dt': dt_obj, 'has_time': has_time})
-        except:
+        except Exception:
             pass
             
     parsed_dates.sort(key=lambda x: x['dt'])
@@ -81,12 +84,16 @@ async def scrape_site(browser, inst_id, url):
         await asyncio.sleep(5) 
         
         job_candidates = []
+        row_limit = 15
         rows = await page.query_selector_all("tbody tr, .board-list li, ul.list li, .recruitment-item")
-        if not rows: rows = await page.query_selector_all("a")
+        if not rows:
+            # 링크 전체 폴백: 상단 내비게이션 링크가 많으므로 더 넓게 훑는다
+            rows = await page.query_selector_all("a")
+            row_limit = 60
 
         now = datetime.now(KST)
 
-        for row in rows[:15]: 
+        for row in rows[:row_limit]:
             try:
                 row_text = (await row.inner_text()).strip()
                 row_html = await row.inner_html() 
@@ -134,7 +141,7 @@ async def scrape_site(browser, inst_id, url):
                 exclude_words = [
                     "발표", "합격", "면접", "약사", "약무", "의무직",
                     "사전공개", "채용계획", "공시송달", "서류전형", "참여기관", "공모",
-                    "재직", "상임", "고령", "장애", "보훈", "친인척",
+                    "재직", "상임", "고령", "친인척",
                     "계획 공고", "실습 인정", "교육훈련기관",
                     "등록폐지", "윤리위원회", "기준보험료", "심사위원", "변호사"
                 ]
@@ -166,16 +173,7 @@ async def scrape_site(browser, inst_id, url):
                 if inst_id == 'nhis':
                     safe_link = "https://www.nhis.or.kr/nhis/together/wbhaea02700m01.do"
                 elif raw_href and raw_href != "#" and not raw_href.startswith("javascript"):
-                    if raw_href.startswith("http"):
-                        safe_link = raw_href
-                    elif raw_href.startswith("/"):
-                        safe_link = url.split("/")[0] + "//" + url.split("/")[2] + raw_href
-                    else:
-                        base_parts = url.split("?")
-                        if raw_href.startswith("?"):
-                            safe_link = base_parts[0] + raw_href
-                        else:
-                            safe_link = base_parts[0][:base_parts[0].rfind('/')+1] + raw_href
+                    safe_link = urljoin(url, raw_href)
 
                 if (not raw_href or raw_href == "#" or "javascript:void" in raw_href) and not js_code:
                     if inst_id != 'nhis':
@@ -204,35 +202,39 @@ async def scrape_site(browser, inst_id, url):
             js_code = job['js_code']
             safe_link = job['base_url'] 
 
+            detail_page = None
             try:
                 if js_code:
                     detail_page = await browser.new_page()
                     await detail_page.goto(job['list_url'], wait_until="domcontentloaded", timeout=10000)
                     try:
                         async with detail_page.expect_navigation(timeout=5000):
-                            await detail_page.evaluate(js_code) 
-                    except:
+                            await detail_page.evaluate(js_code)
+                    except Exception:
                         await detail_page.evaluate(js_code)
-                        
+
                     await detail_page.wait_for_load_state("domcontentloaded", timeout=10000)
                     await asyncio.sleep(1.5)
                     body_text = await detail_page.inner_text("body")
                     combined_text += " \n" + body_text
-                    
+
                     current_url = detail_page.url
                     if job['instId'] != 'nhis' and current_url and current_url != job['list_url']:
                         safe_link = current_url
-                        
-                    await detail_page.close()
-                
+
                 elif job['raw_href'] and job['raw_href'] != "#" and not job['raw_href'].startswith("javascript"):
                     detail_page = await browser.new_page()
                     await detail_page.goto(safe_link, wait_until="domcontentloaded", timeout=10000)
                     body_text = await detail_page.inner_text("body")
                     combined_text += " \n" + body_text
-                    await detail_page.close()
-            except Exception as e:
+            except Exception:
                 pass
+            finally:
+                if detail_page:
+                    try:
+                        await detail_page.close()
+                    except Exception:
+                        pass
 
             # 맞춤형 지역(시/도) 추출 
             region_set = set()
@@ -305,30 +307,28 @@ async def scrape_site(browser, inst_id, url):
 
             start_str, end_str = "상세참조", "상세참조"
             status = "진행중"
-            is_too_old = False
 
             if start_item:
                 if not start_item['has_time']: start_item['dt'] = start_item['dt'].replace(hour=0, minute=0)
                 start_str = start_item['dt'].strftime("%y.%m.%d")
-                
+
             if end_item:
                 if not end_item['has_time']: end_item['dt'] = end_item['dt'].replace(hour=18, minute=0)
                 end_str = end_item['dt'].strftime("%y.%m.%d %H:%M")
                 if now_kst > end_item['dt']:
                     status = "마감"
-                    if (now_kst - end_item['dt']).days > 90: is_too_old = True
-                    
+
             if start_item and not end_item:
                 if (now_kst - start_item['dt']).days > 90:
                     status = "마감"
-                    is_too_old = True
 
-            if "마감" in job['raw_title'] or "마감" in job['row_html'] or "접수종료" in job['row_html'] or "end" in job['row_html'].lower():
+            # 목록에 마감 표기가 명시된 경우 ("마감연장" 공고는 진행 중으로 취급)
+            if ("마감" in job['raw_title'] and "연장" not in job['raw_title']) \
+               or "접수종료" in job['row_html'] or "접수마감" in job['row_html'] or "채용종료" in job['row_html']:
                 status = "마감"
-                if end_item and (now_kst - end_item['dt']).days > 90: is_too_old = True
-                elif start_item and (now_kst - start_item['dt']).days > 90: is_too_old = True
 
-            if not is_too_old:
+            # 마감된 공고는 저장하지 않음 → 사이트에 노출되지 않음
+            if status != "마감":
                 found_jobs.append({
                     "instId": job['instId'],
                     "title": job['title'],
@@ -347,10 +347,10 @@ async def scrape_site(browser, inst_id, url):
             if c not in seen:
                 unique_jobs.append(job)
                 seen.add(c)
-        return unique_jobs[:10]
+        return unique_jobs[:10], True
     except Exception as e:
         print(f"Error in {inst_id}: {e}")
-        return []
+        return [], False
     finally:
         await page.close()
 
@@ -370,26 +370,36 @@ async def main():
         ]
         
         all_jobs = []
+        succeeded = set()
         for t in targets:
-            all_jobs.extend(await scrape_site(browser, t['id'], t['url']))
-        
-        if all_jobs:
-            batch = db.batch()
-            jobs_path = db.collection('artifacts').document(APP_ID).collection('public').document('data').collection('jobs')
-            
-            for doc in jobs_path.get():
-                batch.delete(doc.reference)
-            
-            for i, job in enumerate(all_jobs):
-                batch.set(jobs_path.document(f"job_{i}"), job)
-            
-            meta_ref = db.collection('artifacts').document(APP_ID).collection('public').document('data').collection('metadata').document('sync')
-            batch.set(meta_ref, {"lastSync": datetime.now(KST).isoformat()})
-            batch.commit()
-            print(f"🚀 성공: {len(all_jobs)}개의 공고 저장 완료!")
-        else:
-            print("수집된 공고가 0개입니다.")
+            jobs, ok = await scrape_site(browser, t['id'], t['url'])
+            if ok:
+                succeeded.add(t['id'])
+                all_jobs.extend(jobs)
         await browser.close()
+
+        if not succeeded:
+            print("모든 사이트 수집 실패 - 기존 데이터를 유지합니다.")
+            return
+
+        # 수집에 성공한 기관의 문서만 교체하고, 실패한 기관의 기존 공고는 보존
+        batch = db.batch()
+        jobs_path = db.collection('artifacts').document(APP_ID).collection('public').document('data').collection('jobs')
+
+        for doc in jobs_path.get():
+            if doc.to_dict().get('instId') in succeeded:
+                batch.delete(doc.reference)
+
+        counters = {}
+        for job in all_jobs:
+            n = counters.get(job['instId'], 0)
+            counters[job['instId']] = n + 1
+            batch.set(jobs_path.document(f"{job['instId']}_{n}"), job)
+
+        meta_ref = db.collection('artifacts').document(APP_ID).collection('public').document('data').collection('metadata').document('sync')
+        batch.set(meta_ref, {"lastSync": datetime.now(KST).isoformat()})
+        batch.commit()
+        print(f"🚀 성공: {len(succeeded)}개 기관에서 {len(all_jobs)}개의 공고 저장 완료!")
 
 if __name__ == "__main__":
     asyncio.run(main())
