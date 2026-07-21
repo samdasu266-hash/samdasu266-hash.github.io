@@ -128,6 +128,102 @@ def detect_region(inst_id, title, row_text, combined_text):
     if inst_id == "comwel": return "울산(본부·공고확인)"
     return "전국(공고확인)"
 
+def _careeron_iso_to_dot(s):
+    # "2026-07-20", "2026-07-20T18:00:00", "2026.07.20 18:00" → "yy.mm.dd [HH:MM]"
+    m = re.search(r'(\d{4})[-./](\d{1,2})[-./](\d{1,2})(?:[ T](\d{1,2}):(\d{2}))?', str(s))
+    if not m:
+        return None
+    base = f"{int(m.group(1)) % 100:02d}.{int(m.group(2)):02d}.{int(m.group(3)):02d}"
+    if m.group(4) is not None:
+        return base + f" {int(m.group(4)):02d}:{m.group(5)}"
+    return base
+
+def build_careeron_jobs(payload, inst_id):
+    # careeron SPA의 목록 API(JSON)에서 공고를 직접 추출한다.
+    if not payload:
+        return []
+    def find_list(obj, depth=0):
+        if isinstance(obj, list):
+            return obj if (obj and isinstance(obj[0], dict)) else None
+        if isinstance(obj, dict) and depth < 5:
+            for key in ['list', 'items', 'content', 'rows', 'recruitments',
+                        'data', 'result', 'resultList', 'dataList']:
+                if key in obj:
+                    r = find_list(obj[key], depth + 1)
+                    if r:
+                        return r
+            for v in obj.values():
+                r = find_list(v, depth + 1)
+                if r:
+                    return r
+        return None
+
+    items = find_list(payload) or []
+    now = datetime.now(KST).replace(tzinfo=None)
+    exclude_words = ["발표", "합격", "면접", "약사", "약무", "의무직", "사전공개", "채용계획",
+                     "공시송달", "서류전형", "참여기관", "공모", "재직", "상임", "고령", "친인척",
+                     "계획 공고", "실습 인정", "교육훈련기관", "등록폐지", "윤리위원회",
+                     "기준보험료", "심사위원", "변호사"]
+    jobs = []
+    for it in items:
+        if not isinstance(it, dict):
+            continue
+        title = None
+        for k, v in it.items():
+            if any(t in k.lower() for t in ['title', 'subject']) and isinstance(v, str) and v.strip():
+                title = re.sub(r'\s+', ' ', v).strip()
+                break
+        if not title or len(title) < 3:
+            continue
+        if any(ex in title for ex in exclude_words):
+            continue
+        if re.search(r'(?:의사|전문의|수련의|전공의)', title):
+            continue
+        rid = None
+        for k, v in it.items():
+            lk = k.lower()
+            if (lk in ('id', 'seq', 'no', 'idx') or lk.endswith('id') or lk.endswith('seq') or lk.endswith('idx')) \
+               and isinstance(v, (int, str)) and str(v).strip() and str(v).strip() != '0':
+                rid = str(v).strip()
+                break
+        link = f"https://bloodinfo.careeron.co.kr/#/recruitment/detail/{rid}" if rid else "https://bloodinfo.careeron.co.kr/#/recruitment/list"
+        start_str, end_str = "상세참조", "상세참조"
+        for k, v in it.items():
+            lk = k.lower()
+            if start_str == "상세참조" and any(x in lk for x in ['start', 'begin', 'apply', 'open', 'reg']) and v:
+                dv = _careeron_iso_to_dot(v)
+                if dv:
+                    start_str = dv
+            if end_str == "상세참조" and any(x in lk for x in ['end', 'close', 'deadline', 'expire', 'fin']) and v:
+                dv = _careeron_iso_to_dot(v)
+                if dv:
+                    end_str = dv
+        status = "진행중"
+        m = re.match(r'(\d{2})\.(\d{2})\.(\d{2})(?:\s+(\d{1,2}):(\d{2}))?', end_str)
+        if m:
+            try:
+                end_dt = datetime(2000 + int(m.group(1)), int(m.group(2)), int(m.group(3)),
+                                  int(m.group(4) or 18), int(m.group(5) or 0))
+                if now > end_dt:
+                    status = "마감"
+            except Exception:
+                pass
+        if status == "마감":
+            continue
+        job_type = "정규직"
+        if "무기계약직" in title: job_type = "무기계약직"
+        elif "공무직" in title: job_type = "공무직"
+        elif any(k in title for k in ["기간제", "계약직", "촉탁직", "휴직", "대체"]): job_type = "계약직/기간제"
+        elif "비정규직" in title: job_type = "비정규직"
+        elif "인턴" in title: job_type = "인턴"
+        jobs.append({
+            "instId": inst_id, "title": title,
+            "startDate": start_str, "endDate": end_str, "status": status,
+            "jobType": job_type, "region": detect_region(inst_id, title, title, title),
+            "link": link,
+        })
+    return jobs
+
 async def scrape_site(browser, inst_id, url):
     page = await browser.new_page(
         user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
@@ -136,23 +232,34 @@ async def scrape_site(browser, inst_id, url):
     
     try:
         print(f"[{inst_id}] 접속 중: {url}")
+
+        # careeron(혈액원) SPA: 목록이 헤드리스에서 렌더링되지 않으므로, SPA가 호출하는
+        # 목록 API 응답(JSON)을 가로채 직접 파싱한다. (DOM 스크래핑 불가 확인됨)
+        if 'careeron' in url:
+            list_json = None
+            try:
+                async with page.expect_response(
+                    lambda r: 'recruitment/list' in r.url and 'api' in r.url, timeout=45000
+                ) as ri:
+                    await page.goto(url, wait_until="domcontentloaded", timeout=60000)
+                resp = await ri.value
+                list_json = await resp.json()
+            except Exception as e:
+                print(f"[CAREERON] 목록 API 응답 캡처 실패: {e}")
+            careeron_jobs = build_careeron_jobs(list_json, inst_id)
+            print(f"[{inst_id}] careeron API에서 {len(careeron_jobs)}건 수집")
+            return careeron_jobs[:10], True
+
         await page.goto(url, wait_until="domcontentloaded", timeout=60000)
-        await asyncio.sleep(5) 
-        
+        await asyncio.sleep(5)
+
         job_candidates = []
         row_limit = 15
-        if 'careeron' in url:
-            # careeron(혈액원 등)은 Vue SPA. 실제 공고는 #/recruitment/detail/{id} 링크이므로
-            # 상세 링크만 골라 잡는다. (범용 폴백은 상단 메뉴 '채용공고' 링크를 오인식함)
-            await asyncio.sleep(2)  # 목록 렌더링 추가 대기
-            rows = await page.query_selector_all('a[href*="recruitment/detail"]')
-            row_limit = 30
-        else:
-            rows = await page.query_selector_all("tbody tr, .board-list li, ul.list li, .recruitment-item")
-            if not rows:
-                # 링크 전체 폴백: 상단 내비게이션 링크가 많으므로 더 넓게 훑는다
-                rows = await page.query_selector_all("a")
-                row_limit = 60
+        rows = await page.query_selector_all("tbody tr, .board-list li, ul.list li, .recruitment-item")
+        if not rows:
+            # 링크 전체 폴백: 상단 내비게이션 링크가 많으므로 더 넓게 훑는다
+            rows = await page.query_selector_all("a")
+            row_limit = 60
 
         now = datetime.now(KST)
 
