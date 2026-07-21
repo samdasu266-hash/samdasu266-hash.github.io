@@ -295,6 +295,7 @@ async def scrape_site(browser, inst_id, url):
                 elif job['raw_href'] and job['raw_href'] != "#" and not job['raw_href'].startswith("javascript"):
                     detail_page = await browser.new_page()
                     await detail_page.goto(safe_link, wait_until="domcontentloaded", timeout=10000)
+                    await asyncio.sleep(1.5)  # SPA(careeron 등) 렌더링 대기
                     body_text = await detail_page.inner_text("body")
                     combined_text += " \n" + body_text
             except Exception:
@@ -403,6 +404,7 @@ async def main():
             {"id": "nps", "url": "https://www.nps.or.kr/pnsgdnc/hiregdnc/getOHAE0004M0List.do"},
             {"id": "comwel", "url": "https://www.comwel.or.kr/recruit/hp/pblanc/pblancList.do"},
             {"id": "redcross", "url": "https://www.redcross.or.kr/recruit/"},
+            {"id": "redcross", "url": "https://bloodinfo.careeron.co.kr/#/recruitment/list"},
             {"id": "mohw", "url": "https://www.mohw.go.kr/board.es?mid=a10501010400&bid=0003"}
         ]
         
@@ -426,6 +428,17 @@ async def main():
         for doc in jobs_path.get():
             if doc.to_dict().get('instId') in succeeded:
                 batch.delete(doc.reference)
+
+        # 같은 기관을 여러 사이트에서 수집하는 경우(적십자사 본사 + 혈액관리본부) 중복 제거
+        deduped_jobs = []
+        seen_keys = set()
+        for job in all_jobs:
+            key = (job['instId'], job['title'].replace(" ", ""))
+            if key in seen_keys:
+                continue
+            seen_keys.add(key)
+            deduped_jobs.append(job)
+        all_jobs = deduped_jobs
 
         counters = {}
         for job in all_jobs:

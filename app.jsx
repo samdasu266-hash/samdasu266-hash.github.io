@@ -366,7 +366,8 @@ const App = () => {
                         <button onClick={() => setShowContact(false)} className="absolute top-6 right-6 text-slate-300 hover:text-slate-900"><Icon name="x" /></button>
                         <Icon name="mail" className="w-14 h-14 mx-auto text-blue-500 mb-4" />
                         <h2 className="text-xl font-black text-slate-900 mb-3">운영자 문의하기</h2>
-                        <p className="text-sm text-slate-600 font-medium mb-6 leading-relaxed">기관 추가 요청, 오류 제보 및 각종 건의사항은 아래 메일로 보내주시기 바랍니다.</p>
+                        <p className="text-sm text-slate-600 font-medium mb-6 leading-relaxed">기관 추가 요청, 오류 제보 및 각종 건의사항은 아래 요청 폼이나 메일로 보내주시기 바랍니다.</p>
+                        <a href="https://docs.google.com/forms/d/e/1FAIpQLSe8gTQy9ECOAzh-Qw33t_SeHqmwXZRm-WIu1qXOO1qOcsYsTQ/viewform" target="_blank" rel="noopener noreferrer" className="block w-full py-4 bg-blue-600 text-white rounded-2xl font-bold hover:bg-blue-700 transition-colors shadow-lg mb-3">📝 기관 추가 요청 / 건의하기</a>
                         <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 mb-6 flex justify-center items-center">
                             <span className="font-bold text-blue-600 text-[15px] select-all tracking-tight">samdasu266@gmail.com</span>
                         </div>

@@ -634,7 +634,12 @@ const App = () => {
     className: "text-xl font-black text-slate-900 mb-3"
   }, "운영자 문의하기"), /*#__PURE__*/React.createElement("p", {
     className: "text-sm text-slate-600 font-medium mb-6 leading-relaxed"
-  }, "기관 추가 요청, 오류 제보 및 각종 건의사항은 아래 메일로 보내주시기 바랍니다."), /*#__PURE__*/React.createElement("div", {
+  }, "기관 추가 요청, 오류 제보 및 각종 건의사항은 아래 요청 폼이나 메일로 보내주시기 바랍니다."), /*#__PURE__*/React.createElement("a", {
+    href: "https://docs.google.com/forms/d/e/1FAIpQLSe8gTQy9ECOAzh-Qw33t_SeHqmwXZRm-WIu1qXOO1qOcsYsTQ/viewform",
+    target: "_blank",
+    rel: "noopener noreferrer",
+    className: "block w-full py-4 bg-blue-600 text-white rounded-2xl font-bold hover:bg-blue-700 transition-colors shadow-lg mb-3"
+  }, "📝 기관 추가 요청 / 건의하기"), /*#__PURE__*/React.createElement("div", {
     className: "bg-slate-50 p-4 rounded-2xl border border-slate-100 mb-6 flex justify-center items-center"
   }, /*#__PURE__*/React.createElement("span", {
     className: "font-bold text-blue-600 text-[15px] select-all tracking-tight"
