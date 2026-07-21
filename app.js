@@ -255,6 +255,18 @@ const App = () => {
     hour12: false
   }) : '';
 
+  // 접수 시작일이 오늘 포함 2일 이내면 NEW 배지 (날짜 단위 비교)
+  const isNew = job => {
+    const start = parseDotDate(job.startDate);
+    if (!start) return false;
+    const s = new Date(start);
+    s.setHours(0, 0, 0, 0);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const diffDays = Math.round((today - s) / 86400000);
+    return diffDays >= 0 && diffDays <= 2;
+  };
+
   // 마감까지 남은 날짜 (7일 이내만 배지로 표시)
   const getDday = job => {
     const end = parseDotDate(job.endDate);
@@ -507,15 +519,20 @@ const App = () => {
     };
     const isClosed = job.status === '마감';
     const dday = getDday(job);
-    return /*#__PURE__*/React.createElement("div", {
+    return /*#__PURE__*/React.createElement("a", {
       key: job.id,
-      onClick: () => window.open(job.link, '_blank'),
-      className: "job-card cursor-pointer bg-white p-5 md:p-6 rounded-2xl border border-slate-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 text-left"
+      href: job.link || '#',
+      target: "_blank",
+      rel: "noopener noreferrer",
+      "aria-label": `${instInfo.shortName} ${job.title} 공고 보기`,
+      className: "job-card group block bg-white p-5 md:p-6 rounded-2xl border border-slate-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 text-left focus:outline-none focus:ring-2 focus:ring-blue-500"
     }, /*#__PURE__*/React.createElement("div", {
       className: "flex-1"
     }, /*#__PURE__*/React.createElement("div", {
       className: "flex gap-1.5 mb-2 flex-wrap"
-    }, dday && /*#__PURE__*/React.createElement("span", {
+    }, isNew(job) && /*#__PURE__*/React.createElement("span", {
+      className: "text-[10px] font-black px-2 py-0.5 rounded bg-emerald-500 text-white"
+    }, "NEW"), dday && /*#__PURE__*/React.createElement("span", {
       className: `text-[10px] font-black px-2 py-0.5 rounded ${dday.urgent ? 'bg-red-500 text-white' : 'bg-orange-100 text-orange-600 border border-orange-200'}`
     }, dday.label), /*#__PURE__*/React.createElement("span", {
       className: "text-[10px] font-black px-2 py-0.5 bg-slate-100 rounded text-slate-500 uppercase tracking-tight"
@@ -537,13 +554,9 @@ const App = () => {
       className: "w-3 h-3"
     }), " 접수기간: ", job.startDate, " ~ ", /*#__PURE__*/React.createElement("span", {
       className: isClosed ? 'text-slate-300' : 'text-red-400'
-    }, job.endDate))), /*#__PURE__*/React.createElement("button", {
-      onClick: e => {
-        e.stopPropagation();
-        window.open(job.link, '_blank');
-      },
-      className: `w-full md:w-auto px-7 py-2.5 rounded-xl font-bold text-xs shadow-sm transition-all ${isClosed ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-slate-900 text-white hover:bg-blue-600'}`
-    }, isClosed ? '모집종료' : '지원하기'));
+    }, job.endDate))), /*#__PURE__*/React.createElement("span", {
+      className: `w-full md:w-auto px-7 py-2.5 rounded-xl font-bold text-xs shadow-sm transition-all text-center ${isClosed ? 'bg-slate-100 text-slate-400' : 'bg-slate-900 text-white group-hover:bg-blue-600'}`
+    }, isClosed ? '모집종료' : '지원하기 →'));
   }) : /*#__PURE__*/React.createElement("div", {
     className: "py-20 text-center bg-white rounded-3xl border border-dashed border-slate-200 flex flex-col items-center justify-center gap-3"
   }, /*#__PURE__*/React.createElement(Icon, {

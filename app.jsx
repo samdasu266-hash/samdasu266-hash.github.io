@@ -135,6 +135,16 @@ const App = () => {
     const formatDate = (d) => d ? d.toLocaleDateString('ko-KR', { timeZone: 'Asia/Seoul', year: 'numeric', month: 'long', day: 'numeric' }) : '확인 중...';
     const formatTime = (d) => d ? d.toLocaleTimeString('ko-KR', { timeZone: 'Asia/Seoul', hour: '2-digit', minute: '2-digit', hour12: false }) : '';
 
+    // 접수 시작일이 오늘 포함 2일 이내면 NEW 배지 (날짜 단위 비교)
+    const isNew = (job) => {
+        const start = parseDotDate(job.startDate);
+        if (!start) return false;
+        const s = new Date(start); s.setHours(0, 0, 0, 0);
+        const today = new Date(); today.setHours(0, 0, 0, 0);
+        const diffDays = Math.round((today - s) / 86400000);
+        return diffDays >= 0 && diffDays <= 2;
+    };
+
     // 마감까지 남은 날짜 (7일 이내만 배지로 표시)
     const getDday = (job) => {
         const end = parseDotDate(job.endDate);
@@ -255,9 +265,10 @@ const App = () => {
                                         const isClosed = job.status === '마감';
                                         const dday = getDday(job);
                                         return (
-                                            <div key={job.id} onClick={() => window.open(job.link, '_blank')} className="job-card cursor-pointer bg-white p-5 md:p-6 rounded-2xl border border-slate-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 text-left">
+                                            <a key={job.id} href={job.link || '#'} target="_blank" rel="noopener noreferrer" aria-label={`${instInfo.shortName} ${job.title} 공고 보기`} className="job-card group block bg-white p-5 md:p-6 rounded-2xl border border-slate-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 text-left focus:outline-none focus:ring-2 focus:ring-blue-500">
                                                 <div className="flex-1">
                                                     <div className="flex gap-1.5 mb-2 flex-wrap">
+                                                        {isNew(job) && <span className="text-[10px] font-black px-2 py-0.5 rounded bg-emerald-500 text-white">NEW</span>}
                                                         {dday && <span className={`text-[10px] font-black px-2 py-0.5 rounded ${dday.urgent ? 'bg-red-500 text-white' : 'bg-orange-100 text-orange-600 border border-orange-200'}`}>{dday.label}</span>}
                                                         <span className="text-[10px] font-black px-2 py-0.5 bg-slate-100 rounded text-slate-500 uppercase tracking-tight">{instInfo.shortName}</span>
                                                         <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${isClosed ? 'text-red-600 bg-red-50 border-red-100' : 'text-blue-600 bg-blue-50 border-blue-100'}`}>{isClosed ? '서류접수마감' : '채용진행중'}</span>
@@ -269,8 +280,8 @@ const App = () => {
                                                     <h3 className={`text-[16px] md:text-[17px] font-bold text-slate-800 mb-2 leading-snug break-keep`}>{job.title}</h3>
                                                     <p className="text-[11px] font-bold text-slate-400 flex items-center gap-1"><Icon name="calendar" className="w-3 h-3" /> 접수기간: {job.startDate} ~ <span className={isClosed ? 'text-slate-300' : 'text-red-400'}>{job.endDate}</span></p>
                                                 </div>
-                                                <button onClick={(e) => { e.stopPropagation(); window.open(job.link, '_blank'); }} className={`w-full md:w-auto px-7 py-2.5 rounded-xl font-bold text-xs shadow-sm transition-all ${isClosed ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-slate-900 text-white hover:bg-blue-600'}`}>{isClosed ? '모집종료' : '지원하기'}</button>
-                                            </div>
+                                                <span className={`w-full md:w-auto px-7 py-2.5 rounded-xl font-bold text-xs shadow-sm transition-all text-center ${isClosed ? 'bg-slate-100 text-slate-400' : 'bg-slate-900 text-white group-hover:bg-blue-600'}`}>{isClosed ? '모집종료' : '지원하기 →'}</span>
+                                            </a>
                                         );
                                     })
                                 ) : (
