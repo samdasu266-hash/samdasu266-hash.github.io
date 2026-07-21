@@ -46,9 +46,9 @@ const App = () => {
     const [jobs, setJobs] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
-    const [activeTab, setActiveTab] = useState('all');
-    const [activeJobType, setActiveJobType] = useState('all'); 
-    const [activeRegion, setActiveRegion] = useState('all'); 
+    const [activeTabs, setActiveTabs] = useState([]);       // [] = 전체
+    const [activeJobTypes, setActiveJobTypes] = useState([]);
+    const [activeRegions, setActiveRegions] = useState([]);
     const [sortBy, setSortBy] = useState('latest'); // 'latest' | 'deadline'
     const [lastSync, setLastSync] = useState(null);
     const [mainView, setMainView] = useState('jobs'); 
@@ -94,29 +94,13 @@ const App = () => {
             if (endDt && endDt < new Date()) return false;
 
             const matchesSearch = job.title?.toLowerCase().includes(searchTerm.toLowerCase());
-            const matchesInst = activeTab === 'all' || job.instId === activeTab;
-            
+            const matchesInst = activeTabs.length === 0 || activeTabs.includes(job.instId);
+
             const actualJobType = job.jobType || "정규직";
-            let matchesType = false;
-            if (activeJobType === 'all') {
-                matchesType = true;
-            } else if (activeJobType === '계약직') {
-                matchesType = actualJobType.includes('계약직') || actualJobType.includes('기간제');
-            } else {
-                matchesType = actualJobType.includes(activeJobType);
-            }
+            const matchesType = activeJobTypes.length === 0 || activeJobTypes.some(t => matchType(t, actualJobType));
 
             const actualRegion = job.region || "전국";
-            let matchesRegion = false;
-            if (activeRegion === 'all') {
-                matchesRegion = true;
-            } else if (activeRegion === '경인') {
-                matchesRegion = actualRegion.includes('경기') || actualRegion.includes('인천');
-            } else if (activeRegion === '대전충남') {
-                matchesRegion = actualRegion.includes('대전') || actualRegion.includes('세종') || actualRegion.includes('충남') || actualRegion.includes('대전충남');
-            } else {
-                matchesRegion = actualRegion.includes(activeRegion);
-            }
+            const matchesRegion = activeRegions.length === 0 || activeRegions.some(r => matchRegion(r, actualRegion));
 
             return matchesSearch && matchesInst && matchesType && matchesRegion;
         });
@@ -131,10 +115,25 @@ const App = () => {
             });
         }
         return result;
-    }, [jobs, searchTerm, activeTab, activeJobType, activeRegion, sortBy]);
+    }, [jobs, searchTerm, activeTabs, activeJobTypes, activeRegions, sortBy]);
 
-    const formatDate = (d) => d ? `${d.getFullYear()}년 ${d.getMonth()+1}월 ${d.getDate()}일` : '확인 중...';
-    const formatTime = (d) => d ? `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}` : '';
+    // 다중 선택 토글: 'all'을 누르면 전체(빈 배열)로 초기화, 그 외에는 켜고 끄기
+    const toggleFilter = (setter, value) => {
+        if (value === 'all') { setter([]); return; }
+        setter(prev => prev.includes(value) ? prev.filter(v => v !== value) : [...prev, value]);
+    };
+    const matchType = (sel, actual) => sel === '계약직'
+        ? (actual.includes('계약직') || actual.includes('기간제'))
+        : actual.includes(sel);
+    const matchRegion = (sel, actual) => {
+        if (sel === '경인') return actual.includes('경기') || actual.includes('인천');
+        if (sel === '대전충남') return actual.includes('대전') || actual.includes('세종') || actual.includes('충남');
+        return actual.includes(sel);
+    };
+
+    // 수집 시각은 항상 한국 표준시(KST)로 표기
+    const formatDate = (d) => d ? d.toLocaleDateString('ko-KR', { timeZone: 'Asia/Seoul', year: 'numeric', month: 'long', day: 'numeric' }) : '확인 중...';
+    const formatTime = (d) => d ? d.toLocaleTimeString('ko-KR', { timeZone: 'Asia/Seoul', hour: '2-digit', minute: '2-digit', hour12: false }) : '';
 
     // 마감까지 남은 날짜 (7일 이내만 배지로 표시)
     const getDday = (job) => {
@@ -167,7 +166,7 @@ const App = () => {
                 <div className="flex flex-wrap gap-2">
                     <span className="bg-blue-600 text-white px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider">1시간 주기 자동 업데이트</span>
                     <span className="bg-white border border-slate-200 text-slate-600 px-2.5 py-0.5 rounded-full text-[10px] font-bold shadow-sm flex items-center gap-1"><Icon name="calendar" className="w-3 h-3 text-blue-500" /> 기준일자: {formatDate(lastSync)}</span>
-                    <span className="bg-white border border-slate-200 text-slate-500 px-2.5 py-0.5 rounded-full text-[10px] font-bold shadow-sm flex items-center gap-1"><Icon name="clock" className="w-3 h-3" /> 최근 수집: {formatTime(lastSync)}</span>
+                    <span className="bg-white border border-slate-200 text-slate-500 px-2.5 py-0.5 rounded-full text-[10px] font-bold shadow-sm flex items-center gap-1"><Icon name="clock" className="w-3 h-3" /> 최근 수집: {formatTime(lastSync)} KST</span>
                     <a href={REQUEST_FORM_URL} target="_blank" rel="noopener noreferrer" className="bg-white border border-blue-200 text-blue-600 px-2.5 py-0.5 rounded-full text-[10px] font-bold shadow-sm flex items-center gap-1 hover:bg-blue-50 transition-colors"><Icon name="plus-circle" className="w-3 h-3" /> 기관 추가 요청</a>
                 </div>
                 <h1 className="text-2xl md:text-3xl font-black text-slate-900 leading-tight">
@@ -209,11 +208,12 @@ const App = () => {
                             </div>
 
                             <div className="flex flex-col gap-3">
+                                <p className="text-[10.5px] text-slate-400 font-medium flex items-center gap-1 -mb-1"><Icon name="mouse-pointer-click" className="w-3 h-3" /> 여러 개를 선택하면 함께 볼 수 있어요</p>
                                 <ScrollRow>
                                     <span className="text-[11px] font-black text-slate-400 uppercase tracking-widest mr-1 shrink-0 flex items-center gap-1 w-12"><Icon name="building" className="w-3 h-3"/> 기관</span>
-                                    <button onClick={() => setActiveTab('all')} className={`flex-shrink-0 px-3.5 py-1.5 rounded-lg text-xs font-bold border transition-all ${activeTab === 'all' ? 'bg-slate-900 text-white border-slate-900 shadow-md' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50 hover:text-slate-800'}`}>전체</button>
+                                    <button onClick={() => toggleFilter(setActiveTabs, 'all')} className={`flex-shrink-0 px-3.5 py-1.5 rounded-lg text-xs font-bold border transition-all ${activeTabs.length === 0 ? 'bg-slate-900 text-white border-slate-900 shadow-md' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50 hover:text-slate-800'}`}>전체</button>
                                     {institutions.map(inst => (
-                                        <button key={inst.id} onClick={() => setActiveTab(inst.id)} className={`flex-shrink-0 px-3.5 py-1.5 rounded-lg text-xs font-bold border transition-all ${activeTab === inst.id ? 'bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-100' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50 hover:text-blue-600'}`}>
+                                        <button key={inst.id} onClick={() => toggleFilter(setActiveTabs, inst.id)} className={`flex-shrink-0 px-3.5 py-1.5 rounded-lg text-xs font-bold border transition-all ${activeTabs.includes(inst.id) ? 'bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-100' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50 hover:text-blue-600'}`}>
                                             {inst.shortName}
                                         </button>
                                     ))}
@@ -222,7 +222,7 @@ const App = () => {
                                 <ScrollRow>
                                     <span className="text-[11px] font-black text-slate-400 uppercase tracking-widest mr-1 shrink-0 flex items-center gap-1 w-12"><Icon name="briefcase" className="w-3 h-3"/> 계약</span>
                                     {[ { id: 'all', label: '전체' }, { id: '정규직', label: '정규직' }, { id: '무기계약직', label: '무기계약직' }, { id: '계약직', label: '계약직/기간제' }, { id: '비정규직', label: '비정규직' }, { id: '인턴', label: '체험형 인턴' }].map(type => (
-                                        <button key={type.id} onClick={() => setActiveJobType(type.id)} className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-[11.5px] font-bold border transition-all ${activeJobType === type.id ? 'bg-purple-600 text-white border-purple-600 shadow-md shadow-purple-100' : 'bg-white text-slate-500 border-slate-200 hover:bg-purple-50 hover:text-purple-700 hover:border-purple-200'}`}>
+                                        <button key={type.id} onClick={() => toggleFilter(setActiveJobTypes, type.id)} className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-[11.5px] font-bold border transition-all ${(type.id === 'all' ? activeJobTypes.length === 0 : activeJobTypes.includes(type.id)) ? 'bg-purple-600 text-white border-purple-600 shadow-md shadow-purple-100' : 'bg-white text-slate-500 border-slate-200 hover:bg-purple-50 hover:text-purple-700 hover:border-purple-200'}`}>
                                             {type.label}
                                         </button>
                                     ))}
@@ -231,7 +231,7 @@ const App = () => {
                                 <ScrollRow>
                                     <span className="text-[11px] font-black text-slate-400 uppercase tracking-widest mr-1 shrink-0 flex items-center gap-1 w-12"><Icon name="map-pin" className="w-3 h-3"/> 지역</span>
                                     {[ { id: 'all', label: '전체' }, { id: '전국', label: '전국' }, { id: '서울', label: '서울' }, { id: '경인', label: '경기·인천' }, { id: '강원', label: '강원' }, { id: '대전충남', label: '대전·세종·충남' }, { id: '충북', label: '충북' }, { id: '광주', label: '광주' }, { id: '전북', label: '전북' }, { id: '전남', label: '전남' }, { id: '부산', label: '부산' }, { id: '대구', label: '대구' }, { id: '울산', label: '울산' }, { id: '경북', label: '경북' }, { id: '경남', label: '경남' }, { id: '제주', label: '제주' } ].map(reg => (
-                                        <button key={reg.id} onClick={() => setActiveRegion(reg.id)} className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-[11.5px] font-bold border transition-all ${activeRegion === reg.id ? 'bg-emerald-600 text-white border-emerald-600 shadow-md shadow-emerald-100' : 'bg-white text-slate-500 border-slate-200 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-200'}`}>
+                                        <button key={reg.id} onClick={() => toggleFilter(setActiveRegions, reg.id)} className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-[11.5px] font-bold border transition-all ${(reg.id === 'all' ? activeRegions.length === 0 : activeRegions.includes(reg.id)) ? 'bg-emerald-600 text-white border-emerald-600 shadow-md shadow-emerald-100' : 'bg-white text-slate-500 border-slate-200 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-200'}`}>
                                             {reg.label}
                                         </button>
                                     ))}
@@ -277,7 +277,7 @@ const App = () => {
                                     <div className="py-20 text-center bg-white rounded-3xl border border-dashed border-slate-200 flex flex-col items-center justify-center gap-3">
                                         <Icon name="search-x" className="w-10 h-10 text-slate-300" />
                                         <p className="text-slate-400 text-sm font-bold">현재 필터 조건에 맞는 공고가 없습니다.</p>
-                                        <button onClick={() => { setActiveTab('all'); setActiveJobType('all'); setActiveRegion('all'); setSearchTerm(''); }} className="mt-2 text-[11px] text-blue-600 font-bold hover:underline">필터 전체 초기화</button>
+                                        <button onClick={() => { setActiveTabs([]); setActiveJobTypes([]); setActiveRegions([]); setSearchTerm(''); }} className="mt-2 text-[11px] text-blue-600 font-bold hover:underline">필터 전체 초기화</button>
                                     </div>
                                 )
                             }

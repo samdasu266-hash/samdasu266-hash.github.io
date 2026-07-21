@@ -59,9 +59,9 @@ const App = () => {
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [activeTab, setActiveTab] = useState('all');
-  const [activeJobType, setActiveJobType] = useState('all');
-  const [activeRegion, setActiveRegion] = useState('all');
+  const [activeTabs, setActiveTabs] = useState([]); // [] = 전체
+  const [activeJobTypes, setActiveJobTypes] = useState([]);
+  const [activeRegions, setActiveRegions] = useState([]);
   const [sortBy, setSortBy] = useState('latest'); // 'latest' | 'deadline'
   const [lastSync, setLastSync] = useState(null);
   const [mainView, setMainView] = useState('jobs');
@@ -206,27 +206,11 @@ const App = () => {
       const endDt = parseDotDate(job.endDate);
       if (endDt && endDt < new Date()) return false;
       const matchesSearch = job.title?.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesInst = activeTab === 'all' || job.instId === activeTab;
+      const matchesInst = activeTabs.length === 0 || activeTabs.includes(job.instId);
       const actualJobType = job.jobType || "정규직";
-      let matchesType = false;
-      if (activeJobType === 'all') {
-        matchesType = true;
-      } else if (activeJobType === '계약직') {
-        matchesType = actualJobType.includes('계약직') || actualJobType.includes('기간제');
-      } else {
-        matchesType = actualJobType.includes(activeJobType);
-      }
+      const matchesType = activeJobTypes.length === 0 || activeJobTypes.some(t => matchType(t, actualJobType));
       const actualRegion = job.region || "전국";
-      let matchesRegion = false;
-      if (activeRegion === 'all') {
-        matchesRegion = true;
-      } else if (activeRegion === '경인') {
-        matchesRegion = actualRegion.includes('경기') || actualRegion.includes('인천');
-      } else if (activeRegion === '대전충남') {
-        matchesRegion = actualRegion.includes('대전') || actualRegion.includes('세종') || actualRegion.includes('충남') || actualRegion.includes('대전충남');
-      } else {
-        matchesRegion = actualRegion.includes(activeRegion);
-      }
+      const matchesRegion = activeRegions.length === 0 || activeRegions.some(r => matchRegion(r, actualRegion));
       return matchesSearch && matchesInst && matchesType && matchesRegion;
     });
     if (sortBy === 'deadline') {
@@ -240,9 +224,36 @@ const App = () => {
       });
     }
     return result;
-  }, [jobs, searchTerm, activeTab, activeJobType, activeRegion, sortBy]);
-  const formatDate = d => d ? `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일` : '확인 중...';
-  const formatTime = d => d ? `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}` : '';
+  }, [jobs, searchTerm, activeTabs, activeJobTypes, activeRegions, sortBy]);
+
+  // 다중 선택 토글: 'all'을 누르면 전체(빈 배열)로 초기화, 그 외에는 켜고 끄기
+  const toggleFilter = (setter, value) => {
+    if (value === 'all') {
+      setter([]);
+      return;
+    }
+    setter(prev => prev.includes(value) ? prev.filter(v => v !== value) : [...prev, value]);
+  };
+  const matchType = (sel, actual) => sel === '계약직' ? actual.includes('계약직') || actual.includes('기간제') : actual.includes(sel);
+  const matchRegion = (sel, actual) => {
+    if (sel === '경인') return actual.includes('경기') || actual.includes('인천');
+    if (sel === '대전충남') return actual.includes('대전') || actual.includes('세종') || actual.includes('충남');
+    return actual.includes(sel);
+  };
+
+  // 수집 시각은 항상 한국 표준시(KST)로 표기
+  const formatDate = d => d ? d.toLocaleDateString('ko-KR', {
+    timeZone: 'Asia/Seoul',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  }) : '확인 중...';
+  const formatTime = d => d ? d.toLocaleTimeString('ko-KR', {
+    timeZone: 'Asia/Seoul',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false
+  }) : '';
 
   // 마감까지 남은 날짜 (7일 이내만 배지로 표시)
   const getDday = job => {
@@ -308,7 +319,7 @@ const App = () => {
   }, /*#__PURE__*/React.createElement(Icon, {
     name: "clock",
     className: "w-3 h-3"
-  }), " 최근 수집: ", formatTime(lastSync)), /*#__PURE__*/React.createElement("a", {
+  }), " 최근 수집: ", formatTime(lastSync), " KST"), /*#__PURE__*/React.createElement("a", {
     href: REQUEST_FORM_URL,
     target: "_blank",
     rel: "noopener noreferrer",
@@ -371,18 +382,23 @@ const App = () => {
     className: "w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium transition-all"
   })), /*#__PURE__*/React.createElement("div", {
     className: "flex flex-col gap-3"
-  }, /*#__PURE__*/React.createElement(ScrollRow, null, /*#__PURE__*/React.createElement("span", {
+  }, /*#__PURE__*/React.createElement("p", {
+    className: "text-[10.5px] text-slate-400 font-medium flex items-center gap-1 -mb-1"
+  }, /*#__PURE__*/React.createElement(Icon, {
+    name: "mouse-pointer-click",
+    className: "w-3 h-3"
+  }), " 여러 개를 선택하면 함께 볼 수 있어요"), /*#__PURE__*/React.createElement(ScrollRow, null, /*#__PURE__*/React.createElement("span", {
     className: "text-[11px] font-black text-slate-400 uppercase tracking-widest mr-1 shrink-0 flex items-center gap-1 w-12"
   }, /*#__PURE__*/React.createElement(Icon, {
     name: "building",
     className: "w-3 h-3"
   }), " 기관"), /*#__PURE__*/React.createElement("button", {
-    onClick: () => setActiveTab('all'),
-    className: `flex-shrink-0 px-3.5 py-1.5 rounded-lg text-xs font-bold border transition-all ${activeTab === 'all' ? 'bg-slate-900 text-white border-slate-900 shadow-md' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50 hover:text-slate-800'}`
+    onClick: () => toggleFilter(setActiveTabs, 'all'),
+    className: `flex-shrink-0 px-3.5 py-1.5 rounded-lg text-xs font-bold border transition-all ${activeTabs.length === 0 ? 'bg-slate-900 text-white border-slate-900 shadow-md' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50 hover:text-slate-800'}`
   }, "전체"), institutions.map(inst => /*#__PURE__*/React.createElement("button", {
     key: inst.id,
-    onClick: () => setActiveTab(inst.id),
-    className: `flex-shrink-0 px-3.5 py-1.5 rounded-lg text-xs font-bold border transition-all ${activeTab === inst.id ? 'bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-100' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50 hover:text-blue-600'}`
+    onClick: () => toggleFilter(setActiveTabs, inst.id),
+    className: `flex-shrink-0 px-3.5 py-1.5 rounded-lg text-xs font-bold border transition-all ${activeTabs.includes(inst.id) ? 'bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-100' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50 hover:text-blue-600'}`
   }, inst.shortName))), /*#__PURE__*/React.createElement(ScrollRow, null, /*#__PURE__*/React.createElement("span", {
     className: "text-[11px] font-black text-slate-400 uppercase tracking-widest mr-1 shrink-0 flex items-center gap-1 w-12"
   }, /*#__PURE__*/React.createElement(Icon, {
@@ -408,8 +424,8 @@ const App = () => {
     label: '체험형 인턴'
   }].map(type => /*#__PURE__*/React.createElement("button", {
     key: type.id,
-    onClick: () => setActiveJobType(type.id),
-    className: `flex-shrink-0 px-3 py-1.5 rounded-lg text-[11.5px] font-bold border transition-all ${activeJobType === type.id ? 'bg-purple-600 text-white border-purple-600 shadow-md shadow-purple-100' : 'bg-white text-slate-500 border-slate-200 hover:bg-purple-50 hover:text-purple-700 hover:border-purple-200'}`
+    onClick: () => toggleFilter(setActiveJobTypes, type.id),
+    className: `flex-shrink-0 px-3 py-1.5 rounded-lg text-[11.5px] font-bold border transition-all ${(type.id === 'all' ? activeJobTypes.length === 0 : activeJobTypes.includes(type.id)) ? 'bg-purple-600 text-white border-purple-600 shadow-md shadow-purple-100' : 'bg-white text-slate-500 border-slate-200 hover:bg-purple-50 hover:text-purple-700 hover:border-purple-200'}`
   }, type.label))), /*#__PURE__*/React.createElement(ScrollRow, null, /*#__PURE__*/React.createElement("span", {
     className: "text-[11px] font-black text-slate-400 uppercase tracking-widest mr-1 shrink-0 flex items-center gap-1 w-12"
   }, /*#__PURE__*/React.createElement(Icon, {
@@ -465,8 +481,8 @@ const App = () => {
     label: '제주'
   }].map(reg => /*#__PURE__*/React.createElement("button", {
     key: reg.id,
-    onClick: () => setActiveRegion(reg.id),
-    className: `flex-shrink-0 px-3 py-1.5 rounded-lg text-[11.5px] font-bold border transition-all ${activeRegion === reg.id ? 'bg-emerald-600 text-white border-emerald-600 shadow-md shadow-emerald-100' : 'bg-white text-slate-500 border-slate-200 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-200'}`
+    onClick: () => toggleFilter(setActiveRegions, reg.id),
+    className: `flex-shrink-0 px-3 py-1.5 rounded-lg text-[11.5px] font-bold border transition-all ${(reg.id === 'all' ? activeRegions.length === 0 : activeRegions.includes(reg.id)) ? 'bg-emerald-600 text-white border-emerald-600 shadow-md shadow-emerald-100' : 'bg-white text-slate-500 border-slate-200 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-200'}`
   }, reg.label))))), /*#__PURE__*/React.createElement("div", {
     className: "flex items-center justify-between px-1"
   }, /*#__PURE__*/React.createElement("p", {
@@ -537,9 +553,9 @@ const App = () => {
     className: "text-slate-400 text-sm font-bold"
   }, "현재 필터 조건에 맞는 공고가 없습니다."), /*#__PURE__*/React.createElement("button", {
     onClick: () => {
-      setActiveTab('all');
-      setActiveJobType('all');
-      setActiveRegion('all');
+      setActiveTabs([]);
+      setActiveJobTypes([]);
+      setActiveRegions([]);
       setSearchTerm('');
     },
     className: "mt-2 text-[11px] text-blue-600 font-bold hover:underline"
