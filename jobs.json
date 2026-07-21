@@ -1,5 +1,5 @@
 {
- "lastSync": "2026-07-22T00:20:12.199096+09:00",
+ "lastSync": "2026-07-22T00:47:03.835445+09:00",
  "jobs": [
   {
    "instId": "nhis",
@@ -73,6 +73,16 @@
   },
   {
    "instId": "nps",
+   "title": "［국민연금공단 서울북부지역본부］공무직(환경관리직, 보안직) 및 기간제근로자(사회복지사, 지역상담직) 공개채용 공고",
+   "startDate": "26.06.17",
+   "endDate": "상세참조",
+   "status": "진행중",
+   "jobType": "공무직",
+   "region": "서울",
+   "link": "https://www.nps.or.kr/pnsgdnc/hiregdnc/getOHAE0004M1.do?menuId=MN24000969&pstId=ZZ202600000000000682&hmpgCd=01&hmpgBbsCd=BS20240138&sortSe=FR&pageIndex=1&searchText=&searchGbu=&pstSeCd="
+  },
+  {
+   "instId": "nps",
    "title": "국민연금공단 기금이사 초빙 공고",
    "startDate": "26.06.11",
    "endDate": "상세참조",
@@ -80,16 +90,6 @@
    "jobType": "정규직",
    "region": "전북(본부·공고확인)",
    "link": "https://www.nps.or.kr/pnsgdnc/hiregdnc/getOHAE0004M1.do?menuId=MN24000969&pstId=ZZ202600000000000652&hmpgCd=01&hmpgBbsCd=BS20240138&sortSe=FR&pageIndex=1&searchText=&searchGbu=&pstSeCd="
-  },
-  {
-   "instId": "nps",
-   "title": "[국민연금공단 서울남부지역본부] 공무직(시설직, 보안직) 및 기간제근로자(시설직) 공개채용 공고",
-   "startDate": "26.05.27",
-   "endDate": "상세참조",
-   "status": "진행중",
-   "jobType": "공무직",
-   "region": "서울",
-   "link": "https://www.nps.or.kr/pnsgdnc/hiregdnc/getOHAE0004M1.do?menuId=MN24000969&pstId=ZZ202600000000000593&hmpgCd=01&hmpgBbsCd=BS20240138&sortSe=FR&pageIndex=1&searchText=&searchGbu=&pstSeCd="
   },
   {
    "instId": "nps",
