@@ -1,5 +1,5 @@
 {
- "lastSync": "2026-07-22T04:26:18.943410+09:00",
+ "lastSync": "2026-07-22T06:13:28.236062+09:00",
  "jobs": [
   {
    "instId": "nhis",
@@ -33,6 +33,16 @@
   },
   {
    "instId": "nps",
+   "title": "[국민연금공단 부산지역본부] 부산지역본부 공무직(환경관리직(가)) 및 양산지사 공무직(보안직(가)) 채용 공고",
+   "startDate": "26.07.08",
+   "endDate": "상세참조",
+   "status": "진행중",
+   "jobType": "공무직",
+   "region": "부산",
+   "link": "https://www.nps.or.kr/pnsgdnc/hiregdnc/getOHAE0004M1.do?menuId=MN24000969&pstId=ZZ202600000000000785&hmpgCd=01&hmpgBbsCd=BS20240138&sortSe=FR&pageIndex=1&searchText=&searchGbu=&pstSeCd="
+  },
+  {
+   "instId": "nps",
    "title": "국민연금연구원 임시 연구보조원 채용 공고",
    "startDate": "26.07.08",
    "endDate": "상세참조",
@@ -53,13 +63,13 @@
   },
   {
    "instId": "nps",
-   "title": "본부 공무직(시설직) 공개채용 공고",
-   "startDate": "26.06.24",
+   "title": "국민연금공단 복지이사 초빙 공고",
+   "startDate": "26.06.23",
    "endDate": "상세참조",
    "status": "진행중",
-   "jobType": "공무직",
+   "jobType": "정규직",
    "region": "전북(본부·공고확인)",
-   "link": "https://www.nps.or.kr/pnsgdnc/hiregdnc/getOHAE0004M1.do?menuId=MN24000969&pstId=ZZ202600000000000705&hmpgCd=01&hmpgBbsCd=BS20240138&sortSe=FR&pageIndex=1&searchText=&searchGbu=&pstSeCd="
+   "link": "https://www.nps.or.kr/pnsgdnc/hiregdnc/getOHAE0004M1.do?menuId=MN24000969&pstId=ZZ202600000000000699&hmpgCd=01&hmpgBbsCd=BS20240138&sortSe=FR&pageIndex=1&searchText=&searchGbu=&pstSeCd="
   },
   {
    "instId": "nps",
@@ -90,16 +100,6 @@
    "jobType": "공무직",
    "region": "서울",
    "link": "https://www.nps.or.kr/pnsgdnc/hiregdnc/getOHAE0004M1.do?menuId=MN24000969&pstId=ZZ202600000000000593&hmpgCd=01&hmpgBbsCd=BS20240138&sortSe=FR&pageIndex=1&searchText=&searchGbu=&pstSeCd="
-  },
-  {
-   "instId": "nps",
-   "title": "[국민연금공단 대전세종지역본부] 공무직(시설직, 환경관리직) 공개채용 공고",
-   "startDate": "26.05.21",
-   "endDate": "상세참조",
-   "status": "진행중",
-   "jobType": "공무직",
-   "region": "대전충남",
-   "link": "https://www.nps.or.kr/pnsgdnc/hiregdnc/getOHAE0004M1.do?menuId=MN24000969&pstId=ZZ202600000000000573&hmpgCd=01&hmpgBbsCd=BS20240138&sortSe=FR&pageIndex=1&searchText=&searchGbu=&pstSeCd="
   },
   {
    "instId": "redcross",
