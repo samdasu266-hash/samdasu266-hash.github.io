@@ -4,25 +4,10 @@ import asyncio
 import re
 from datetime import datetime, timedelta, timezone
 from urllib.parse import urljoin
-import firebase_admin
-from firebase_admin import credentials
-from firebase_admin import firestore
 from playwright.async_api import async_playwright
 
-# 1. Firebase 인증
-firebase_json = os.environ.get('FIREBASE_CONFIG_JSON')
-if not firebase_json:
-    print("Error: FIREBASE_CONFIG_JSON 설정 없음")
-    exit(1)
-
-cred_dict = json.loads(firebase_json)
-cred = credentials.Certificate(cred_dict)
-
-if not firebase_admin._apps:
-    firebase_admin.initialize_app(cred)
-
-db = firestore.client()
-APP_ID = "recruitment-portal-v3"
+# 수집 결과는 저장소의 jobs.json에 저장하고, 커밋되면 GitHub Pages가 서빙한다
+JOBS_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "jobs.json")
 KST = timezone(timedelta(hours=9))
 
 def extract_dates(text, current_year):
@@ -71,6 +56,77 @@ def extract_dates(text, current_year):
             
     parsed_dates.sort(key=lambda x: x['dt'])
     return parsed_dates
+
+GENERAL_REGIONS = ["서울", "부산", "대구", "인천", "광주", "울산", "경기", "강원", "충북", "전북", "전남", "경북", "경남", "제주"]
+
+# 기관명 → 소재지 매핑. 공고에서 기관명이 확인되면 본문 주소보다 우선 적용한다.
+# (보건복지부 게시판에는 소속·산하기관 공고가 섞여 있어 페이지 주소(세종)로 오탐이 발생)
+KNOWN_ORG_REGIONS = {
+    "사회보장정보원": "서울",     # 한국사회보장정보원 (마포)
+    "국립중앙의료원": "서울",
+    "국립정신건강센터": "서울",
+    "국립재활원": "서울",
+    "건강증진개발원": "서울",     # 한국건강증진개발원 (중구)
+    "국립암센터": "경기",         # 고양
+    "국립춘천병원": "강원",
+    "국립공주병원": "대전충남",
+    "국립부곡병원": "경남",
+    "국립마산병원": "경남",
+    "국립목포병원": "전남",
+    "국립나주병원": "전남",
+    "국립소록도병원": "전남",
+    "질병관리청": "충북",         # 오송
+    "국립보건연구원": "충북",     # 오송
+    "보건복지인재원": "충북",     # 오송
+    "오송": "충북",
+}
+
+def regions_in_text(text):
+    found = set()
+    if "거창" in text: found.add("경남")
+    if "상주" in text: found.add("경북")
+    if "남부혈액검사센터" in text: found.add("부산")
+    if "혈액관리본부" in text: found.add("강원")
+    if "경인" in text: found.update(["경기", "인천"])
+    if any(k in text for k in ["대전", "세종", "충남"]): found.add("대전충남")
+    for r in GENERAL_REGIONS:
+        if r in text: found.add(r)
+    return found
+
+def detect_region(inst_id, title, row_text, combined_text):
+    # 1) 알려진 기관명이 보이면 소재지 확정
+    for org, reg in KNOWN_ORG_REGIONS.items():
+        if org in title or org in row_text:
+            return reg
+    for org, reg in KNOWN_ORG_REGIONS.items():
+        if org in combined_text:
+            return reg
+
+    # 2) 근무지/근무장소가 명시된 줄에서만 추출 (본문 전체 스캔보다 정확)
+    region_set = set()
+    for line in combined_text.split('\n'):
+        if any(k in line for k in ['근무지', '근무장소', '근무 장소', '근무예정지', '소재지']):
+            region_set |= regions_in_text(line)
+
+    # 3) 제목에서 추출
+    if not region_set:
+        region_set = regions_in_text(title)
+
+    # 4) 본문 전체 스캔 — 마지막 수단.
+    #    mohw는 게시판/본문에 세종 주소가 항상 포함되어 오탐이 심하므로 제외
+    if not region_set and inst_id != 'mohw':
+        region_set = regions_in_text(combined_text)
+
+    if region_set:
+        return ", ".join(sorted(region_set))
+
+    # 5) 공고에 근무지가 명시되지 않은 경우: 본부 소재지 + 짧은 확인 안내 표시
+    #    (필터는 문자열 포함 매칭이라 꼬리표가 붙어도 그대로 동작)
+    if inst_id in ["neca", "kuksiwon", "koiha"]: return "서울(본부·공고확인)"
+    if inst_id in ["hira", "nhis", "redcross"]: return "강원(본부·공고확인)"
+    if inst_id == "nps": return "전북(본부·공고확인)"
+    if inst_id == "comwel": return "울산(본부·공고확인)"
+    return "전국(공고확인)"
 
 async def scrape_site(browser, inst_id, url):
     page = await browser.new_page(
@@ -225,6 +281,7 @@ async def scrape_site(browser, inst_id, url):
                 elif job['raw_href'] and job['raw_href'] != "#" and not job['raw_href'].startswith("javascript"):
                     detail_page = await browser.new_page()
                     await detail_page.goto(safe_link, wait_until="domcontentloaded", timeout=10000)
+                    await asyncio.sleep(1.5)  # SPA(careeron 등) 렌더링 대기
                     body_text = await detail_page.inner_text("body")
                     combined_text += " \n" + body_text
             except Exception:
@@ -236,41 +293,8 @@ async def scrape_site(browser, inst_id, url):
                     except Exception:
                         pass
 
-            # 맞춤형 지역(시/도) 추출 
-            region_set = set()
-            title_region_set = set()
-            general_regions = ["서울", "부산", "대구", "인천", "광주", "울산", "경기", "강원", "충북", "전북", "전남", "경북", "경남", "제주"]
-            
-            if "거창" in job['title']: title_region_set.add("경남")
-            if "상주" in job['title']: title_region_set.add("경북")
-            if "남부혈액검사센터" in job['title']: title_region_set.add("부산")
-            if "혈액관리본부" in job['title']: title_region_set.add("강원")
-            if "경인" in job['title']: title_region_set.update(["경기", "인천"])
-            if any(k in job['title'] for k in ["대전", "세종", "충남"]): title_region_set.add("대전충남")
-            for r in general_regions:
-                if r in job['title']: title_region_set.add(r)
-                
-            if title_region_set:
-                region_set = title_region_set
-            else:
-                if "거창" in combined_text: region_set.add("경남")
-                if "상주" in combined_text: region_set.add("경북")
-                if "남부혈액검사센터" in combined_text: region_set.add("부산")
-                if "혈액관리본부" in combined_text: region_set.add("강원")
-                if "경인" in combined_text: region_set.update(["경기", "인천"])
-                if any(k in combined_text for k in ["대전", "세종", "충남"]): region_set.add("대전충남")
-                for r in general_regions:
-                    if r in combined_text: region_set.add(r)
-            
-            if len(region_set) > 0: detected_region = ", ".join(sorted(list(region_set)))
-            else: detected_region = "전국"
-            
-            if detected_region == "전국":
-                if job['instId'] in ["neca", "kuksiwon", "koiha"]: detected_region = "서울"
-                elif job['instId'] in ["hira", "nhis", "redcross"]: detected_region = "강원"
-                elif job['instId'] == "nps": detected_region = "전북"
-                elif job['instId'] == "comwel": detected_region = "울산"
-                elif job['instId'] == "mohw": detected_region = "대전충남"
+            # 맞춤형 지역(시/도) 추출
+            detected_region = detect_region(job['instId'], job['title'], job['row_text'], combined_text)
 
             # 🔥 기간 탐색 키워드 확대 (지원, 기간, 기한 등 추가)
             start_item = None
@@ -366,6 +390,7 @@ async def main():
             {"id": "nps", "url": "https://www.nps.or.kr/pnsgdnc/hiregdnc/getOHAE0004M0List.do"},
             {"id": "comwel", "url": "https://www.comwel.or.kr/recruit/hp/pblanc/pblancList.do"},
             {"id": "redcross", "url": "https://www.redcross.or.kr/recruit/"},
+            {"id": "redcross", "url": "https://bloodinfo.careeron.co.kr/#/recruitment/list"},
             {"id": "mohw", "url": "https://www.mohw.go.kr/board.es?mid=a10501010400&bid=0003"}
         ]
         
@@ -382,24 +407,31 @@ async def main():
             print("모든 사이트 수집 실패 - 기존 데이터를 유지합니다.")
             return
 
-        # 수집에 성공한 기관의 문서만 교체하고, 실패한 기관의 기존 공고는 보존
-        batch = db.batch()
-        jobs_path = db.collection('artifacts').document(APP_ID).collection('public').document('data').collection('jobs')
+        # 수집에 실패한 기관은 기존 jobs.json의 데이터를 보존
+        try:
+            with open(JOBS_FILE, encoding="utf-8") as f:
+                old_jobs = json.load(f).get("jobs", [])
+        except Exception:
+            old_jobs = []
+        for job in old_jobs:
+            if job.get("instId") not in succeeded:
+                all_jobs.append(job)
 
-        for doc in jobs_path.get():
-            if doc.to_dict().get('instId') in succeeded:
-                batch.delete(doc.reference)
-
-        counters = {}
+        # 같은 기관을 여러 사이트에서 수집하는 경우(적십자사 본사 + 혈액관리본부) 중복 제거
+        deduped_jobs = []
+        seen_keys = set()
         for job in all_jobs:
-            n = counters.get(job['instId'], 0)
-            counters[job['instId']] = n + 1
-            batch.set(jobs_path.document(f"{job['instId']}_{n}"), job)
+            key = (job['instId'], job['title'].replace(" ", ""))
+            if key in seen_keys:
+                continue
+            seen_keys.add(key)
+            deduped_jobs.append(job)
+        all_jobs = deduped_jobs
 
-        meta_ref = db.collection('artifacts').document(APP_ID).collection('public').document('data').collection('metadata').document('sync')
-        batch.set(meta_ref, {"lastSync": datetime.now(KST).isoformat()})
-        batch.commit()
-        print(f"🚀 성공: {len(succeeded)}개 기관에서 {len(all_jobs)}개의 공고 저장 완료!")
+        payload = {"lastSync": datetime.now(KST).isoformat(), "jobs": all_jobs}
+        with open(JOBS_FILE, "w", encoding="utf-8") as f:
+            json.dump(payload, f, ensure_ascii=False, indent=1)
+        print(f"🚀 성공: {len(succeeded)}개 기관, 총 {len(all_jobs)}개의 공고를 jobs.json에 저장!")
 
 if __name__ == "__main__":
     asyncio.run(main())

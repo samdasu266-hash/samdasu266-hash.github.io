@@ -5,19 +5,7 @@ const Icon = ({ name, className = "w-5 h-5" }) => {
     return <i data-lucide={name} className={className}></i>;
 };
 
-const firebaseConfig = {
-    apiKey: "AIzaSyDUBJ3oGSEbhEKHLP04OuUUXkiZNpv6vXE",
-    authDomain: "get-out-from-hospital.firebaseapp.com",
-    projectId: "get-out-from-hospital",
-    storageBucket: "get-out-from-hospital.firebasestorage.app",
-    messagingSenderId: "18005175262",
-    appId: "1:18005175262:web:ae31eedd60bb90d438cb4f"
-};
-
-if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
-const auth = firebase.auth();
-const APP_ID = "recruitment-portal-v3";
+const REQUEST_FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLSe8gTQy9ECOAzh-Qw33t_SeHqmwXZRm-WIu1qXOO1qOcsYsTQ/viewform";
 
 // "26.03.11" 또는 "26.03.11 18:00" 형식 파싱 (그 외 형식은 null)
 const parseDotDate = (s) => {
@@ -37,7 +25,6 @@ const App = () => {
     const [activeJobType, setActiveJobType] = useState('all'); 
     const [activeRegion, setActiveRegion] = useState('all'); 
     const [lastSync, setLastSync] = useState(null);
-    const [todayVisitors, setTodayVisitors] = useState(0);
     const [mainView, setMainView] = useState('jobs'); 
     const [showPrivacy, setShowPrivacy] = useState(false);
     const [showContact, setShowContact] = useState(false);
@@ -55,41 +42,22 @@ const App = () => {
     ];
 
     useEffect(() => {
-        auth.signInAnonymously().then(() => {
-            const dataRef = db.collection('artifacts').doc(APP_ID).collection('public').doc('data');
-            
-            dataRef.collection('jobs').onSnapshot(snap => {
-                const list = [];
-                snap.forEach(doc => {
-                    const data = doc.data();
-                    if(data.title) {
-                        list.push({ id: doc.id, ...data });
-                    }
-                });
-                const sortKey = (job) => { const d = parseDotDate(job.startDate || job.postedDate); return d ? d.getTime() : 0; };
-                list.sort((a, b) => sortKey(b) - sortKey(a));
-                setJobs(list);
-                setLoading(false);
-            });
-
-            dataRef.collection('metadata').doc('sync').onSnapshot(doc => {
-                if(doc.exists && doc.data().lastSync) setLastSync(new Date(doc.data().lastSync));
-            });
-
-            const now = new Date();
-            const kst = new Date(now.getTime() + (now.getTimezoneOffset() * 60000) + (9 * 3600000));
-            const todayKey = `${kst.getFullYear()}-${String(kst.getMonth() + 1).padStart(2, '0')}-${String(kst.getDate()).padStart(2, '0')}`; 
-            const visitorDocRef = dataRef.collection('visitors').doc(todayKey);
-            
-            if (!localStorage.getItem(`visited_${todayKey}`)) {
-                visitorDocRef.set({ count: firebase.firestore.FieldValue.increment(1), date: todayKey }, { merge: true })
-                .then(() => localStorage.setItem(`visited_${todayKey}`, 'true')).catch(e => console.error(e));
-            }
-            visitorDocRef.onSnapshot(doc => setTodayVisitors(doc.exists ? doc.data().count || 0 : 1));
-        }).catch(err => {
-            console.error("Firebase Login Error:", err);
-            setLoading(false);
-        });
+        const loadJobs = () => {
+            fetch('jobs.json?t=' + Date.now())
+                .then(r => r.ok ? r.json() : { jobs: [] })
+                .then(data => {
+                    const list = (data.jobs || []).filter(j => j && j.title).map((j, i) => ({ id: 'job_' + i, ...j }));
+                    const sortKey = (job) => { const d = parseDotDate(job.startDate || job.postedDate); return d ? d.getTime() : 0; };
+                    list.sort((a, b) => sortKey(b) - sortKey(a));
+                    setJobs(list);
+                    if (data.lastSync) setLastSync(new Date(data.lastSync));
+                    setLoading(false);
+                })
+                .catch(() => setLoading(false));
+        };
+        loadJobs();
+        const timer = setInterval(loadJobs, 10 * 60 * 1000); // 열어둔 화면도 10분마다 자동 갱신
+        return () => clearInterval(timer);
     }, []);
 
     const filteredJobs = useMemo(() => {
@@ -149,7 +117,7 @@ const App = () => {
                     <span className="bg-blue-600 text-white px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider">1시간 주기 자동 업데이트</span>
                     <span className="bg-white border border-slate-200 text-slate-600 px-2.5 py-0.5 rounded-full text-[10px] font-bold shadow-sm flex items-center gap-1"><Icon name="calendar" className="w-3 h-3 text-blue-500" /> 기준일자: {formatDate(lastSync)}</span>
                     <span className="bg-white border border-slate-200 text-slate-500 px-2.5 py-0.5 rounded-full text-[10px] font-bold shadow-sm flex items-center gap-1"><Icon name="clock" className="w-3 h-3" /> 최근 수집: {formatTime(lastSync)}</span>
-                    <span className="bg-white border border-slate-200 text-slate-700 px-2.5 py-0.5 rounded-full text-[10px] font-bold shadow-sm flex items-center gap-1"><Icon name="users" className="w-3 h-3 text-emerald-500" /> 오늘 방문자: {todayVisitors}명</span>
+                    <a href={REQUEST_FORM_URL} target="_blank" rel="noopener noreferrer" className="bg-white border border-blue-200 text-blue-600 px-2.5 py-0.5 rounded-full text-[10px] font-bold shadow-sm flex items-center gap-1 hover:bg-blue-50 transition-colors"><Icon name="plus-circle" className="w-3 h-3" /> 기관 추가 요청</a>
                 </div>
                 <h1 className="text-2xl md:text-3xl font-black text-slate-900 leading-tight">
                     보건의료 공기업 <span className="text-blue-600">채용 통합 포털</span>
@@ -178,6 +146,7 @@ const App = () => {
                                     </div>
                                 ))}
                             </nav>
+                            <a href={REQUEST_FORM_URL} target="_blank" rel="noopener noreferrer" className="mt-4 block w-full text-center py-2.5 rounded-xl border border-dashed border-blue-300 text-blue-600 text-xs font-bold hover:bg-blue-50 transition-colors">+ 원하는 기관이 없나요? 추가 요청하기</a>
                         </div>
                     </aside>
                     
@@ -366,7 +335,8 @@ const App = () => {
                         <button onClick={() => setShowContact(false)} className="absolute top-6 right-6 text-slate-300 hover:text-slate-900"><Icon name="x" /></button>
                         <Icon name="mail" className="w-14 h-14 mx-auto text-blue-500 mb-4" />
                         <h2 className="text-xl font-black text-slate-900 mb-3">운영자 문의하기</h2>
-                        <p className="text-sm text-slate-600 font-medium mb-6 leading-relaxed">기관 추가 요청, 오류 제보 및 각종 건의사항은 아래 메일로 보내주시기 바랍니다.</p>
+                        <p className="text-sm text-slate-600 font-medium mb-6 leading-relaxed">기관 추가 요청, 오류 제보 및 각종 건의사항은 아래 요청 폼이나 메일로 보내주시기 바랍니다.</p>
+                        <a href={REQUEST_FORM_URL} target="_blank" rel="noopener noreferrer" className="block w-full py-4 bg-blue-600 text-white rounded-2xl font-bold hover:bg-blue-700 transition-colors shadow-lg mb-3">📝 기관 추가 요청 / 건의하기</a>
                         <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 mb-6 flex justify-center items-center">
                             <span className="font-bold text-blue-600 text-[15px] select-all tracking-tight">samdasu266@gmail.com</span>
                         </div>
