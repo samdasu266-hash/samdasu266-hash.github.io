@@ -24,6 +24,7 @@ const App = () => {
     const [activeTab, setActiveTab] = useState('all');
     const [activeJobType, setActiveJobType] = useState('all'); 
     const [activeRegion, setActiveRegion] = useState('all'); 
+    const [sortBy, setSortBy] = useState('latest'); // 'latest' | 'deadline'
     const [lastSync, setLastSync] = useState(null);
     const [mainView, setMainView] = useState('jobs'); 
     const [showPrivacy, setShowPrivacy] = useState(false);
@@ -61,7 +62,7 @@ const App = () => {
     }, []);
 
     const filteredJobs = useMemo(() => {
-        return jobs.filter(job => {
+        let result = jobs.filter(job => {
             // 마감되었거나 접수기한이 지난 공고는 화면에서 숨김
             if (job.status === '마감') return false;
             const endDt = parseDotDate(job.endDate);
@@ -94,10 +95,35 @@ const App = () => {
 
             return matchesSearch && matchesInst && matchesType && matchesRegion;
         });
-    }, [jobs, searchTerm, activeTab, activeJobType, activeRegion]);
+        if (sortBy === 'deadline') {
+            result = [...result].sort((a, b) => {
+                const da = parseDotDate(a.endDate);
+                const db = parseDotDate(b.endDate);
+                if (!da && !db) return 0;
+                if (!da) return 1;   // 마감일 미상은 뒤로
+                if (!db) return -1;
+                return da - db;
+            });
+        }
+        return result;
+    }, [jobs, searchTerm, activeTab, activeJobType, activeRegion, sortBy]);
 
     const formatDate = (d) => d ? `${d.getFullYear()}년 ${d.getMonth()+1}월 ${d.getDate()}일` : '확인 중...';
     const formatTime = (d) => d ? `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}` : '';
+
+    // 마감까지 남은 날짜 (7일 이내만 배지로 표시)
+    const getDday = (job) => {
+        const end = parseDotDate(job.endDate);
+        if (!end) return null;
+        const today = new Date(); today.setHours(0, 0, 0, 0);
+        const endDay = new Date(end); endDay.setHours(0, 0, 0, 0);
+        const diff = Math.round((endDay - today) / 86400000);
+        if (diff < 0) return null;
+        if (diff === 0) return { label: '오늘 마감', urgent: true };
+        if (diff <= 3) return { label: `마감 D-${diff}`, urgent: true };
+        if (diff <= 7) return { label: `마감 D-${diff}`, urgent: false };
+        return null;
+    };
 
     return (
         <div className="max-w-5xl mx-auto p-4 md:p-8 flex flex-col min-h-[100dvh]">
@@ -126,7 +152,7 @@ const App = () => {
 
             {mainView === 'jobs' ? (
                 <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 md:gap-8">
-                    <aside className="lg:col-span-1 space-y-6">
+                    <aside className="lg:col-span-1 space-y-6 order-2 lg:order-1">
                         <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm text-left">
                             <h2 className="text-[11px] font-black text-slate-400 uppercase mb-4 tracking-widest flex items-center gap-1">
                                 <Icon name="link" className="w-3 h-3" /> 기관별 채용 사이트
@@ -150,7 +176,7 @@ const App = () => {
                         </div>
                     </aside>
                     
-                    <main className="lg:col-span-3 space-y-6">
+                    <main className="lg:col-span-3 space-y-6 order-1 lg:order-2">
                         <div className="bg-white p-4 md:p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col gap-4">
                             <div className="relative">
                                 <Icon name="search" className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
@@ -188,16 +214,26 @@ const App = () => {
                             </div>
                         </div>
 
+                        <div className="flex items-center justify-between px-1">
+                            <p className="text-xs font-bold text-slate-500">진행중 공고 <span className="text-blue-600">{filteredJobs.length}</span>건</p>
+                            <div className="flex gap-1">
+                                <button onClick={() => setSortBy('latest')} className={`px-3 py-1.5 rounded-lg text-[11px] font-bold border transition-all ${sortBy === 'latest' ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'}`}>최신순</button>
+                                <button onClick={() => setSortBy('deadline')} className={`px-3 py-1.5 rounded-lg text-[11px] font-bold border transition-all ${sortBy === 'deadline' ? 'bg-red-500 text-white border-red-500' : 'bg-white text-slate-500 border-slate-200 hover:bg-red-50 hover:text-red-500'}`}>마감임박순</button>
+                            </div>
+                        </div>
+
                         <div className="space-y-3">
                             {loading ? <div className="py-20 text-center text-slate-300 animate-pulse font-bold text-sm">최신 채용 정보를 동기화 중입니다...</div> :
                                 filteredJobs.length > 0 ? (
                                     filteredJobs.map(job => {
                                         const instInfo = institutions.find(i => i.id === job.instId) || { shortName: (job.instId || '').toUpperCase() };
                                         const isClosed = job.status === '마감';
+                                        const dday = getDday(job);
                                         return (
-                                            <div key={job.id} className="job-card bg-white p-5 md:p-6 rounded-2xl border border-slate-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 text-left">
+                                            <div key={job.id} onClick={() => window.open(job.link, '_blank')} className="job-card cursor-pointer bg-white p-5 md:p-6 rounded-2xl border border-slate-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 text-left">
                                                 <div className="flex-1">
                                                     <div className="flex gap-1.5 mb-2 flex-wrap">
+                                                        {dday && <span className={`text-[10px] font-black px-2 py-0.5 rounded ${dday.urgent ? 'bg-red-500 text-white' : 'bg-orange-100 text-orange-600 border border-orange-200'}`}>{dday.label}</span>}
                                                         <span className="text-[10px] font-black px-2 py-0.5 bg-slate-100 rounded text-slate-500 uppercase tracking-tight">{instInfo.shortName}</span>
                                                         <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${isClosed ? 'text-red-600 bg-red-50 border-red-100' : 'text-blue-600 bg-blue-50 border-blue-100'}`}>{isClosed ? '서류접수마감' : '채용진행중'}</span>
                                                         <span className="text-[10px] font-bold px-2 py-0.5 rounded border text-purple-600 bg-purple-50 border-purple-100">{job.jobType || "정규직"}</span>
@@ -208,7 +244,7 @@ const App = () => {
                                                     <h3 className={`text-[16px] md:text-[17px] font-bold text-slate-800 mb-2 leading-snug break-keep`}>{job.title}</h3>
                                                     <p className="text-[11px] font-bold text-slate-400 flex items-center gap-1"><Icon name="calendar" className="w-3 h-3" /> 접수기간: {job.startDate} ~ <span className={isClosed ? 'text-slate-300' : 'text-red-400'}>{job.endDate}</span></p>
                                                 </div>
-                                                <button onClick={() => window.open(job.link, '_blank')} className={`w-full md:w-auto px-7 py-2.5 rounded-xl font-bold text-xs shadow-sm transition-all ${isClosed ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-slate-900 text-white hover:bg-blue-600'}`}>{isClosed ? '모집종료' : '지원하기'}</button>
+                                                <button onClick={(e) => { e.stopPropagation(); window.open(job.link, '_blank'); }} className={`w-full md:w-auto px-7 py-2.5 rounded-xl font-bold text-xs shadow-sm transition-all ${isClosed ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-slate-900 text-white hover:bg-blue-600'}`}>{isClosed ? '모집종료' : '지원하기'}</button>
                                             </div>
                                         );
                                     })
