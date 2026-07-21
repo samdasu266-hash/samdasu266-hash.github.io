@@ -72,6 +72,76 @@ def extract_dates(text, current_year):
     parsed_dates.sort(key=lambda x: x['dt'])
     return parsed_dates
 
+GENERAL_REGIONS = ["서울", "부산", "대구", "인천", "광주", "울산", "경기", "강원", "충북", "전북", "전남", "경북", "경남", "제주"]
+
+# 기관명 → 소재지 매핑. 공고에서 기관명이 확인되면 본문 주소보다 우선 적용한다.
+# (보건복지부 게시판에는 소속·산하기관 공고가 섞여 있어 페이지 주소(세종)로 오탐이 발생)
+KNOWN_ORG_REGIONS = {
+    "사회보장정보원": "서울",     # 한국사회보장정보원 (마포)
+    "국립중앙의료원": "서울",
+    "국립정신건강센터": "서울",
+    "국립재활원": "서울",
+    "건강증진개발원": "서울",     # 한국건강증진개발원 (중구)
+    "국립암센터": "경기",         # 고양
+    "국립춘천병원": "강원",
+    "국립공주병원": "대전충남",
+    "국립부곡병원": "경남",
+    "국립마산병원": "경남",
+    "국립목포병원": "전남",
+    "국립나주병원": "전남",
+    "국립소록도병원": "전남",
+    "질병관리청": "충북",         # 오송
+    "국립보건연구원": "충북",     # 오송
+    "보건복지인재원": "충북",     # 오송
+    "오송": "충북",
+}
+
+def regions_in_text(text):
+    found = set()
+    if "거창" in text: found.add("경남")
+    if "상주" in text: found.add("경북")
+    if "남부혈액검사센터" in text: found.add("부산")
+    if "혈액관리본부" in text: found.add("강원")
+    if "경인" in text: found.update(["경기", "인천"])
+    if any(k in text for k in ["대전", "세종", "충남"]): found.add("대전충남")
+    for r in GENERAL_REGIONS:
+        if r in text: found.add(r)
+    return found
+
+def detect_region(inst_id, title, row_text, combined_text):
+    # 1) 알려진 기관명이 보이면 소재지 확정
+    for org, reg in KNOWN_ORG_REGIONS.items():
+        if org in title or org in row_text:
+            return reg
+    for org, reg in KNOWN_ORG_REGIONS.items():
+        if org in combined_text:
+            return reg
+
+    # 2) 근무지/근무장소가 명시된 줄에서만 추출 (본문 전체 스캔보다 정확)
+    region_set = set()
+    for line in combined_text.split('\n'):
+        if any(k in line for k in ['근무지', '근무장소', '근무 장소', '근무예정지', '소재지']):
+            region_set |= regions_in_text(line)
+
+    # 3) 제목에서 추출
+    if not region_set:
+        region_set = regions_in_text(title)
+
+    # 4) 본문 전체 스캔 — 마지막 수단.
+    #    mohw는 게시판/본문에 세종 주소가 항상 포함되어 오탐이 심하므로 제외
+    if not region_set and inst_id != 'mohw':
+        region_set = regions_in_text(combined_text)
+
+    if region_set:
+        return ", ".join(sorted(region_set))
+
+    # 5) 기관 소재지 기본값 (mohw는 산하기관 공고가 다양해 기본값 없이 "전국")
+    if inst_id in ["neca", "kuksiwon", "koiha"]: return "서울"
+    if inst_id in ["hira", "nhis", "redcross"]: return "강원"
+    if inst_id == "nps": return "전북"
+    if inst_id == "comwel": return "울산"
+    return "전국"
+
 async def scrape_site(browser, inst_id, url):
     page = await browser.new_page(
         user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
@@ -236,41 +306,8 @@ async def scrape_site(browser, inst_id, url):
                     except Exception:
                         pass
 
-            # 맞춤형 지역(시/도) 추출 
-            region_set = set()
-            title_region_set = set()
-            general_regions = ["서울", "부산", "대구", "인천", "광주", "울산", "경기", "강원", "충북", "전북", "전남", "경북", "경남", "제주"]
-            
-            if "거창" in job['title']: title_region_set.add("경남")
-            if "상주" in job['title']: title_region_set.add("경북")
-            if "남부혈액검사센터" in job['title']: title_region_set.add("부산")
-            if "혈액관리본부" in job['title']: title_region_set.add("강원")
-            if "경인" in job['title']: title_region_set.update(["경기", "인천"])
-            if any(k in job['title'] for k in ["대전", "세종", "충남"]): title_region_set.add("대전충남")
-            for r in general_regions:
-                if r in job['title']: title_region_set.add(r)
-                
-            if title_region_set:
-                region_set = title_region_set
-            else:
-                if "거창" in combined_text: region_set.add("경남")
-                if "상주" in combined_text: region_set.add("경북")
-                if "남부혈액검사센터" in combined_text: region_set.add("부산")
-                if "혈액관리본부" in combined_text: region_set.add("강원")
-                if "경인" in combined_text: region_set.update(["경기", "인천"])
-                if any(k in combined_text for k in ["대전", "세종", "충남"]): region_set.add("대전충남")
-                for r in general_regions:
-                    if r in combined_text: region_set.add(r)
-            
-            if len(region_set) > 0: detected_region = ", ".join(sorted(list(region_set)))
-            else: detected_region = "전국"
-            
-            if detected_region == "전국":
-                if job['instId'] in ["neca", "kuksiwon", "koiha"]: detected_region = "서울"
-                elif job['instId'] in ["hira", "nhis", "redcross"]: detected_region = "강원"
-                elif job['instId'] == "nps": detected_region = "전북"
-                elif job['instId'] == "comwel": detected_region = "울산"
-                elif job['instId'] == "mohw": detected_region = "대전충남"
+            # 맞춤형 지역(시/도) 추출
+            detected_region = detect_region(job['instId'], job['title'], job['row_text'], combined_text)
 
             # 🔥 기간 탐색 키워드 확대 (지원, 기간, 기한 등 추가)
             start_item = None
