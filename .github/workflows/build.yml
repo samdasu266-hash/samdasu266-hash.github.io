@@ -1,0 +1,46 @@
+name: Build Frontend Assets
+
+# app.jsx나 HTML을 수정해서 푸시하면 app.js / tailwind.css를 자동으로 다시 빌드해 커밋합니다.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'app.jsx'
+      - '*.html'
+      - 'tailwind.config.js'
+      - 'tailwind.input.css'
+      - 'package.json'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build app.js and tailwind.css
+        run: npm run build
+
+      - name: Commit built assets
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if ! git diff --quiet app.js tailwind.css; then
+            git add app.js tailwind.css
+            git commit -m "Rebuild frontend assets [skip ci]"
+            git push
+          else
+            echo "No asset changes"
+          fi
