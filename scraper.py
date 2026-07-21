@@ -135,12 +135,13 @@ def detect_region(inst_id, title, row_text, combined_text):
     if region_set:
         return ", ".join(sorted(region_set))
 
-    # 5) 기관 소재지 기본값 (mohw는 산하기관 공고가 다양해 기본값 없이 "전국")
-    if inst_id in ["neca", "kuksiwon", "koiha"]: return "서울"
-    if inst_id in ["hira", "nhis", "redcross"]: return "강원"
-    if inst_id == "nps": return "전북"
-    if inst_id == "comwel": return "울산"
-    return "전국"
+    # 5) 공고에 근무지가 명시되지 않은 경우: 본부 소재지 + 짧은 확인 안내 표시
+    #    (필터는 문자열 포함 매칭이라 꼬리표가 붙어도 그대로 동작)
+    if inst_id in ["neca", "kuksiwon", "koiha"]: return "서울(본부·공고확인)"
+    if inst_id in ["hira", "nhis", "redcross"]: return "강원(본부·공고확인)"
+    if inst_id == "nps": return "전북(본부·공고확인)"
+    if inst_id == "comwel": return "울산(본부·공고확인)"
+    return "전국(공고확인)"
 
 async def scrape_site(browser, inst_id, url):
     page = await browser.new_page(
