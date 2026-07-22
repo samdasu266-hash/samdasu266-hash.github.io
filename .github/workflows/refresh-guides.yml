@@ -1,0 +1,57 @@
+name: 반기별 가이드 갱신 리마인더
+
+# 기관별 합격 가이드 및 5개 칼럼(근무환경·워라밸 / 채용 트렌드 / 임상경력 활용 /
+# 서류 가점 전략 / 면접 필승 가이드)은 6개월에 한 번 최신 자료로 갱신합니다.
+# 콘텐츠 재작성 자체는 자료 조사가 필요하므로, 이 워크플로는 "갱신 시점"을
+# 매년 1월 1일·7월 1일에 자동으로 이슈로 띄워 리마인드합니다.
+# 이슈가 열리면 담당자(또는 이 저장소를 지켜보는 Claude)가 자료를 조사해
+# 각 페이지 내용을 갱신하고 '최근 업데이트' 일자를 함께 수정합니다.
+
+on:
+  schedule:
+    - cron: '0 0 1 1,7 *'   # 매년 1월 1일, 7월 1일 00:00 UTC
+  workflow_dispatch:          # 필요 시 수동 실행
+
+permissions:
+  issues: write
+
+jobs:
+  open-reminder:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 갱신 리마인더 이슈 생성
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const half = (new Date().getUTCMonth() < 6) ? '상반기' : '하반기';
+            const year = new Date().getUTCFullYear();
+            const title = `[반기 갱신] ${year} ${half} 가이드 콘텐츠 리프레시`;
+            const pages = [
+              '기관별 합격 가이드 (app.jsx 의 institutions specs)',
+              '근무환경·워라밸 (guide.html)',
+              '채용 트렌드 (tips.html)',
+              '임상경력 활용 (career.html)',
+              '서류 가점 전략 (license.html)',
+              '면접 필승 가이드 (interview.html)',
+            ];
+            const body = [
+              '6개월 주기 가이드 갱신 시점입니다. 아래 6개 콘텐츠를 최신 자료(ALIO 공시·채용 공고·현직 커뮤니티)로 검토·갱신하고,',
+              '각 HTML 페이지의 `<!--LU-->날짜<!--/LU-->` 최근 업데이트 일자를 함께 수정해 주세요.',
+              '',
+              ...pages.map(p => `- [ ] ${p}`),
+              '',
+              '> 이 이슈는 `.github/workflows/refresh-guides.yml` 이 자동 생성했습니다.',
+            ].join('\n');
+            // 같은 반기에 이미 열린 리마인더가 있으면 중복 생성하지 않음
+            const { data: existing } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner, repo: context.repo.repo,
+              state: 'open', labels: 'guide-refresh',
+            });
+            if (existing.some(i => i.title === title)) {
+              core.info('이미 동일한 리마인더 이슈가 열려 있어 생성을 건너뜁니다.');
+              return;
+            }
+            await github.rest.issues.create({
+              owner: context.repo.owner, repo: context.repo.repo,
+              title, body, labels: ['guide-refresh'],
+            });
