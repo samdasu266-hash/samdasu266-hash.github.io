@@ -410,33 +410,51 @@ async def scrape_site(browser, inst_id, url):
             # 맞춤형 지역(시/도) 추출
             detected_region = detect_region(job['instId'], job['title'], job['row_text'], combined_text)
 
-            # 🔥 기간 탐색 키워드 확대 (지원, 기간, 기한 등 추가)
+            # 🔥 접수기간 탐색 (목록 + 상세페이지 본문 combined_text 대상, 여러 형식 보강)
             start_item = None
             end_item = None
             now_kst = now.replace(tzinfo=None)
-            
-            lines = combined_text.split('\n')
-            for i, line in enumerate(lines):
-                if any(k in line for k in ['접수', '지원', '기간', '기한', '모집', '일정']) and any(c in line for c in ['~', '-', '부터', '까지']):
-                    context = line
-                    if i + 1 < len(lines): context += " " + lines[i+1] 
-                    dates = extract_dates(context, now.year)
-                    if len(dates) >= 2:
-                        start_item, end_item = dates[0], dates[-1] # 여러 날짜가 나와도 첫날과 마지막 날만 잡음
-                        break
-                    elif len(dates) == 1:
-                        if any(c in line for c in ['까지', '~', '마감']): end_item = dates[0]
-                        else: start_item = dates[0]
-                        break
 
-            if not start_item and not end_item:
+            lines = combined_text.split('\n')
+            PERIOD_KW = ['접수', '지원', '기간', '기한', '모집', '일정', '신청', '마감', '공고기간']
+            # 1) 접수기간류 키워드가 있는 문맥(해당 줄 + 다음 2줄)에서 날짜 탐색.
+            #    한 줄만 있어도 놓치지 않도록 first-match break 대신 후보를 누적한다.
+            for i, line in enumerate(lines):
+                if not any(k in line for k in PERIOD_KW):
+                    continue
+                context = " ".join(lines[i:i+3])
+                dates = extract_dates(context, now.year)
+                if len(dates) >= 2:
+                    start_item, end_item = dates[0], dates[-1]
+                    break
+                if len(dates) == 1:
+                    d = dates[0]
+                    if any(c in context for c in ['까지', '마감', '~', '-']):
+                        if end_item is None or d['dt'] > end_item['dt']:
+                            end_item = d  # 마감일 후보 (가장 늦은 날짜 유지)
+                    elif start_item is None:
+                        start_item = d   # 시작일 후보 (가장 처음 것 유지)
+
+            # 2) "YYYY.MM.DD ~ (YYYY.)MM.DD [HH:MM]" 범위 패턴 (전체 본문)
+            if not (start_item and end_item):
                 match = re.search(r'((?:(?:20)?\d{2})\s*[-./]\s*\d{1,2}\s*[-./]\s*\d{1,2}.*?(?:~|-|부터).*?\d{1,2}\s*[-./]\s*\d{1,2}(?:.*?\d{1,2}:\d{2})?)', combined_text.replace('\n', ' '))
                 if match:
                     dates = extract_dates(match.group(1), now.year)
-                    if len(dates) >= 2: start_item, end_item = dates[0], dates[-1]
+                    if len(dates) >= 2:
+                        start_item, end_item = dates[0], dates[-1]
 
+            # 3) 마감일 단독 표기 보강 ("~ 7.27 18:00까지", "접수마감 7.27", "마감일 7.27")
+            if end_item is None:
+                for mk in re.finditer(r'(?:마감|까지|접수\s*종료|접수\s*마감)[^\n]{0,25}', combined_text):
+                    dd = extract_dates(mk.group(0), now.year)
+                    if dd:
+                        cand = dd[-1]
+                        if end_item is None or cand['dt'] > end_item['dt']:
+                            end_item = cand
+
+            # 4) 최후 폴백: 본문 앞부분(범위 확대)에서 날짜쌍
             if not start_item and not end_item:
-                dates = extract_dates(combined_text[:500], now.year)
+                dates = extract_dates(combined_text[:900], now.year)
                 if len(dates) >= 2: start_item, end_item = dates[0], dates[-1]
                 elif len(dates) == 1: start_item = dates[0]
 
