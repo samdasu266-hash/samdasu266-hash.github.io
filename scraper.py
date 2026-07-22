@@ -474,8 +474,10 @@ async def scrape_site(browser, inst_id, url):
                 if now_kst > end_item['dt']:
                     status = "마감"
 
+            # 마감일을 못 읽은 공고는 접수 시작일 기준 15일이 지나면 자동 마감 처리
+            # (대부분의 공공기관 접수기간이 2~3주 이내이므로, 오래 떠 있는 것을 방지)
             if start_item and not end_item:
-                if (now_kst - start_item['dt']).days > 90:
+                if (now_kst - start_item['dt']).days > 15:
                     status = "마감"
 
             # 목록에 마감 표기가 명시된 경우 ("마감연장" 공고는 진행 중으로 취급)
@@ -550,12 +552,24 @@ async def main():
                 all_jobs.append(job)
 
         # 같은 기관을 여러 사이트에서 수집하는 경우(적십자사 본사 + 혈액관리본부) 중복 제거
+        def _norm_title(t):
+            return re.sub(r'[^0-9A-Za-z가-힣]', '', t or '')
+
+        # 보건복지부 게시판은 국민연금 등 다른 기관 공고를 함께 싣는 경우가 있다.
+        # 해당 기관 공고가 이미 원(原) 기관에서 수집됐다면 보건복지부 중복분은 숨긴다.
+        nonmohw_norms = [_norm_title(j['title']) for j in all_jobs if j.get('instId') != 'mohw']
+
         deduped_jobs = []
         seen_keys = set()
         for job in all_jobs:
             key = (job['instId'], job['title'].replace(" ", ""))
             if key in seen_keys:
                 continue
+            if job.get('instId') == 'mohw':
+                jn = _norm_title(job['title'])
+                # 원 기관 제목과 정확히 일치하거나, 원 기관 제목(8자 이상)이 포함되면 중복으로 간주
+                if any(n and (n == jn or (len(n) >= 8 and n in jn)) for n in nonmohw_norms):
+                    continue
             seen_keys.add(key)
             deduped_jobs.append(job)
         all_jobs = deduped_jobs
