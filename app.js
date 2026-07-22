@@ -211,8 +211,7 @@ const App = () => {
   const [activeRegions, setActiveRegions] = useState([]);
   const [sortBy, setSortBy] = useState('latest'); // 'latest' | 'deadline'
   const [lastSync, setLastSync] = useState(null);
-  const [mainView, setMainView] = useState('jobs');
-  const [showPrivacy, setShowPrivacy] = useState(false);
+  const [mainView, setMainView] = useState(typeof location !== 'undefined' && location.hash === '#guide' ? 'guide' : 'jobs');
   const [showContact, setShowContact] = useState(false);
   const [showRequest, setShowRequest] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -443,20 +442,43 @@ const App = () => {
   return /*#__PURE__*/React.createElement("div", {
     className: "max-w-5xl mx-auto p-4 md:p-8 flex flex-col min-h-[100dvh]"
   }, /*#__PURE__*/React.createElement("nav", {
-    className: "mb-10 flex flex-wrap items-center gap-x-6 gap-y-1 border-b border-slate-200 text-[13px] md:text-sm font-bold overflow-x-auto no-scrollbar whitespace-nowrap pb-2"
+    className: "mb-10 -mx-4 md:mx-0 px-4 md:px-0 border-b border-slate-200 flex items-center gap-0.5 overflow-x-auto no-scrollbar whitespace-nowrap text-[12.5px] md:text-[13px] font-bold"
   }, /*#__PURE__*/React.createElement("button", {
-    onClick: () => setMainView('jobs'),
+    onClick: () => {
+      setMainView('jobs');
+      if (history.replaceState) history.replaceState(null, '', location.pathname);
+    },
     className: `nav-link ${mainView === 'jobs' ? 'active' : 'text-slate-500 hover:text-slate-800'}`
   }, "실시간 채용공고"), /*#__PURE__*/React.createElement("button", {
-    onClick: () => setMainView('guide'),
+    onClick: () => {
+      setMainView('guide');
+      if (history.replaceState) history.replaceState(null, '', '#guide');
+    },
     className: `nav-link ${mainView === 'guide' ? 'active' : 'text-slate-500 hover:text-slate-800'}`
-  }, "기관별 합격 가이드")), /*#__PURE__*/React.createElement("header", {
-    className: "mb-10 space-y-3"
+  }, "기관별 합격 가이드"), /*#__PURE__*/React.createElement("a", {
+    href: "guide.html",
+    className: "nav-link text-slate-500 hover:text-slate-800"
+  }, "근무환경·워라밸"), /*#__PURE__*/React.createElement("a", {
+    href: "tips.html",
+    className: "nav-link text-slate-500 hover:text-slate-800"
+  }, "채용 트렌드"), /*#__PURE__*/React.createElement("a", {
+    href: "career.html",
+    className: "nav-link text-slate-500 hover:text-slate-800"
+  }, "임상경력 활용"), /*#__PURE__*/React.createElement("a", {
+    href: "license.html",
+    className: "nav-link text-slate-500 hover:text-slate-800"
+  }, "서류 가점 전략"), /*#__PURE__*/React.createElement("a", {
+    href: "interview.html",
+    className: "nav-link text-slate-500 hover:text-slate-800"
+  }, "면접 필승 가이드")), /*#__PURE__*/React.createElement("header", {
+    className: "mb-10 space-y-4"
   }, /*#__PURE__*/React.createElement("div", {
     className: "flex flex-wrap gap-2"
   }, /*#__PURE__*/React.createElement("span", {
-    className: "bg-blue-600 text-white px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider"
-  }, "1시간 주기 자동 업데이트"), /*#__PURE__*/React.createElement("span", {
+    className: "bg-blue-600 text-white px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider flex items-center gap-1"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "w-1.5 h-1.5 rounded-full bg-white animate-pulse"
+  }), " 1시간 주기 자동 업데이트"), /*#__PURE__*/React.createElement("span", {
     className: "bg-white border border-slate-200 text-slate-600 px-2.5 py-0.5 rounded-full text-[10px] font-bold shadow-sm flex items-center gap-1"
   }, /*#__PURE__*/React.createElement(Icon, {
     name: "calendar",
@@ -472,11 +494,17 @@ const App = () => {
   }, /*#__PURE__*/React.createElement(Icon, {
     name: "plus-circle",
     className: "w-3 h-3"
-  }), " 기관 추가 요청")), /*#__PURE__*/React.createElement("h1", {
-    className: "text-2xl md:text-3xl font-black text-slate-900 leading-tight"
-  }, "보건의료 공기업 ", /*#__PURE__*/React.createElement("span", {
-    className: "text-blue-600"
-  }, "채용 통합 포털"))), mainView === 'jobs' ? /*#__PURE__*/React.createElement("div", {
+  }), " 기관 추가 요청")), /*#__PURE__*/React.createElement("div", {
+    className: "space-y-2.5"
+  }, /*#__PURE__*/React.createElement("h1", {
+    className: "text-[26px] md:text-[34px] font-black text-slate-900 leading-[1.22] tracking-tight break-keep"
+  }, "탈임상 간호사를 위한 ", /*#__PURE__*/React.createElement("br", {
+    className: "hidden sm:block"
+  }), /*#__PURE__*/React.createElement("span", {
+    className: "bg-gradient-to-r from-blue-600 to-indigo-500 bg-clip-text text-transparent"
+  }, "보건의료 공기업 채용 통합 포털")), /*#__PURE__*/React.createElement("p", {
+    className: "text-[13.5px] md:text-[15px] text-slate-500 font-medium leading-relaxed max-w-2xl break-keep"
+  }, "건강보험공단·심평원·국민연금 등 주요 보건의료 공공기관 채용공고를 1시간마다 자동으로 모아 보여드립니다. 기관별 합격 가이드까지 한곳에서 확인하세요."))), mainView === 'jobs' ? /*#__PURE__*/React.createElement("div", {
     className: "grid grid-cols-1 lg:grid-cols-4 gap-6 md:gap-8"
   }, /*#__PURE__*/React.createElement("aside", {
     className: "lg:col-span-1 space-y-6 order-2 lg:order-1"
@@ -725,75 +753,53 @@ const App = () => {
   }, /*#__PURE__*/React.createElement("p", null, /*#__PURE__*/React.createElement("strong", null, "📅 연간 채용 주기:"), " ", inst.specs.recruitSchedule, " 기간에 집중적으로 신입 및 경력직 채용이 진행됩니다."), /*#__PURE__*/React.createElement("p", null, /*#__PURE__*/React.createElement("strong", null, "💰 처우 및 복지:"), " 신입 사원 기준 ", inst.specs.salary, " 수준의 경쟁력 있는 급여를 제공하며, 공공기관 특유의 안정적인 복지 혜택을 누릴 수 있습니다."), /*#__PURE__*/React.createElement("p", null, /*#__PURE__*/React.createElement("strong", null, "🎯 필수 핵심 스펙:"), " 어학 성적은 ", inst.specs.language, " 이상 확보가 권장되며, 자격증 가점은 ", inst.specs.cert, " 위주로 구성하는 것이 가장 효율적입니다."), /*#__PURE__*/React.createElement("div", {
     className: "bg-blue-50 p-6 rounded-2xl text-blue-900 text-[13.5px] border border-blue-100 mt-2 shadow-inner leading-relaxed"
   }, /*#__PURE__*/React.createElement("strong", null, "💡 현직자 합격 꿀팁:"), " ", inst.specs.summary)))))), /*#__PURE__*/React.createElement("section", {
-    className: "mt-20"
+    className: "mt-20 bg-white p-6 md:p-9 rounded-3xl border border-slate-200 shadow-sm text-left"
   }, /*#__PURE__*/React.createElement("h2", {
-    className: "text-lg font-black text-slate-900 mb-1 flex items-center gap-2"
-  }, /*#__PURE__*/React.createElement(Icon, {
-    name: "book-open",
-    className: "text-blue-600 w-5 h-5"
-  }), " 취업 준비 가이드"), /*#__PURE__*/React.createElement("p", {
-    className: "text-[12px] text-slate-400 font-medium mb-5"
-  }, "합격에 필요한 정보를 주제별로 정리했습니다."), /*#__PURE__*/React.createElement("div", {
-    className: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"
-  }, [{
-    href: 'guide.html',
-    icon: 'map-pin',
-    title: '기관별 근무환경·워라밸',
-    desc: '본사 위치·복지·실질 워라밸 비교'
-  }, {
-    href: 'tips.html',
-    icon: 'trending-up',
-    title: '채용 트렌드',
-    desc: '2026년 채용 동향과 합격 전략'
-  }, {
-    href: 'career.html',
-    icon: 'briefcase',
-    title: '임상경력 활용',
-    desc: '경력이 합격에 미치는 영향 분석'
-  }, {
-    href: 'license.html',
-    icon: 'award',
-    title: '서류 가점 전략',
-    desc: '직렬별 필수 가점 자격증 로드맵'
-  }, {
-    href: 'interview.html',
-    icon: 'users',
-    title: '면접 필승 가이드',
-    desc: '블라인드 면접 필수 체크리스트'
-  }].map(p => /*#__PURE__*/React.createElement("a", {
-    key: p.href,
-    href: p.href,
-    className: "bg-white p-4 rounded-2xl border border-slate-200 hover:border-blue-500 hover:shadow-md transition-all flex items-center gap-3"
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0"
-  }, /*#__PURE__*/React.createElement(Icon, {
-    name: p.icon,
-    className: "w-5 h-5"
-  })), /*#__PURE__*/React.createElement("div", {
-    className: "min-w-0"
-  }, /*#__PURE__*/React.createElement("h4", {
-    className: "font-bold text-slate-900 text-[13.5px] leading-tight"
-  }, p.title), /*#__PURE__*/React.createElement("p", {
-    className: "text-[11px] text-slate-500 mt-0.5 break-keep"
-  }, p.desc)))))), /*#__PURE__*/React.createElement("section", {
-    className: "mt-12 bg-white p-8 rounded-3xl border border-slate-200 shadow-sm text-left"
-  }, /*#__PURE__*/React.createElement("h2", {
-    className: "text-xl font-black text-slate-900 mb-6 flex items-center gap-2"
+    className: "text-xl font-black text-slate-900 mb-1.5 flex items-center gap-2"
   }, /*#__PURE__*/React.createElement(Icon, {
     name: "help-circle",
     className: "text-blue-600"
-  }), " 보건의료 취업 FAQ"), /*#__PURE__*/React.createElement("div", {
-    className: "space-y-6 text-[14px] text-slate-700 font-medium leading-relaxed"
-  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h3", {
-    className: "font-bold text-slate-900 mb-2"
-  }, "Q. 보건직 공기업 채용에서 가장 중요한 '서류 컷' 기준은 무엇인가요?"), /*#__PURE__*/React.createElement("p", null, "대부분의 기관은 자격증 점수로 서류를 선발하는 '정량 평가' 방식을 채택합니다. 따라서 컴활 1급, 한국사 1급, 토익 800점 이상의 기본 스펙을 갖춘 후, 직렬별 우대 자격증(사회복지사 등)으로 추가 가점을 확보하는 것이 합격권의 기본입니다.")))), /*#__PURE__*/React.createElement("footer", {
+  }), " 보건의료 취업 자주 묻는 질문 (FAQ)"), /*#__PURE__*/React.createElement("p", {
+    className: "text-[12px] text-slate-400 font-medium mb-6"
+  }, "탈임상·보건직 공기업 준비생들이 가장 많이 묻는 질문을 모았습니다."), /*#__PURE__*/React.createElement("div", {
+    className: "divide-y divide-slate-100"
+  }, [{
+    q: "보건직 공기업 채용에서 가장 중요한 '서류 컷' 기준은 무엇인가요?",
+    a: "대부분의 기관은 자격증·어학 점수로 서류를 선발하는 '정량 평가' 방식을 채택합니다. 컴활 1급, 한국사 1급, 토익 800점 이상의 기본 스펙을 갖춘 뒤, 직렬별 우대 자격증(사회복지사 1급 등)으로 추가 가점을 확보하는 것이 합격권의 기본입니다."
+  }, {
+    q: "임상 경력(간호사 근무 경력)이 채용에 얼마나 도움이 되나요?",
+    a: "심평원 심사직, 인증원 조사위원처럼 임상 경험을 직접 요구하는 직무에서는 종합병원급 이상 경력이 사실상 필수 경쟁력입니다. 반면 일반 행정직은 블라인드 원칙상 경력보다 NCS 필기와 정량 스펙이 더 크게 작용합니다. 지원 직무에 따라 경력의 가치가 달라집니다."
+  }, {
+    q: "블라인드 채용인데 어떻게 준비해야 하나요?",
+    a: "출신 학교·나이·가족관계 등은 평가에서 배제되므로, 자기소개서와 면접에서 '직무 역량 중심'으로 서술하는 것이 핵심입니다. 기관의 미션·사업을 숙지하고, 본인의 경험을 직무 역량과 연결해 구조화(STAR 기법)하는 연습을 권장합니다."
+  }, {
+    q: "공고는 얼마나 자주 갱신되나요?",
+    a: "본 사이트는 각 기관 채용 페이지를 1시간마다 자동 수집하여 진행 중인 공고만 보여드립니다. 마감되었거나 접수 기한이 지난 공고는 자동으로 숨겨집니다. 다만 정확한 자격 요건과 일정은 반드시 각 기관 공식 공고문을 확인하세요."
+  }, {
+    q: "원하는 기관이 목록에 없어요. 추가할 수 있나요?",
+    a: "상단 '기관 추가 요청' 버튼이나 하단 '문의하기'를 통해 기관명과 채용 페이지 주소를 남겨주시면, 검토 후 수집 대상에 반영합니다."
+  }].map((f, i) => /*#__PURE__*/React.createElement("details", {
+    key: i,
+    className: "group py-4"
+  }, /*#__PURE__*/React.createElement("summary", {
+    className: "flex items-start gap-2 cursor-pointer list-none font-bold text-slate-900 text-[14.5px] leading-snug break-keep"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "text-blue-600 shrink-0"
+  }, "Q."), /*#__PURE__*/React.createElement("span", {
+    className: "flex-1"
+  }, f.q), /*#__PURE__*/React.createElement(Icon, {
+    name: "chevron-down",
+    className: "w-4 h-4 text-slate-400 mt-0.5 shrink-0 transition-transform group-open:rotate-180"
+  })), /*#__PURE__*/React.createElement("p", {
+    className: "mt-3 pl-5 text-[13.5px] text-slate-600 font-medium leading-relaxed break-keep"
+  }, f.a))))), /*#__PURE__*/React.createElement("footer", {
     className: "mt-20 pt-10 pb-6 border-t border-slate-200 text-center space-y-6"
   }, /*#__PURE__*/React.createElement("div", {
     className: "flex justify-center gap-6 text-[12px] font-bold text-slate-500"
-  }, /*#__PURE__*/React.createElement("button", {
-    onClick: () => setShowPrivacy(true),
+  }, /*#__PURE__*/React.createElement("a", {
+    href: "about.html",
     className: "hover:text-slate-800 transition-colors"
-  }, "개인정보처리방침"), /*#__PURE__*/React.createElement("span", {
+  }, "소개·운영정책"), /*#__PURE__*/React.createElement("span", {
     className: "text-slate-200"
   }, "|"), /*#__PURE__*/React.createElement("button", {
     onClick: () => setShowContact(true),
@@ -821,32 +827,7 @@ const App = () => {
     className: "hidden md:inline"
   }, "탈임상 AI 챗봇"), /*#__PURE__*/React.createElement("span", {
     className: "md:hidden"
-  }, "AI 챗봇"))), showPrivacy && /*#__PURE__*/React.createElement("div", {
-    className: "fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm"
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "bg-white w-full max-w-lg rounded-[2.5rem] p-8 shadow-2xl relative animate-in zoom-in duration-300"
-  }, /*#__PURE__*/React.createElement("button", {
-    onClick: () => setShowPrivacy(false),
-    className: "absolute top-6 right-6 text-slate-300 hover:text-slate-900"
-  }, /*#__PURE__*/React.createElement(Icon, {
-    name: "x"
-  })), /*#__PURE__*/React.createElement("h2", {
-    className: "text-xl font-black text-slate-900 mb-6 flex items-center gap-2"
-  }, /*#__PURE__*/React.createElement(Icon, {
-    name: "shield-check",
-    className: "text-blue-600"
-  }), " 개인정보처리방침"), /*#__PURE__*/React.createElement("div", {
-    className: "space-y-4 text-[13.5px] text-slate-600 font-medium leading-relaxed max-h-[50vh] overflow-y-auto pr-2 no-scrollbar"
-  }, /*#__PURE__*/React.createElement("p", null, "본 사이트는 보건의료 공공기관 채용 정보를 제공하는 비상업 목적의 페이지입니다."), /*#__PURE__*/React.createElement("h3", {
-    className: "font-bold text-slate-900 mt-4"
-  }, "1. 수집하는 개인정보"), /*#__PURE__*/React.createElement("p", null, "사이트 이용만으로는 어떠한 개인정보도 수집하지 않습니다. 다만 '기관 추가·건의' 기능에서 회신용 이메일을 선택적으로 입력하실 수 있으며, 이는 접수 확인 및 답변 목적으로만 사용됩니다."), /*#__PURE__*/React.createElement("h3", {
-    className: "font-bold text-slate-900 mt-4"
-  }, "2. 방문 통계"), /*#__PURE__*/React.createElement("p", null, "서비스 개선을 위해 Google Analytics를 통해 익명의 방문 통계를 수집하며, 개인을 식별하지 않습니다."), /*#__PURE__*/React.createElement("h3", {
-    className: "font-bold text-slate-900 mt-4"
-  }, "3. 제3자 제공"), /*#__PURE__*/React.createElement("p", null, "입력하신 정보는 제3자에게 제공·판매되지 않습니다.")), /*#__PURE__*/React.createElement("button", {
-    onClick: () => setShowPrivacy(false),
-    className: "w-full mt-8 py-4 bg-slate-900 text-white rounded-2xl font-bold hover:bg-blue-600 transition-colors shadow-lg"
-  }, "확인 완료"))), showContact && /*#__PURE__*/React.createElement("div", {
+  }, "AI 챗봇"))), showContact && /*#__PURE__*/React.createElement("div", {
     className: "fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm"
   }, /*#__PURE__*/React.createElement("div", {
     className: "bg-white w-full max-w-sm rounded-[2.5rem] p-8 shadow-2xl relative text-center animate-in zoom-in duration-300"
