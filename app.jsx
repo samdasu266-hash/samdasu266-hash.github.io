@@ -203,6 +203,16 @@ const App = () => {
         return result;
     }, [jobs, searchTerm, activeTabs, activeJobTypes, activeRegions, sortBy]);
 
+    // 검색창 예시(회색 글씨)는 실제 수집된 공고 제목에 존재하는 단어만 노출한다.
+    // → 예시를 검색했을 때 결과가 항상 뜨도록 보장. (없으면 일반 예시로 폴백)
+    const searchPlaceholder = useMemo(() => {
+        const candidates = ['간호', '보건', '공무직', '기간제', '연구', '행정', '전문직', '사회복지', '시설', '채용'];
+        const titles = jobs.map(j => (j.title || ''));
+        const hits = candidates.filter(c => titles.some(t => t.includes(c))).slice(0, 3);
+        const ex = hits.length ? hits.join(', ') : '채용, 공고';
+        return `공고 제목으로 검색 (예: ${ex})...`;
+    }, [jobs]);
+
     // 다중 선택 토글: 'all'을 누르면 전체(빈 배열)로 초기화, 그 외에는 켜고 끄기
     const toggleFilter = (setter, value) => {
         if (value === 'all') { setter([]); return; }
@@ -303,7 +313,7 @@ const App = () => {
                         <div className="bg-white p-4 md:p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col gap-4">
                             <div className="relative">
                                 <Icon name="search" className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
-                                <input type="text" placeholder="공고 제목으로 검색 (예: 간호사, 임상병리사, 행정직)..." onChange={e => setSearchTerm(e.target.value)} className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium transition-all" />
+                                <input type="text" placeholder={searchPlaceholder} onChange={e => setSearchTerm(e.target.value)} className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium transition-all" />
                             </div>
 
                             <div className="flex flex-col gap-3">
