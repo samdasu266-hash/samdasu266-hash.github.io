@@ -267,7 +267,7 @@ const App = () => {
                 </div>
                 <div className="space-y-2.5">
                     <h1 className="text-[26px] md:text-[34px] font-black text-slate-900 leading-[1.22] tracking-tight break-keep">
-                        탈임상 간호사를 위한 <br className="hidden sm:block" /><span className="bg-gradient-to-r from-blue-600 to-indigo-500 bg-clip-text text-transparent">보건의료 공기업 채용 통합 포털</span>
+                        <span className="bg-gradient-to-r from-blue-600 to-indigo-500 bg-clip-text text-transparent">보건의료 공기업 채용 통합 포털</span>
                     </h1>
                     <p className="text-[13.5px] md:text-[15px] text-slate-500 font-medium leading-relaxed max-w-2xl break-keep">건강보험공단·심평원·국민연금 등 주요 보건의료 공공기관 채용공고를 1시간마다 자동으로 모아 보여드립니다. 기관별 합격 가이드까지 한곳에서 확인하세요.</p>
                 </div>
@@ -303,7 +303,7 @@ const App = () => {
                         <div className="bg-white p-4 md:p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col gap-4">
                             <div className="relative">
                                 <Icon name="search" className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
-                                <input type="text" placeholder="공고 제목으로 검색 (예: 간호사, 행정직)..." onChange={e => setSearchTerm(e.target.value)} className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium transition-all" />
+                                <input type="text" placeholder="공고 제목으로 검색 (예: 간호사, 임상병리사, 행정직)..." onChange={e => setSearchTerm(e.target.value)} className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium transition-all" />
                             </div>
 
                             <div className="flex flex-col gap-3">
@@ -415,7 +415,7 @@ const App = () => {
                 <div className="divide-y divide-slate-100">
                     {[
                         { q: "보건직 공기업 채용에서 가장 중요한 '서류 컷' 기준은 무엇인가요?", a: "대부분의 기관은 자격증·어학 점수로 서류를 선발하는 '정량 평가' 방식을 채택합니다. 컴활 1급, 한국사 1급, 토익 800점 이상의 기본 스펙을 갖춘 뒤, 직렬별 우대 자격증(사회복지사 1급 등)으로 추가 가점을 확보하는 것이 합격권의 기본입니다." },
-                        { q: "임상 경력(간호사 근무 경력)이 채용에 얼마나 도움이 되나요?", a: "심평원 심사직, 인증원 조사위원처럼 임상 경험을 직접 요구하는 직무에서는 종합병원급 이상 경력이 사실상 필수 경쟁력입니다. 반면 일반 행정직은 블라인드 원칙상 경력보다 NCS 필기와 정량 스펙이 더 크게 작용합니다. 지원 직무에 따라 경력의 가치가 달라집니다." },
+                        { q: "임상 경력(병원 근무 경험)이 채용에 얼마나 도움이 되나요?", a: "심평원 심사직, 인증원 조사위원처럼 임상 경험을 직접 요구하는 직무에서는 종합병원급 이상 경력이 사실상 필수 경쟁력입니다. 반면 일반 행정직은 블라인드 원칙상 경력보다 NCS 필기와 정량 스펙이 더 크게 작용합니다. 간호사·방사선사·임상병리사 등 직역과 지원 직무에 따라 경력의 가치가 달라집니다." },
                         { q: "블라인드 채용인데 어떻게 준비해야 하나요?", a: "출신 학교·나이·가족관계 등은 평가에서 배제되므로, 자기소개서와 면접에서 '직무 역량 중심'으로 서술하는 것이 핵심입니다. 기관의 미션·사업을 숙지하고, 본인의 경험을 직무 역량과 연결해 구조화(STAR 기법)하는 연습을 권장합니다." },
                         { q: "공고는 얼마나 자주 갱신되나요?", a: "본 사이트는 각 기관 채용 페이지를 1시간마다 자동 수집하여 진행 중인 공고만 보여드립니다. 마감되었거나 접수 기한이 지난 공고는 자동으로 숨겨집니다. 다만 정확한 자격 요건과 일정은 반드시 각 기관 공식 공고문을 확인하세요." },
                         { q: "원하는 기관이 목록에 없어요. 추가할 수 있나요?", a: "상단 '기관 추가 요청' 버튼이나 하단 '문의하기'를 통해 기관명과 채용 페이지 주소를 남겨주시면, 검토 후 수집 대상에 반영합니다." },
