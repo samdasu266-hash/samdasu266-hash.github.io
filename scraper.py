@@ -94,13 +94,17 @@ def regions_in_text(text):
     return found
 
 def detect_region(inst_id, title, row_text, combined_text):
-    # 1) 알려진 기관명이 보이면 소재지 확정
+    # 1) 알려진 기관명이 보이면 소재지 확정 (제목·목록행 우선)
     for org, reg in KNOWN_ORG_REGIONS.items():
         if org in title or org in row_text:
             return reg
-    for org, reg in KNOWN_ORG_REGIONS.items():
-        if org in combined_text:
-            return reg
+    # 본문 전체(combined_text) 기관명 매칭은 오탐 위험이 있어 mohw는 제외한다.
+    # (보건복지부 게시판/상세는 인접 공고·타 기관명이 섞여 들어와, 예: '첨단재생'
+    #  공고가 인접한 '국립소록도병원'을 잡아 전남으로 오인식되는 문제가 있었음)
+    if inst_id != 'mohw':
+        for org, reg in KNOWN_ORG_REGIONS.items():
+            if org in combined_text:
+                return reg
 
     # 2) 근무지/근무장소가 명시된 줄에서만 추출 (본문 전체 스캔보다 정확)
     region_set = set()
