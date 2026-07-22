@@ -384,8 +384,15 @@ async def scrape_site(browser, inst_id, url):
                         await detail_page.evaluate(js_code)
 
                     await detail_page.wait_for_load_state("domcontentloaded", timeout=10000)
-                    await asyncio.sleep(1.5)
+                    await asyncio.sleep(2)
                     body_text = await detail_page.inner_text("body")
+                    # 접수기간 날짜가 아직 안 보이면 렌더링을 조금 더 기다렸다가 재수집
+                    if not re.search(r'\d{1,2}\s*[.\-/월]\s*\d{1,2}', body_text):
+                        await asyncio.sleep(2.5)
+                        try:
+                            body_text = await detail_page.inner_text("body")
+                        except Exception:
+                            pass
                     combined_text += " \n" + body_text
 
                     current_url = detail_page.url
@@ -394,9 +401,16 @@ async def scrape_site(browser, inst_id, url):
 
                 elif job['raw_href'] and job['raw_href'] != "#" and not job['raw_href'].startswith("javascript"):
                     detail_page = await browser.new_page()
-                    await detail_page.goto(safe_link, wait_until="domcontentloaded", timeout=10000)
-                    await asyncio.sleep(1.5)  # SPA(careeron 등) 렌더링 대기
+                    await detail_page.goto(safe_link, wait_until="domcontentloaded", timeout=15000)
+                    await asyncio.sleep(2)  # SPA(careeron 등) 렌더링 대기
                     body_text = await detail_page.inner_text("body")
+                    # 접수기간 날짜가 아직 안 보이면 렌더링을 조금 더 기다렸다가 재수집
+                    if not re.search(r'\d{1,2}\s*[.\-/월]\s*\d{1,2}', body_text):
+                        await asyncio.sleep(2.5)
+                        try:
+                            body_text = await detail_page.inner_text("body")
+                        except Exception:
+                            pass
                     combined_text += " \n" + body_text
             except Exception:
                 pass
