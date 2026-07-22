@@ -498,9 +498,7 @@ const App = () => {
     className: "space-y-2.5"
   }, /*#__PURE__*/React.createElement("h1", {
     className: "text-[26px] md:text-[34px] font-black text-slate-900 leading-[1.22] tracking-tight break-keep"
-  }, "탈임상 간호사를 위한 ", /*#__PURE__*/React.createElement("br", {
-    className: "hidden sm:block"
-  }), /*#__PURE__*/React.createElement("span", {
+  }, /*#__PURE__*/React.createElement("span", {
     className: "bg-gradient-to-r from-blue-600 to-indigo-500 bg-clip-text text-transparent"
   }, "보건의료 공기업 채용 통합 포털")), /*#__PURE__*/React.createElement("p", {
     className: "text-[13.5px] md:text-[15px] text-slate-500 font-medium leading-relaxed max-w-2xl break-keep"
@@ -548,7 +546,7 @@ const App = () => {
     className: "absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4"
   }), /*#__PURE__*/React.createElement("input", {
     type: "text",
-    placeholder: "공고 제목으로 검색 (예: 간호사, 행정직)...",
+    placeholder: "공고 제목으로 검색 (예: 간호사, 임상병리사, 행정직)...",
     onChange: e => setSearchTerm(e.target.value),
     className: "w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium transition-all"
   })), /*#__PURE__*/React.createElement("div", {
@@ -767,8 +765,8 @@ const App = () => {
     q: "보건직 공기업 채용에서 가장 중요한 '서류 컷' 기준은 무엇인가요?",
     a: "대부분의 기관은 자격증·어학 점수로 서류를 선발하는 '정량 평가' 방식을 채택합니다. 컴활 1급, 한국사 1급, 토익 800점 이상의 기본 스펙을 갖춘 뒤, 직렬별 우대 자격증(사회복지사 1급 등)으로 추가 가점을 확보하는 것이 합격권의 기본입니다."
   }, {
-    q: "임상 경력(간호사 근무 경력)이 채용에 얼마나 도움이 되나요?",
-    a: "심평원 심사직, 인증원 조사위원처럼 임상 경험을 직접 요구하는 직무에서는 종합병원급 이상 경력이 사실상 필수 경쟁력입니다. 반면 일반 행정직은 블라인드 원칙상 경력보다 NCS 필기와 정량 스펙이 더 크게 작용합니다. 지원 직무에 따라 경력의 가치가 달라집니다."
+    q: "임상 경력(병원 근무 경험)이 채용에 얼마나 도움이 되나요?",
+    a: "심평원 심사직, 인증원 조사위원처럼 임상 경험을 직접 요구하는 직무에서는 종합병원급 이상 경력이 사실상 필수 경쟁력입니다. 반면 일반 행정직은 블라인드 원칙상 경력보다 NCS 필기와 정량 스펙이 더 크게 작용합니다. 간호사·방사선사·임상병리사 등 직역과 지원 직무에 따라 경력의 가치가 달라집니다."
   }, {
     q: "블라인드 채용인데 어떻게 준비해야 하나요?",
     a: "출신 학교·나이·가족관계 등은 평가에서 배제되므로, 자기소개서와 면접에서 '직무 역량 중심'으로 서술하는 것이 핵심입니다. 기관의 미션·사업을 숙지하고, 본인의 경험을 직무 역량과 연결해 구조화(STAR 기법)하는 연습을 권장합니다."
