@@ -142,14 +142,14 @@ const App = () => {
     const [copied, setCopied] = useState(false);
 
     const institutions = [
-        { id: 'nhis', name: '국민건강보험공단', shortName: '건보공단', url: 'https://nhis.kpcice.kr', specs: { recruitSchedule: '연 2회 (상반기 3~4월, 하반기 8~9월)', salary: '신입 약 4,000 / 평균 약 7,500', language: '토익 850점 이상 안정권', cert: '컴활 1급, 한국사 1급 필수 수준', summary: '서류 가점을 만점으로 채우는 것이 기본 전제입니다.' } },
-        { id: 'hira', name: '건강보험심사평가원', shortName: '심평원', url: 'https://hira.recruitlab.co.kr', specs: { recruitSchedule: '연 2회 (상반기 4~5월, 하반기 9~10월)', salary: '신입 약 4,100 / 평균 약 7,800', language: '토익 850점 이상 (심사직 700+)', cert: 'ADsP, SQLD 등 데이터 역량 우대', summary: '심사직은 종합병원급 이상의 임상 경력이 합격의 핵심입니다.' } },
-        { id: 'nps', name: '국민연금공단', shortName: '국민연금', url: 'https://nps.saramin.co.kr', specs: { recruitSchedule: '연 2회 (상반기 4월, 하반기 9월)', salary: '신입 약 3,800 / 평균 약 7,100', language: '토익 800점 이상 권장', cert: '사회복지사 1급 가점 비중 높음', summary: 'NCS 및 전공 필기 시험의 난이도가 상당히 높은 편입니다.' } },
-        { id: 'comwel', name: '근로복지공단', shortName: '근로복지', url: 'https://www.comwel.or.kr/recruit', specs: { recruitSchedule: '연 2회 (상반기 4~5월, 하반기 9~10월)', salary: '신입 약 3,600 / 평균 약 6,500', language: '토익 750점 이상 우대', cert: '직무 자격증 가점 비중 높음', summary: '블라인드 원칙 준수와 필기 성적이 합격에 결정적입니다.' } },
-        { id: 'neca', name: '한국보건의료연구원', shortName: '보의연', url: 'https://www.neca.re.kr', specs: { recruitSchedule: '수시 및 상·하반기 통합 채용', salary: '신입 약 3,900 / 평균 약 7,200', language: '토익 800점 이상 권장', cert: '석/박사 학위 및 연구 실적 중시', summary: '연구 중심 기관으로 학술적 전문성과 서울 근무의 장점이 큽니다.' } },
-        { id: 'kuksiwon', name: '한국보건의료인국가시험원', shortName: '국시원', url: 'https://dware.intojob.co.kr', specs: { recruitSchedule: '연 1~2회 (하반기 집중)', salary: '신입 약 3,700 / 평균 약 6,900', language: '토익 750점 이상 권장', cert: '행정 및 기획 역량 중시', summary: '서울 광진구 소재 및 비수기 워라밸이 매우 뛰어납니다.' } },
-        { id: 'koiha', name: '의료기관평가인증원', shortName: '인증원', url: 'https://koiha.recruiter.co.kr', specs: { recruitSchedule: '상·하반기 및 결원 수시 채용', salary: '신입 약 3,800 / 평균 약 6,800', language: '공인영어성적 필수 제출', cert: '인증 평가 및 QPS 실무자 우대', summary: '전국 병원 현장 평가 출장이 잦은 직무적 특성이 있습니다.' } },
-        { id: 'redcross', name: '대한적십자사', shortName: '적십자사', url: 'https://www.redcross.or.kr/recruit/', specs: { recruitSchedule: '본사 통합 및 각 지사별 수시', salary: '신입 약 3,500 / 평균 약 6,200', language: '토익 750점 이상 권장', cert: '헌혈 횟수 및 봉사 활동 가점 필수', summary: '봉사 정신과 기관 미션에 대한 이해도가 면접에서 중요합니다.' } },
+        { id: 'nhis', name: '국민건강보험공단', shortName: '건보공단', url: 'https://nhis.kpcice.kr', specs: { recruitSchedule: '연 2회 (상반기 3~4월, 하반기 8~9월)', salary: '신입 약 4,400만원 / 평균 약 6,900만원', language: '토익 850점 이상 안정권', cert: '컴활 1급·한국사 심화 등 기본 가점', summary: '서류 가점을 만점으로 채우는 것이 기본 전제입니다.' } },
+        { id: 'hira', name: '건강보험심사평가원', shortName: '심평원', url: 'https://hira.recruitlab.co.kr', specs: { recruitSchedule: '연 2회 (상반기 4~5월, 하반기 9~10월)', salary: '신입 약 4,300만원 / 평균 약 7,000만원', language: '토익 850점 이상 (심사직 700+)', cert: 'ADsP, SQLD 등 데이터 역량 우대', summary: '심사직은 종합병원급 이상의 임상 경력이 합격의 핵심입니다.' } },
+        { id: 'nps', name: '국민연금공단', shortName: '국민연금', url: 'https://nps.saramin.co.kr', specs: { recruitSchedule: '연 2회 (상반기 4월, 하반기 9월)', salary: '신입 약 3,900만원 / 평균 약 6,000만원', language: '토익 800점 이상 권장', cert: '사회복지사 1급 가점 비중 높음', summary: 'NCS 및 전공 필기 시험의 난이도가 상당히 높은 편입니다.' } },
+        { id: 'comwel', name: '근로복지공단', shortName: '근로복지', url: 'https://www.comwel.or.kr/recruit', specs: { recruitSchedule: '연 2회 (상반기 4~5월, 하반기 9~10월)', salary: '신입 약 3,400만원 / 평균 약 5,600만원', language: '토익 750점 이상 우대', cert: '직무 자격증 가점 비중 높음', summary: '블라인드 원칙 준수와 필기 성적이 합격에 결정적입니다.' } },
+        { id: 'neca', name: '한국보건의료연구원', shortName: '보의연', url: 'https://www.neca.re.kr', specs: { recruitSchedule: '수시 및 상·하반기 통합 채용', salary: '신입 약 3,300만원 / 평균 약 5,300만원', language: '토익 800점 이상 권장', cert: '석/박사 학위 및 연구 실적 중시', summary: '연구 중심 기관으로 학술적 전문성과 서울 근무의 장점이 큽니다.' } },
+        { id: 'kuksiwon', name: '한국보건의료인국가시험원', shortName: '국시원', url: 'https://dware.intojob.co.kr', specs: { recruitSchedule: '연 1~2회 (하반기 집중)', salary: '신입 약 3,700만원 / 평균 약 5,300만원', language: '토익 750점 이상 권장', cert: '행정 및 기획 역량 중시', summary: '서울 광진구 소재 및 비수기 워라밸이 매우 뛰어납니다.' } },
+        { id: 'koiha', name: '의료기관평가인증원', shortName: '인증원', url: 'https://koiha.recruiter.co.kr', specs: { recruitSchedule: '상·하반기 및 결원 수시 채용', salary: '신입 약 3,900만원 / 평균 약 6,000만원', language: '공인영어성적 필수 제출', cert: '인증 평가 및 QPS 실무자 우대', summary: '전국 병원 현장 평가 출장이 잦은 직무적 특성이 있습니다.' } },
+        { id: 'redcross', name: '대한적십자사', shortName: '적십자사', url: 'https://www.redcross.or.kr/recruit/', specs: { recruitSchedule: '본사 통합 및 각 지사별 수시', salary: '신입 약 3,300만원 / 평균 약 6,000만원', language: '토익 750점 이상 권장', cert: '헌혈·봉사 실적 가점(우대)', summary: '봉사 정신과 기관 미션에 대한 이해도가 면접에서 중요합니다.' } },
         { id: 'mohw', name: '보건복지부 및 소속기관', shortName: '보건복지부', url: 'https://www.mohw.go.kr', specs: { recruitSchedule: '수시 채용', salary: '공무직 보수규정 적용', language: '직무별 상이', cert: '관련 실무경력 중시', summary: '다양한 공무직 및 임기제 채용이 진행됩니다.' } }
     ];
 
@@ -388,7 +388,8 @@ const App = () => {
                 <div className="bg-white p-8 md:p-12 rounded-3xl border border-slate-200 shadow-sm space-y-16 text-left">
                     <header className="border-b border-slate-100 pb-8">
                         <h2 className="text-2xl font-black text-slate-900 mb-4">보건의료 공공기관별 심층 합격 전략 분석</h2>
-                        <p className="text-slate-500 font-medium leading-relaxed">각 기관의 고유한 채용 특성과 현직자들이 강조하는 핵심 스펙을 정리했습니다. 본인의 강점에 맞는 기관을 선택하여 전략적으로 준비하세요.</p>
+                        <p className="text-slate-500 font-medium leading-relaxed">각 기관의 채용 특성과 핵심 스펙을 정리했습니다. 본인의 강점에 맞는 기관을 골라 전략적으로 준비하세요.</p>
+                        <p className="text-[12px] text-slate-400 font-medium mt-3">※ 급여는 ALIO 공시 기준 근사치이며 연도·수당에 따라 편차가 있습니다. 채용 주기·자격·일정 등 세부 기준은 반드시 각 기관 공식 공고를 확인하세요.</p>
                     </header>
                     
                     <div className="grid grid-cols-1 gap-12">
@@ -396,9 +397,9 @@ const App = () => {
                             <article key={inst.id} className="space-y-5">
                                 <h3 className="text-xl font-bold text-blue-700 flex items-center gap-2 underline underline-offset-8 decoration-blue-100"><Icon name="building" /> {inst.name} ({inst.shortName})</h3>
                                 <div className="text-[14px] text-slate-700 space-y-3 font-medium leading-relaxed">
-                                    <p><strong>📅 연간 채용 주기:</strong> {inst.specs.recruitSchedule} 기간에 집중적으로 신입 및 경력직 채용이 진행됩니다.</p>
-                                    <p><strong>💰 처우 및 복지:</strong> 신입 사원 기준 {inst.specs.salary} 수준의 경쟁력 있는 급여를 제공하며, 공공기관 특유의 안정적인 복지 혜택을 누릴 수 있습니다.</p>
-                                    <p><strong>🎯 필수 핵심 스펙:</strong> 어학 성적은 {inst.specs.language} 이상 확보가 권장되며, 자격증 가점은 {inst.specs.cert} 위주로 구성하는 것이 가장 효율적입니다.</p>
+                                    <p><strong>📅 연간 채용 주기:</strong> {inst.specs.recruitSchedule}에 신입·경력직 채용이 집중됩니다.</p>
+                                    <p><strong>💰 처우(ALIO 근사치):</strong> {inst.specs.salary} 수준이며, 공공기관 특유의 안정적인 호봉제와 복지를 갖추고 있습니다.</p>
+                                    <p><strong>🎯 핵심 스펙:</strong> 어학은 {inst.specs.language}, 자격증 가점은 {inst.specs.cert} 위주로 준비하는 것이 효율적입니다.</p>
                                     <div className="bg-blue-50 p-6 rounded-2xl text-blue-900 text-[13.5px] border border-blue-100 mt-2 shadow-inner leading-relaxed">
                                         <strong>💡 현직자 합격 꿀팁:</strong> {inst.specs.summary}
                                     </div>
