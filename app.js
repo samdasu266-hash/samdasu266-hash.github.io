@@ -796,7 +796,12 @@ const App = () => {
     className: "mt-20 pt-10 pb-6 border-t border-slate-200 text-center space-y-6"
   }, /*#__PURE__*/React.createElement("div", {
     className: "flex justify-center gap-6 text-[12px] font-bold text-slate-500"
-  }, /*#__PURE__*/React.createElement("button", {
+  }, /*#__PURE__*/React.createElement("a", {
+    href: "about.html",
+    className: "hover:text-slate-800 transition-colors"
+  }, "소개·운영정책"), /*#__PURE__*/React.createElement("span", {
+    className: "text-slate-200"
+  }, "|"), /*#__PURE__*/React.createElement("button", {
     onClick: () => setShowContact(true),
     className: "hover:text-slate-800 transition-colors"
   }, "문의하기")), /*#__PURE__*/React.createElement("div", {
