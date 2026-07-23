@@ -53,7 +53,7 @@
 </head>
 <body class="p-4 md:p-8 max-w-4xl mx-auto text-left">
     <nav class="mb-8 -mx-4 md:mx-0 px-4 md:px-0 border-b border-slate-200 flex items-center gap-0.5 overflow-x-auto whitespace-nowrap text-[12.5px] md:text-[13px] font-bold" style="scrollbar-width:none;-ms-overflow-style:none;">
-        <a href="index.html" class="inline-flex items-center h-11 px-3 border-b-2 border-transparent text-slate-500 hover:text-slate-800 transition-colors">실시간 채용공고</a>
+        <a href="index.html" class="inline-flex items-center h-11 px-3 border-b-2 border-transparent text-slate-500 hover:text-slate-800 transition-colors">홈</a>
         <a href="index.html#guide" class="inline-flex items-center h-11 px-3 border-b-2 border-transparent text-slate-500 hover:text-slate-800 transition-colors">기관별 합격 가이드</a>
         <a href="guide.html" class="inline-flex items-center h-11 px-3 border-b-2 border-transparent text-slate-500 hover:text-slate-800 transition-colors">근무환경·워라밸</a>
         <a href="tips.html" class="inline-flex items-center h-11 px-3 border-b-2 border-transparent text-slate-500 hover:text-slate-800 transition-colors">채용 트렌드</a>
@@ -150,5 +150,20 @@
         <p class="mt-2"><a href="about.html" class="text-slate-500 hover:text-blue-600 underline">사이트 소개·운영정책</a></p>
     </footer>
 
+<script>
+(function(){
+  // 모바일 가로 네비: 현재 페이지 항목이 보이도록 스크롤
+  var a = document.querySelector('nav a.border-blue-600');
+  if (a && a.scrollIntoView) try { a.scrollIntoView({inline:'center', block:'nearest'}); } catch(e){}
+  // 맨 위로 버튼 (좌측 하단)
+  var btn = document.createElement('button');
+  btn.setAttribute('aria-label','맨 위로 이동');
+  btn.textContent = '\u2191';
+  btn.style.cssText = 'position:fixed;bottom:24px;left:24px;z-index:50;width:44px;height:44px;border-radius:9999px;background:#fff;border:1px solid #e2e8f0;color:#475569;box-shadow:0 10px 15px -3px rgba(0,0,0,.1);font-size:20px;font-weight:700;cursor:pointer;display:none;align-items:center;justify-content:center;';
+  btn.onclick = function(){ window.scrollTo({top:0, behavior:'smooth'}); };
+  document.body.appendChild(btn);
+  window.addEventListener('scroll', function(){ btn.style.display = window.scrollY > 400 ? 'flex' : 'none'; }, {passive:true});
+})();
+</script>
 </body>
 </html>

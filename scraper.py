@@ -107,10 +107,12 @@ def detect_region(inst_id, title, row_text, combined_text):
                 return reg
 
     # 2) 근무지/근무장소가 명시된 줄에서만 추출 (본문 전체 스캔보다 정확)
+    #    표 형태(라벨 줄과 값 줄이 분리)를 대비해 해당 줄 + 다음 줄까지 함께 본다.
     region_set = set()
-    for line in combined_text.split('\n'):
-        if any(k in line for k in ['근무지', '근무장소', '근무 장소', '근무예정지', '소재지']):
-            region_set |= regions_in_text(line)
+    ctx_lines = combined_text.split('\n')
+    for i, line in enumerate(ctx_lines):
+        if any(k in line for k in ['근무지', '근무장소', '근무 장소', '근무예정지', '근무예정부서', '소재지']):
+            region_set |= regions_in_text(" ".join(ctx_lines[i:i+2]))
 
     # 3) 제목에서 추출
     if not region_set:
