@@ -140,6 +140,22 @@ const App = () => {
     const [showContact, setShowContact] = useState(false);
     const [showRequest, setShowRequest] = useState(false);
     const [copied, setCopied] = useState(false);
+    const [showTop, setShowTop] = useState(false);
+    const navRef = React.useRef(null);
+
+    // 스크롤을 내리면 '맨 위로' 버튼 노출
+    useEffect(() => {
+        const onScroll = () => setShowTop(window.scrollY > 400);
+        window.addEventListener('scroll', onScroll, { passive: true });
+        onScroll();
+        return () => window.removeEventListener('scroll', onScroll);
+    }, []);
+
+    // 모바일 가로 네비: 현재 선택된 항목이 화면에 보이도록 스크롤
+    useEffect(() => {
+        const el = navRef.current?.querySelector('.nav-link.active');
+        if (el && el.scrollIntoView) el.scrollIntoView({ inline: 'center', block: 'nearest' });
+    }, [mainView]);
 
     const institutions = [
         { id: 'nhis', name: '국민건강보험공단', shortName: '건보공단', url: 'https://nhis.kpcice.kr', specs: { recruitSchedule: '연 2회 (상반기 3~4월, 하반기 8~9월)', salary: '신입 약 4,400만원 / 평균 약 6,900만원', language: '토익 850점 이상 안정권', cert: '컴활 1급·한국사 심화 등 기본 가점', summary: '서류 가점을 만점으로 채우는 것이 기본 전제입니다.' } },
@@ -171,6 +187,17 @@ const App = () => {
         const timer = setInterval(loadJobs, 10 * 60 * 1000); // 열어둔 화면도 10분마다 자동 갱신
         return () => clearInterval(timer);
     }, []);
+
+    // ⚠️ matchType/matchRegion은 아래 filteredJobs useMemo에서 사용하므로 반드시 먼저 정의해야 한다.
+    //    (const는 호이스팅되지 않아, 뒤에 두면 필터 선택 시 TDZ ReferenceError로 앱이 크래시함)
+    const matchType = (sel, actual) => sel === '계약직'
+        ? (actual.includes('계약직') || actual.includes('기간제'))
+        : actual.includes(sel);
+    const matchRegion = (sel, actual) => {
+        if (sel === '경인') return actual.includes('경기') || actual.includes('인천');
+        if (sel === '대전충남') return actual.includes('대전') || actual.includes('세종') || actual.includes('충남');
+        return actual.includes(sel);
+    };
 
     const filteredJobs = useMemo(() => {
         let result = jobs.filter(job => {
@@ -218,14 +245,6 @@ const App = () => {
         if (value === 'all') { setter([]); return; }
         setter(prev => prev.includes(value) ? prev.filter(v => v !== value) : [...prev, value]);
     };
-    const matchType = (sel, actual) => sel === '계약직'
-        ? (actual.includes('계약직') || actual.includes('기간제'))
-        : actual.includes(sel);
-    const matchRegion = (sel, actual) => {
-        if (sel === '경인') return actual.includes('경기') || actual.includes('인천');
-        if (sel === '대전충남') return actual.includes('대전') || actual.includes('세종') || actual.includes('충남');
-        return actual.includes(sel);
-    };
 
     // 수집 시각은 항상 한국 표준시(KST)로 표기
     const formatDate = (d) => d ? d.toLocaleDateString('ko-KR', { timeZone: 'Asia/Seoul', year: 'numeric', month: 'long', day: 'numeric' }) : '확인 중...';
@@ -258,8 +277,8 @@ const App = () => {
     return (
         <div className="max-w-5xl mx-auto p-4 md:p-8 flex flex-col min-h-[100dvh]">
             
-            <nav className="mb-10 -mx-4 md:mx-0 px-4 md:px-0 border-b border-slate-200 flex items-center gap-0.5 overflow-x-auto no-scrollbar whitespace-nowrap text-[12.5px] md:text-[13px] font-bold">
-                <button onClick={() => { setMainView('jobs'); if (history.replaceState) history.replaceState(null, '', location.pathname); }} className={`nav-link ${mainView === 'jobs' ? 'active' : 'text-slate-500 hover:text-slate-800'}`}>실시간 채용공고</button>
+            <nav ref={navRef} className="mb-10 -mx-4 md:mx-0 px-4 md:px-0 border-b border-slate-200 flex items-center gap-0.5 overflow-x-auto no-scrollbar whitespace-nowrap text-[12.5px] md:text-[13px] font-bold">
+                <button onClick={() => { setMainView('jobs'); if (history.replaceState) history.replaceState(null, '', location.pathname); }} className={`nav-link ${mainView === 'jobs' ? 'active' : 'text-slate-500 hover:text-slate-800'}`}>홈</button>
                 <button onClick={() => { setMainView('guide'); if (history.replaceState) history.replaceState(null, '', '#guide'); }} className={`nav-link ${mainView === 'guide' ? 'active' : 'text-slate-500 hover:text-slate-800'}`}>기관별 합격 가이드</button>
                 <a href="guide.html" className="nav-link text-slate-500 hover:text-slate-800">근무환경·워라밸</a>
                 <a href="tips.html" className="nav-link text-slate-500 hover:text-slate-800">채용 트렌드</a>
@@ -454,6 +473,17 @@ const App = () => {
                     <p className="text-[10px] text-slate-300">모든 채용 정보는 실시간 수집 데이터로, 정확한 내용은 반드시 각 기관의 공식 공고문을 확인하시기 바랍니다.</p>
                 </div>
             </footer>
+
+            {/* 맨 위로 스크롤 버튼 (좌측 하단, 챗봇과 겹치지 않게) */}
+            {showTop && (
+                <button
+                    onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                    aria-label="맨 위로 이동"
+                    className="fixed bottom-6 left-6 md:bottom-8 md:left-8 z-50 w-11 h-11 rounded-full bg-white border border-slate-200 text-slate-600 shadow-lg hover:text-blue-600 hover:border-blue-300 flex items-center justify-center transition-all animate-in fade-in"
+                >
+                    <Icon name="arrow-up" className="w-5 h-5" />
+                </button>
+            )}
 
             {/* --- AI 탈임상 도우미 챗봇 플로팅 버튼 영역 --- */}
             <div className="fixed bottom-6 right-6 md:bottom-8 md:right-8 z-50 flex flex-col items-end animate-in fade-in duration-500">
