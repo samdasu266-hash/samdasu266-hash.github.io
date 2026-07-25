@@ -291,7 +291,11 @@ async def scrape_site(browser, inst_id, url):
                     clean_title = clean_title[:date_match.start()]
                     
                 clean_title = clean_title.replace('[마감]', '').replace('[새글]', '').replace('새글', '').replace('~', '').strip()
-                clean_title = re.sub(r'\s+', ' ', clean_title)
+                # 목록 페이지의 상태 배지·D-day 부스러기 제거
+                # (예: "접수중 의료기관평가인증원 … 공고(연구직) D-17" → "의료기관평가인증원 … 공고(연구직)")
+                clean_title = re.sub(r'^\s*(?:접수중|접수예정|진행중|모집중|마감임박|신규)\s+', '', clean_title)
+                clean_title = re.sub(r'\s*D\s*-\s*\d+\s*', ' ', clean_title)
+                clean_title = re.sub(r'\s+', ' ', clean_title).strip()
 
                 # 적십자사: 본문에 있는 소속기관명 낚아채기
                 if inst_id == 'redcross':
@@ -587,8 +591,14 @@ async def main():
                 continue
             if job.get('instId') == 'mohw':
                 jn = _norm_title(job['title'])
-                # 원 기관 제목과 정확히 일치하거나, 원 기관 제목(8자 이상)이 포함되면 중복으로 간주
-                if any(n and (n == jn or (len(n) >= 8 and n in jn)) for n in nonmohw_norms):
+                # 원 기관 제목과 정확히 일치하거나, 한쪽이 다른 쪽을 포함하면(양방향) 중복으로 간주.
+                # 목록 페이지마다 배지·직렬 표기가 달라 길이가 다를 수 있으므로 양방향으로 본다.
+                # (예: koiha "의료기관평가인증원 2026년 제2회 직원채용 공고(연구직)"
+                #      ↔ mohw "의료기관평가인증원 2026년 제2회 직원채용 공고")
+                if any(n and jn and (n == jn or
+                                     (len(n) >= 10 and n in jn) or
+                                     (len(jn) >= 10 and jn in n))
+                       for n in nonmohw_norms):
                     continue
             seen_keys.add(key)
             deduped_jobs.append(job)
