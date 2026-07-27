@@ -1,5 +1,5 @@
 {
- "lastSync": "2026-07-27T16:37:36.023789+09:00",
+ "lastSync": "2026-07-27T20:25:58.649626+09:00",
  "jobs": [
   {
    "instId": "koiha",
@@ -40,16 +40,6 @@
    "jobType": "계약직/기간제",
    "region": "서울",
    "link": "https://www.nps.or.kr/pnsgdnc/hiregdnc/getOHAE0004M1.do?menuId=MN24000969&pstId=ZZ202600000000000825&hmpgCd=01&hmpgBbsCd=BS20240138&sortSe=FR&pageIndex=1&searchText=&searchGbu=&pstSeCd="
-  },
-  {
-   "instId": "nps",
-   "title": "[국민연금공단 경인지역본부] 공무직(시설직) 공개채용 공고",
-   "startDate": "26.07.20",
-   "endDate": "상세참조",
-   "status": "진행중",
-   "jobType": "공무직",
-   "region": "경기, 인천",
-   "link": "https://www.nps.or.kr/pnsgdnc/hiregdnc/getOHAE0004M1.do?menuId=MN24000969&pstId=ZZ202600000000000822&hmpgCd=01&hmpgBbsCd=BS20240138&sortSe=FR&pageIndex=1&searchText=&searchGbu=&pstSeCd="
   },
   {
    "instId": "redcross",
