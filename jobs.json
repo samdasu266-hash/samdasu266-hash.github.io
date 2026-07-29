@@ -1,5 +1,5 @@
 {
- "lastSync": "2026-07-29T22:05:12.275898+09:00",
+ "lastSync": "2026-07-30T00:54:06.730142+09:00",
  "jobs": [
   {
    "instId": "hira",
@@ -23,7 +23,37 @@
   },
   {
    "instId": "koiha",
-   "title": "의료기관평가인증원 2026년 제2회 직원채용 공고(연구직) 2026.07.24 2026.08.12 18:00 공채 일반채용 신입",
+   "title": "채용 프로세스",
+   "startDate": "상세참조",
+   "endDate": "상세참조",
+   "status": "진행중",
+   "jobType": "정규직",
+   "region": "경기, 서울, 인천",
+   "link": "https://koiha.recruiter.co.kr/career/career"
+  },
+  {
+   "instId": "koiha",
+   "title": "채용 공지사항",
+   "startDate": "상세참조",
+   "endDate": "상세참조",
+   "status": "진행중",
+   "jobType": "정규직",
+   "region": "서울(본부·공고확인)",
+   "link": "https://koiha.recruiter.co.kr/career/notice"
+  },
+  {
+   "instId": "koiha",
+   "title": "1:1 채용문의",
+   "startDate": "상세참조",
+   "endDate": "상세참조",
+   "status": "진행중",
+   "jobType": "정규직",
+   "region": "서울(본부·공고확인)",
+   "link": "https://koiha.recruiter.co.kr/career/https://koiha.recruiter.co.kr/career?viewType=QnA"
+  },
+  {
+   "instId": "koiha",
+   "title": "의료기관평가인증원 2026년 제2회 직원채용 공고(연구직) 공채 일반채용 신입 2026.07.24",
    "startDate": "26.07.24",
    "endDate": "26.08.12 18:00",
    "status": "진행중",
@@ -75,7 +105,7 @@
    "instId": "mohw",
    "title": "한국생명존중희망재단 2026년 제3차 직원 채용(공개·제한경쟁) 공고",
    "startDate": "26.07.23",
-   "endDate": "26.08.07 18:00",
+   "endDate": "상세참조",
    "status": "진행중",
    "jobType": "정규직",
    "region": "전국(공고확인)",
