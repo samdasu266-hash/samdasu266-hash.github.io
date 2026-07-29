@@ -1,5 +1,5 @@
 {
- "lastSync": "2026-07-29T16:47:42.048893+09:00",
+ "lastSync": "2026-07-29T19:43:43.730680+09:00",
  "jobs": [
   {
    "instId": "hira",
@@ -40,26 +40,6 @@
    "jobType": "정규직",
    "region": "서울, 전북",
    "link": "https://www.nps.or.kr/pnsgdnc/hiregdnc/getOHAE0004M1.do?menuId=MN24000969&pstId=ZZ202600000000000843&hmpgCd=01&hmpgBbsCd=BS20240138&sortSe=FR&pageIndex=1&searchText=&searchGbu=&pstSeCd="
-  },
-  {
-   "instId": "nps",
-   "title": "[국민연금공단 서울남부지역본부] 공무직(시설직, 보안직) 및 기간제근로자(시설직) 공개채용 공고",
-   "startDate": "26.07.22",
-   "endDate": "상세참조",
-   "status": "진행중",
-   "jobType": "공무직",
-   "region": "서울",
-   "link": "https://www.nps.or.kr/pnsgdnc/hiregdnc/getOHAE0004M1.do?menuId=MN24000969&pstId=ZZ202600000000000826&hmpgCd=01&hmpgBbsCd=BS20240138&sortSe=FR&pageIndex=1&searchText=&searchGbu=&pstSeCd="
-  },
-  {
-   "instId": "nps",
-   "title": "[국민연금공단 서울북부지역본부] 기간제근로자(근로능력평가직) 공개채용 공고",
-   "startDate": "26.07.22",
-   "endDate": "상세참조",
-   "status": "진행중",
-   "jobType": "계약직/기간제",
-   "region": "서울",
-   "link": "https://www.nps.or.kr/pnsgdnc/hiregdnc/getOHAE0004M1.do?menuId=MN24000969&pstId=ZZ202600000000000825&hmpgCd=01&hmpgBbsCd=BS20240138&sortSe=FR&pageIndex=1&searchText=&searchGbu=&pstSeCd="
   },
   {
    "instId": "redcross",
