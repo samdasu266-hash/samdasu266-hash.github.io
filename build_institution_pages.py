@@ -322,7 +322,7 @@ def build_page(inst, hist_jobs, live_jobs, version, today):
         <section class="bg-slate-50 border border-slate-200 rounded-2xl p-6">
             <h2 class="text-[15px] font-bold text-slate-900 mb-3">함께 보면 좋은 가이드</h2>
             <ul class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[13.5px]">
-                <li><a href="index.html#guide" class="text-blue-600 font-bold hover:underline">기관별 합격 가이드 — 전형·스펙 준비</a></li>
+                <li><a href="index.html#guide" class="text-blue-600 font-bold hover:underline">기관별 합격 가이드 — 전형 단계·필기 과목</a></li>
                 <li><a href="guide.html" class="text-blue-600 font-bold hover:underline">근무환경·워라밸 — 입사 후 생활</a></li>
                 <li><a href="license.html" class="text-blue-600 font-bold hover:underline">서류 가점 전략 — 자격·어학</a></li>
                 <li><a href="interview.html" class="text-blue-600 font-bold hover:underline">면접 필승 가이드 — 구조화 면접</a></li>
