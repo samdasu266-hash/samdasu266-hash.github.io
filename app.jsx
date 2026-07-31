@@ -169,8 +169,10 @@ const NotifyModal = ({ open, onClose, institutions }) => {
                             </div>
 
                             <div>
-                                <label className="text-[11px] font-bold text-slate-500 mb-1.5 block">관심 기관 <span className="text-slate-300 font-medium">(선택 안 하면 전체)</span></label>
+                                <label className="text-[11px] font-bold text-slate-500 mb-1.5 block">관심 기관</label>
                                 <div className="flex flex-wrap gap-1.5">
+                                    {/* 빈 배열 = 전체 구독이므로 '전체' 버튼은 선택을 비우는 동작 */}
+                                    <button onClick={() => setInsts([])} className={`px-2.5 py-1.5 rounded-lg text-[11.5px] font-bold border transition-all ${insts.length === 0 ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'}`}>전체</button>
                                     {institutions.map(inst => (
                                         <button key={inst.id} onClick={() => toggle(setInsts, inst.id)} className={`px-2.5 py-1.5 rounded-lg text-[11.5px] font-bold border transition-all ${insts.includes(inst.id) ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'}`}>{inst.shortName}</button>
                                     ))}
@@ -178,12 +180,23 @@ const NotifyModal = ({ open, onClose, institutions }) => {
                             </div>
 
                             <div>
-                                <label className="text-[11px] font-bold text-slate-500 mb-1.5 block">관심 고용형태 <span className="text-slate-300 font-medium">(선택 안 하면 전체)</span></label>
+                                <label className="text-[11px] font-bold text-slate-500 mb-1.5 block">관심 고용형태</label>
                                 <div className="flex flex-wrap gap-1.5">
+                                    <button onClick={() => setJobTypes([])} className={`px-2.5 py-1.5 rounded-lg text-[11.5px] font-bold border transition-all ${jobTypes.length === 0 ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'}`}>전체</button>
                                     {JOB_TYPES.map(t => (
                                         <button key={t} onClick={() => toggle(setJobTypes, t)} className={`px-2.5 py-1.5 rounded-lg text-[11.5px] font-bold border transition-all ${jobTypes.includes(t) ? 'bg-purple-600 text-white border-purple-600' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'}`}>{t}</button>
                                     ))}
                                 </div>
+                            </div>
+
+                            {/* 조건을 좁게 잡으면 메일이 안 올 수 있다는 점을 미리 알려, 발송 누락으로 오해하지 않게 한다 */}
+                            <div className="bg-blue-50 border border-blue-100 rounded-xl p-3.5 text-[11.5px] text-blue-900 font-medium leading-relaxed">
+                                📮 <strong>선택한 조건에 맞는 새 공고가 있는 날에만</strong> 메일을 보내드립니다. 해당하는 공고가 없는 날은 메일이 발송되지 않으니, 알림이 오지 않아도 정상입니다.
+                                {(insts.length > 0 || jobTypes.length > 0) && (
+                                    <span className="block mt-1.5 text-blue-700">
+                                        현재 조건: {insts.length > 0 ? insts.map(id => (institutions.find(i => i.id === id) || {}).shortName).join(' · ') : '전체 기관'} / {jobTypes.length > 0 ? jobTypes.join(' · ') : '전체 고용형태'}
+                                    </span>
+                                )}
                             </div>
 
                             <label className="flex items-start gap-2.5 bg-slate-50 border border-slate-200 rounded-xl p-3.5 cursor-pointer">

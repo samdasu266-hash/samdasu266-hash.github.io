@@ -170,7 +170,7 @@ function sendWelcome_(email, token, data, isUpdate) {
     htmlBody:
       '<div style="font-family:sans-serif;line-height:1.7;color:#0f172a;max-width:560px">' +
       '<h2 style="margin:0 0 12px">채용 알림 ' + (isUpdate ? "설정이 변경" : "신청이 완료") + '되었습니다</h2>' +
-      '<p style="color:#475569;margin:0 0 16px">새 공고가 올라오면 <strong>매일 오전 8시</strong>에 한 통으로 모아 보내드립니다. 새 공고가 없는 날은 메일을 보내지 않습니다.</p>' +
+      '<p style="color:#475569;margin:0 0 16px">아래 조건에 맞는 새 공고가 올라온 날 <strong>오전 8시</strong>에 한 통으로 모아 보내드립니다. 해당하는 공고가 없는 날은 메일을 보내지 않으니, 알림이 오지 않아도 정상입니다.</p>' +
       '<table style="border-collapse:collapse;font-size:14px;color:#334155">' +
       '<tr><td style="padding:4px 12px 4px 0;color:#94a3b8">관심 기관</td><td>' + escapeHtml_(instLabel) + '</td></tr>' +
       '<tr><td style="padding:4px 12px 4px 0;color:#94a3b8">관심 고용형태</td><td>' + escapeHtml_(data.jobTypes || "전체") + '</td></tr>' +

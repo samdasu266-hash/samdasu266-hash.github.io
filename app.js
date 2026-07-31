@@ -287,25 +287,31 @@ const NotifyModal = ({
     className: "mt-1.5 w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
   })), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
     className: "text-[11px] font-bold text-slate-500 mb-1.5 block"
-  }, "관심 기관 ", /*#__PURE__*/React.createElement("span", {
-    className: "text-slate-300 font-medium"
-  }, "(선택 안 하면 전체)")), /*#__PURE__*/React.createElement("div", {
+  }, "관심 기관"), /*#__PURE__*/React.createElement("div", {
     className: "flex flex-wrap gap-1.5"
-  }, institutions.map(inst => /*#__PURE__*/React.createElement("button", {
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: () => setInsts([]),
+    className: `px-2.5 py-1.5 rounded-lg text-[11.5px] font-bold border transition-all ${insts.length === 0 ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'}`
+  }, "전체"), institutions.map(inst => /*#__PURE__*/React.createElement("button", {
     key: inst.id,
     onClick: () => toggle(setInsts, inst.id),
     className: `px-2.5 py-1.5 rounded-lg text-[11.5px] font-bold border transition-all ${insts.includes(inst.id) ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'}`
   }, inst.shortName)))), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
     className: "text-[11px] font-bold text-slate-500 mb-1.5 block"
-  }, "관심 고용형태 ", /*#__PURE__*/React.createElement("span", {
-    className: "text-slate-300 font-medium"
-  }, "(선택 안 하면 전체)")), /*#__PURE__*/React.createElement("div", {
+  }, "관심 고용형태"), /*#__PURE__*/React.createElement("div", {
     className: "flex flex-wrap gap-1.5"
-  }, JOB_TYPES.map(t => /*#__PURE__*/React.createElement("button", {
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: () => setJobTypes([]),
+    className: `px-2.5 py-1.5 rounded-lg text-[11.5px] font-bold border transition-all ${jobTypes.length === 0 ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'}`
+  }, "전체"), JOB_TYPES.map(t => /*#__PURE__*/React.createElement("button", {
     key: t,
     onClick: () => toggle(setJobTypes, t),
     className: `px-2.5 py-1.5 rounded-lg text-[11.5px] font-bold border transition-all ${jobTypes.includes(t) ? 'bg-purple-600 text-white border-purple-600' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'}`
-  }, t)))), /*#__PURE__*/React.createElement("label", {
+  }, t)))), /*#__PURE__*/React.createElement("div", {
+    className: "bg-blue-50 border border-blue-100 rounded-xl p-3.5 text-[11.5px] text-blue-900 font-medium leading-relaxed"
+  }, "📮 ", /*#__PURE__*/React.createElement("strong", null, "선택한 조건에 맞는 새 공고가 있는 날에만"), " 메일을 보내드립니다. 해당하는 공고가 없는 날은 메일이 발송되지 않으니, 알림이 오지 않아도 정상입니다.", (insts.length > 0 || jobTypes.length > 0) && /*#__PURE__*/React.createElement("span", {
+    className: "block mt-1.5 text-blue-700"
+  }, "현재 조건: ", insts.length > 0 ? insts.map(id => (institutions.find(i => i.id === id) || {}).shortName).join(' · ') : '전체 기관', " / ", jobTypes.length > 0 ? jobTypes.join(' · ') : '전체 고용형태')), /*#__PURE__*/React.createElement("label", {
     className: "flex items-start gap-2.5 bg-slate-50 border border-slate-200 rounded-xl p-3.5 cursor-pointer"
   }, /*#__PURE__*/React.createElement("input", {
     type: "checkbox",
