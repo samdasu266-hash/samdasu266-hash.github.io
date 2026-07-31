@@ -268,7 +268,9 @@ async def scrape_site(browser, inst_id, url):
         if not rows:
             # 링크 전체 폴백: 상단 내비게이션 링크가 많으므로 더 넓게 훑는다
             rows = await page.query_selector_all("a")
-            row_limit = 60
+            # 링크 전체 폴백에서는 상단 내비게이션 링크가 앞부분을 차지해,
+            # 한도가 낮으면 정작 뒤쪽의 실제 공고를 못 보고 잘린다. 넉넉히 잡는다.
+            row_limit = 150
 
         now = datetime.now(KST)
 
@@ -317,7 +319,11 @@ async def scrape_site(browser, inst_id, url):
                         continue
                 elif inst_id == 'kac':
                     # 한국공항공사는 보건의료 기관이 아니므로 '보건관리자' 직무만 수집한다.
-                    if not re.search(r'보건\s*관리(자|직)?', clean_title):
+                    # 다만 공고 제목은 '2026년 하반기 경력직 등 공개채용'처럼 통합 공고명이고
+                    # 보건관리자는 본문 채용분야 표에만 있는 경우가 많다.
+                    # → 여기서는 공고 여부만 확인하고, 실제 '보건관리자' 판정은
+                    #    상세 본문(combined_text)을 확보한 뒤 아래에서 수행한다.
+                    if not any(k in clean_title for k in ["채용", "공고", "모집", "선발"]):
                         continue
                 elif inst_id == 'nmc':
                     # 국립중앙의료원은 병원이라 임상 채용이 대부분 → 탈임상 사이트 성격에 맞게
@@ -469,6 +475,11 @@ async def scrape_site(browser, inst_id, url):
                         await detail_page.close()
                     except Exception:
                         pass
+
+            # 한국공항공사: 상세 본문까지 확보한 뒤 '보건관리자' 채용분야가 실제로 있는지 확인.
+            # (통합 공개채용 공고의 본문 채용분야 표에만 등장하는 경우가 많다)
+            if job['instId'] == 'kac' and not re.search(r'보건\s*관리(자|직)', combined_text):
+                continue
 
             # 맞춤형 지역(시/도) 추출
             detected_region = detect_region(job['instId'], job['title'], job['row_text'], combined_text)
