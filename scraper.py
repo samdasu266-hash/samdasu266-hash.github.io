@@ -8,6 +8,8 @@ from playwright.async_api import async_playwright
 
 # 수집 결과는 저장소의 jobs.json에 저장하고, 커밋되면 GitHub Pages가 서빙한다
 JOBS_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "jobs.json")
+# 마감되어 jobs.json에서 사라진 공고까지 누적 보존 (기관별 아카이브 페이지 원본)
+HISTORY_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "history.json")
 KST = timezone(timedelta(hours=9))
 
 def extract_dates(text, current_year):
@@ -622,10 +624,45 @@ async def main():
             deduped_jobs.append(job)
         all_jobs = deduped_jobs
 
-        payload = {"lastSync": datetime.now(KST).isoformat(), "jobs": all_jobs}
+        now_iso = datetime.now(KST).isoformat()
+        payload = {"lastSync": now_iso, "jobs": all_jobs}
         with open(JOBS_FILE, "w", encoding="utf-8") as f:
             json.dump(payload, f, ensure_ascii=False, indent=1)
         print(f"🚀 성공: {len(succeeded)}개 기관, 총 {len(all_jobs)}개의 공고를 jobs.json에 저장!")
+
+        # 누적 이력(history.json) 갱신 — 마감되어 jobs.json에서 사라진 공고도 보존한다.
+        # 기관별 아카이브 페이지의 원본 데이터로 쓰인다.
+        today = now_iso[:10]
+        try:
+            with open(HISTORY_FILE, encoding="utf-8") as f:
+                hist_doc = json.load(f)
+            hist = {f"{j.get('instId')}|{(j.get('title') or '').replace(' ','')}": j
+                    for j in hist_doc.get("jobs", [])}
+        except Exception:
+            hist = {}
+
+        for j in all_jobs:
+            key = f"{j.get('instId')}|{(j.get('title') or '').replace(' ','')}"
+            if key in hist:
+                hist[key]["lastSeen"] = today
+                # 마감일·지역 등이 뒤늦게 확보되면 채워 넣는다
+                for fld in ("endDate", "region", "link", "startDate", "jobType"):
+                    v = j.get(fld)
+                    if v and v != "상세참조" and hist[key].get(fld) in (None, "", "상세참조"):
+                        hist[key][fld] = v
+            else:
+                rec = dict(j)
+                rec["firstSeen"] = today
+                rec["lastSeen"] = today
+                hist[key] = rec
+
+        hist_out = {
+            "generated": now_iso,
+            "jobs": sorted(hist.values(), key=lambda x: x.get("firstSeen", ""), reverse=True),
+        }
+        with open(HISTORY_FILE, "w", encoding="utf-8") as f:
+            json.dump(hist_out, f, ensure_ascii=False, indent=1)
+        print(f"📁 누적 이력: {len(hist_out['jobs'])}건을 history.json에 보존")
 
 if __name__ == "__main__":
     asyncio.run(main())
