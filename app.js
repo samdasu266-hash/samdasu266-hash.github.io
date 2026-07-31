@@ -164,6 +164,172 @@ const RequestModal = ({
   }, status === "sending" ? "전송 중..." : "요청 보내기")))));
 };
 
+// 채용 알림 구독 팝업.
+// 제출된 이메일은 GAS 스프레드시트에만 저장한다(저장소는 공개이고 git 이력은
+// 삭제가 어려워 수신거부 시 파기 의무를 이행할 수 없기 때문).
+const NotifyModal = ({
+  open,
+  onClose,
+  institutions
+}) => {
+  const [emailLocal, setEmailLocal] = useState("");
+  const [emailDomain, setEmailDomain] = useState("naver.com");
+  const [customDomain, setCustomDomain] = useState("");
+  const [insts, setInsts] = useState([]); // 빈 배열 = 전체 기관
+  const [jobTypes, setJobTypes] = useState([]); // 빈 배열 = 전체 고용형태
+  const [agree, setAgree] = useState(false);
+  const [status, setStatus] = useState("idle"); // idle | sending | done | error
+
+  if (!open) return null;
+  const domain = emailDomain === "__custom__" ? customDomain.trim() : emailDomain;
+  const email = emailLocal.trim() && domain ? `${emailLocal.trim()}@${domain}` : "";
+  const reset = () => {
+    setEmailLocal("");
+    setEmailDomain("naver.com");
+    setCustomDomain("");
+    setInsts([]);
+    setJobTypes([]);
+    setAgree(false);
+    setStatus("idle");
+  };
+  const close = () => {
+    reset();
+    onClose();
+  };
+  const toggle = (setter, value) => setter(prev => prev.includes(value) ? prev.filter(v => v !== value) : [...prev, value]);
+  const submit = () => {
+    if (!/.+@.+\..+/.test(email)) {
+      alert("이메일 주소를 정확히 입력해주세요.");
+      return;
+    }
+    if (!agree) {
+      alert("개인정보 수집·이용에 동의해주세요.");
+      return;
+    }
+    setStatus("sending");
+    fetch(REQUEST_ENDPOINT, {
+      method: "POST",
+      mode: "no-cors",
+      headers: {
+        "Content-Type": "text/plain;charset=utf-8"
+      },
+      body: JSON.stringify({
+        type: "채용알림 신청",
+        email,
+        insts: insts.join(","),
+        jobTypes: jobTypes.join(",")
+      })
+    }).then(() => setStatus("done")).catch(() => setStatus("error"));
+  };
+  const JOB_TYPES = ["정규직", "무기계약직", "계약직/기간제", "공무직", "인턴"];
+  return /*#__PURE__*/React.createElement("div", {
+    className: "fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm",
+    onClick: close
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "bg-white w-full max-w-md rounded-[2rem] p-7 shadow-2xl relative animate-in zoom-in duration-300 max-h-[90vh] overflow-y-auto no-scrollbar",
+    onClick: e => e.stopPropagation()
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: close,
+    className: "absolute top-5 right-5 text-slate-300 hover:text-slate-900"
+  }, /*#__PURE__*/React.createElement(Icon, {
+    name: "x"
+  })), status === "done" ? /*#__PURE__*/React.createElement("div", {
+    className: "text-center py-6"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "w-16 h-16 mx-auto rounded-full bg-blue-50 text-blue-500 flex items-center justify-center mb-4"
+  }, /*#__PURE__*/React.createElement(Icon, {
+    name: "mail-check",
+    className: "w-8 h-8"
+  })), /*#__PURE__*/React.createElement("h2", {
+    className: "text-lg font-black text-slate-900 mb-2"
+  }, "알림 신청이 완료되었어요!"), /*#__PURE__*/React.createElement("p", {
+    className: "text-sm text-slate-500 font-medium leading-relaxed mb-6"
+  }, "확인 메일을 보내드렸어요. 새 공고가 올라온 날 ", /*#__PURE__*/React.createElement("strong", {
+    className: "text-slate-700"
+  }, "오전 8시"), "에 한 통으로 모아 보내드립니다."), /*#__PURE__*/React.createElement("button", {
+    onClick: close,
+    className: "w-full py-3.5 bg-slate-900 text-white rounded-2xl font-bold hover:bg-blue-600 transition-colors"
+  }, "닫기")) : /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h2", {
+    className: "text-lg font-black text-slate-900 mb-1 flex items-center gap-2"
+  }, /*#__PURE__*/React.createElement(Icon, {
+    name: "bell",
+    className: "text-blue-600 w-5 h-5"
+  }), " 채용 알림 받기"), /*#__PURE__*/React.createElement("p", {
+    className: "text-[12px] text-slate-400 font-medium mb-5"
+  }, "새 공고가 올라온 날에만 오전 8시에 메일로 알려드립니다."), /*#__PURE__*/React.createElement("div", {
+    className: "space-y-4 text-left"
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
+    className: "text-[11px] font-bold text-slate-500 mb-1.5 block"
+  }, "이메일 ", /*#__PURE__*/React.createElement("span", {
+    className: "text-red-400"
+  }, "*")), /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center gap-1.5"
+  }, /*#__PURE__*/React.createElement("input", {
+    value: emailLocal,
+    onChange: e => setEmailLocal(e.target.value),
+    placeholder: "아이디",
+    className: "flex-1 min-w-0 px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
+  }), /*#__PURE__*/React.createElement("span", {
+    className: "text-slate-400 font-bold shrink-0"
+  }, "@"), /*#__PURE__*/React.createElement("select", {
+    value: emailDomain,
+    onChange: e => setEmailDomain(e.target.value),
+    className: "shrink-0 px-2 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-[13px] focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
+  }, EMAIL_DOMAINS.map(d => /*#__PURE__*/React.createElement("option", {
+    key: d,
+    value: d
+  }, d)), /*#__PURE__*/React.createElement("option", {
+    value: "__custom__"
+  }, "직접입력"))), emailDomain === "__custom__" && /*#__PURE__*/React.createElement("input", {
+    value: customDomain,
+    onChange: e => setCustomDomain(e.target.value),
+    placeholder: "도메인 직접입력 (예: company.co.kr)",
+    className: "mt-1.5 w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
+  })), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
+    className: "text-[11px] font-bold text-slate-500 mb-1.5 block"
+  }, "관심 기관 ", /*#__PURE__*/React.createElement("span", {
+    className: "text-slate-300 font-medium"
+  }, "(선택 안 하면 전체)")), /*#__PURE__*/React.createElement("div", {
+    className: "flex flex-wrap gap-1.5"
+  }, institutions.map(inst => /*#__PURE__*/React.createElement("button", {
+    key: inst.id,
+    onClick: () => toggle(setInsts, inst.id),
+    className: `px-2.5 py-1.5 rounded-lg text-[11.5px] font-bold border transition-all ${insts.includes(inst.id) ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'}`
+  }, inst.shortName)))), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
+    className: "text-[11px] font-bold text-slate-500 mb-1.5 block"
+  }, "관심 고용형태 ", /*#__PURE__*/React.createElement("span", {
+    className: "text-slate-300 font-medium"
+  }, "(선택 안 하면 전체)")), /*#__PURE__*/React.createElement("div", {
+    className: "flex flex-wrap gap-1.5"
+  }, JOB_TYPES.map(t => /*#__PURE__*/React.createElement("button", {
+    key: t,
+    onClick: () => toggle(setJobTypes, t),
+    className: `px-2.5 py-1.5 rounded-lg text-[11.5px] font-bold border transition-all ${jobTypes.includes(t) ? 'bg-purple-600 text-white border-purple-600' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'}`
+  }, t)))), /*#__PURE__*/React.createElement("label", {
+    className: "flex items-start gap-2.5 bg-slate-50 border border-slate-200 rounded-xl p-3.5 cursor-pointer"
+  }, /*#__PURE__*/React.createElement("input", {
+    type: "checkbox",
+    checked: agree,
+    onChange: e => setAgree(e.target.checked),
+    className: "mt-0.5 w-4 h-4 accent-blue-600 shrink-0"
+  }), /*#__PURE__*/React.createElement("span", {
+    className: "text-[11.5px] text-slate-500 font-medium leading-relaxed"
+  }, "채용 알림 발송을 위한 ", /*#__PURE__*/React.createElement("strong", {
+    className: "text-slate-700"
+  }, "이메일 주소 수집·이용"), "에 동의합니다. 수신거부 시 즉시 파기되며, 메일 하단 링크로 언제든 해지할 수 있습니다. ", /*#__PURE__*/React.createElement("a", {
+    href: "privacy.html",
+    target: "_blank",
+    rel: "noopener noreferrer",
+    className: "text-blue-600 underline"
+  }, "개인정보처리방침"))), status === "error" && /*#__PURE__*/React.createElement("p", {
+    className: "text-[12px] text-red-500 font-bold"
+  }, "전송에 실패했어요. 잠시 후 다시 시도해주세요."), /*#__PURE__*/React.createElement("button", {
+    onClick: submit,
+    disabled: status === "sending",
+    className: "w-full py-3.5 bg-blue-600 text-white rounded-2xl font-bold hover:bg-blue-700 transition-colors shadow-lg disabled:opacity-60"
+  }, status === "sending" ? "신청 중..." : "알림 신청하기")))));
+};
+
 // 가로 스크롤 필터 줄: 오른쪽에 더 있을 때만 그라데이션+화살표 힌트를 보여준다
 const ScrollRow = ({
   children
@@ -215,6 +381,7 @@ const App = () => {
   const [mainView, setMainView] = useState(typeof location !== 'undefined' && location.hash === '#guide' ? 'guide' : 'jobs');
   const [showContact, setShowContact] = useState(false);
   const [showRequest, setShowRequest] = useState(false);
+  const [showNotify, setShowNotify] = useState(false);
   const [copied, setCopied] = useState(false);
   const [showTop, setShowTop] = useState(false);
   const navRef = React.useRef(null);
@@ -608,7 +775,13 @@ const App = () => {
   }, /*#__PURE__*/React.createElement(Icon, {
     name: "plus-circle",
     className: "w-3 h-3"
-  }), " 기관 추가 요청")), /*#__PURE__*/React.createElement("div", {
+  }), " 기관 추가 요청"), /*#__PURE__*/React.createElement("button", {
+    onClick: () => setShowNotify(true),
+    className: "bg-blue-600 text-white px-2.5 py-0.5 rounded-full text-[10px] font-bold shadow-sm flex items-center gap-1 hover:bg-blue-700 transition-colors"
+  }, /*#__PURE__*/React.createElement(Icon, {
+    name: "bell",
+    className: "w-3 h-3"
+  }), " 채용 알림 받기")), /*#__PURE__*/React.createElement("div", {
     className: "space-y-2.5"
   }, /*#__PURE__*/React.createElement("h1", {
     className: "text-[26px] md:text-[34px] font-black text-slate-900 leading-[1.22] tracking-tight break-keep"
@@ -982,6 +1155,11 @@ const App = () => {
     href: "about.html",
     className: "hover:text-slate-800 transition-colors"
   }, "소개·운영정책"), /*#__PURE__*/React.createElement("span", {
+    className: "text-slate-300"
+  }, "·"), /*#__PURE__*/React.createElement("a", {
+    href: "privacy.html",
+    className: "hover:text-slate-800 transition-colors"
+  }, "개인정보처리방침"), /*#__PURE__*/React.createElement("span", {
     className: "text-slate-200"
   }, "|"), /*#__PURE__*/React.createElement("button", {
     onClick: () => setShowContact(true),
@@ -1074,6 +1252,10 @@ const App = () => {
   }, "닫기"))), /*#__PURE__*/React.createElement(RequestModal, {
     open: showRequest,
     onClose: () => setShowRequest(false)
+  }), /*#__PURE__*/React.createElement(NotifyModal, {
+    open: showNotify,
+    onClose: () => setShowNotify(false),
+    institutions: institutions
   }));
 };
 const root = ReactDOM.createRoot(document.getElementById('root'));

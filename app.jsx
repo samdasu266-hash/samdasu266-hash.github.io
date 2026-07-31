@@ -92,6 +92,117 @@ const RequestModal = ({ open, onClose }) => {
     );
 };
 
+// 채용 알림 구독 팝업.
+// 제출된 이메일은 GAS 스프레드시트에만 저장한다(저장소는 공개이고 git 이력은
+// 삭제가 어려워 수신거부 시 파기 의무를 이행할 수 없기 때문).
+const NotifyModal = ({ open, onClose, institutions }) => {
+    const [emailLocal, setEmailLocal] = useState("");
+    const [emailDomain, setEmailDomain] = useState("naver.com");
+    const [customDomain, setCustomDomain] = useState("");
+    const [insts, setInsts] = useState([]);      // 빈 배열 = 전체 기관
+    const [jobTypes, setJobTypes] = useState([]); // 빈 배열 = 전체 고용형태
+    const [agree, setAgree] = useState(false);
+    const [status, setStatus] = useState("idle"); // idle | sending | done | error
+
+    if (!open) return null;
+
+    const domain = emailDomain === "__custom__" ? customDomain.trim() : emailDomain;
+    const email = emailLocal.trim() && domain ? `${emailLocal.trim()}@${domain}` : "";
+
+    const reset = () => {
+        setEmailLocal(""); setEmailDomain("naver.com"); setCustomDomain("");
+        setInsts([]); setJobTypes([]); setAgree(false); setStatus("idle");
+    };
+    const close = () => { reset(); onClose(); };
+
+    const toggle = (setter, value) =>
+        setter(prev => prev.includes(value) ? prev.filter(v => v !== value) : [...prev, value]);
+
+    const submit = () => {
+        if (!/.+@.+\..+/.test(email)) { alert("이메일 주소를 정확히 입력해주세요."); return; }
+        if (!agree) { alert("개인정보 수집·이용에 동의해주세요."); return; }
+        setStatus("sending");
+        fetch(REQUEST_ENDPOINT, {
+            method: "POST",
+            mode: "no-cors",
+            headers: { "Content-Type": "text/plain;charset=utf-8" },
+            body: JSON.stringify({
+                type: "채용알림 신청",
+                email,
+                insts: insts.join(","),
+                jobTypes: jobTypes.join(","),
+            }),
+        }).then(() => setStatus("done")).catch(() => setStatus("error"));
+    };
+
+    const JOB_TYPES = ["정규직", "무기계약직", "계약직/기간제", "공무직", "인턴"];
+
+    return (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm" onClick={close}>
+            <div className="bg-white w-full max-w-md rounded-[2rem] p-7 shadow-2xl relative animate-in zoom-in duration-300 max-h-[90vh] overflow-y-auto no-scrollbar" onClick={e => e.stopPropagation()}>
+                <button onClick={close} className="absolute top-5 right-5 text-slate-300 hover:text-slate-900"><Icon name="x" /></button>
+                {status === "done" ? (
+                    <div className="text-center py-6">
+                        <div className="w-16 h-16 mx-auto rounded-full bg-blue-50 text-blue-500 flex items-center justify-center mb-4"><Icon name="mail-check" className="w-8 h-8" /></div>
+                        <h2 className="text-lg font-black text-slate-900 mb-2">알림 신청이 완료되었어요!</h2>
+                        <p className="text-sm text-slate-500 font-medium leading-relaxed mb-6">확인 메일을 보내드렸어요. 새 공고가 올라온 날 <strong className="text-slate-700">오전 8시</strong>에 한 통으로 모아 보내드립니다.</p>
+                        <button onClick={close} className="w-full py-3.5 bg-slate-900 text-white rounded-2xl font-bold hover:bg-blue-600 transition-colors">닫기</button>
+                    </div>
+                ) : (
+                    <div>
+                        <h2 className="text-lg font-black text-slate-900 mb-1 flex items-center gap-2"><Icon name="bell" className="text-blue-600 w-5 h-5" /> 채용 알림 받기</h2>
+                        <p className="text-[12px] text-slate-400 font-medium mb-5">새 공고가 올라온 날에만 오전 8시에 메일로 알려드립니다.</p>
+                        <div className="space-y-4 text-left">
+                            <div>
+                                <label className="text-[11px] font-bold text-slate-500 mb-1.5 block">이메일 <span className="text-red-400">*</span></label>
+                                <div className="flex items-center gap-1.5">
+                                    <input value={emailLocal} onChange={e => setEmailLocal(e.target.value)} placeholder="아이디" className="flex-1 min-w-0 px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium" />
+                                    <span className="text-slate-400 font-bold shrink-0">@</span>
+                                    <select value={emailDomain} onChange={e => setEmailDomain(e.target.value)} className="shrink-0 px-2 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-[13px] focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium">
+                                        {EMAIL_DOMAINS.map(d => <option key={d} value={d}>{d}</option>)}
+                                        <option value="__custom__">직접입력</option>
+                                    </select>
+                                </div>
+                                {emailDomain === "__custom__" && (
+                                    <input value={customDomain} onChange={e => setCustomDomain(e.target.value)} placeholder="도메인 직접입력 (예: company.co.kr)" className="mt-1.5 w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium" />
+                                )}
+                            </div>
+
+                            <div>
+                                <label className="text-[11px] font-bold text-slate-500 mb-1.5 block">관심 기관 <span className="text-slate-300 font-medium">(선택 안 하면 전체)</span></label>
+                                <div className="flex flex-wrap gap-1.5">
+                                    {institutions.map(inst => (
+                                        <button key={inst.id} onClick={() => toggle(setInsts, inst.id)} className={`px-2.5 py-1.5 rounded-lg text-[11.5px] font-bold border transition-all ${insts.includes(inst.id) ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'}`}>{inst.shortName}</button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="text-[11px] font-bold text-slate-500 mb-1.5 block">관심 고용형태 <span className="text-slate-300 font-medium">(선택 안 하면 전체)</span></label>
+                                <div className="flex flex-wrap gap-1.5">
+                                    {JOB_TYPES.map(t => (
+                                        <button key={t} onClick={() => toggle(setJobTypes, t)} className={`px-2.5 py-1.5 rounded-lg text-[11.5px] font-bold border transition-all ${jobTypes.includes(t) ? 'bg-purple-600 text-white border-purple-600' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'}`}>{t}</button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <label className="flex items-start gap-2.5 bg-slate-50 border border-slate-200 rounded-xl p-3.5 cursor-pointer">
+                                <input type="checkbox" checked={agree} onChange={e => setAgree(e.target.checked)} className="mt-0.5 w-4 h-4 accent-blue-600 shrink-0" />
+                                <span className="text-[11.5px] text-slate-500 font-medium leading-relaxed">
+                                    채용 알림 발송을 위한 <strong className="text-slate-700">이메일 주소 수집·이용</strong>에 동의합니다. 수신거부 시 즉시 파기되며, 메일 하단 링크로 언제든 해지할 수 있습니다. <a href="privacy.html" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">개인정보처리방침</a>
+                                </span>
+                            </label>
+
+                            {status === "error" && <p className="text-[12px] text-red-500 font-bold">전송에 실패했어요. 잠시 후 다시 시도해주세요.</p>}
+                            <button onClick={submit} disabled={status === "sending"} className="w-full py-3.5 bg-blue-600 text-white rounded-2xl font-bold hover:bg-blue-700 transition-colors shadow-lg disabled:opacity-60">{status === "sending" ? "신청 중..." : "알림 신청하기"}</button>
+                        </div>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
+
 // 가로 스크롤 필터 줄: 오른쪽에 더 있을 때만 그라데이션+화살표 힌트를 보여준다
 const ScrollRow = ({ children }) => {
     const ref = React.useRef(null);
@@ -140,6 +251,7 @@ const App = () => {
     const [mainView, setMainView] = useState(typeof location !== 'undefined' && location.hash === '#guide' ? 'guide' : 'jobs');
     const [showContact, setShowContact] = useState(false);
     const [showRequest, setShowRequest] = useState(false);
+    const [showNotify, setShowNotify] = useState(false);
     const [copied, setCopied] = useState(false);
     const [showTop, setShowTop] = useState(false);
     const navRef = React.useRef(null);
@@ -387,6 +499,7 @@ const App = () => {
                     <span className="bg-white border border-slate-200 text-slate-600 px-2.5 py-0.5 rounded-full text-[10px] font-bold shadow-sm flex items-center gap-1"><Icon name="calendar" className="w-3 h-3 text-blue-500" /> 기준일자: {formatDate(lastSync)}</span>
                     <span className="bg-white border border-slate-200 text-slate-500 px-2.5 py-0.5 rounded-full text-[10px] font-bold shadow-sm flex items-center gap-1"><Icon name="clock" className="w-3 h-3" /> 최근 수집: {formatTime(lastSync)} KST</span>
                     <button onClick={() => setShowRequest(true)} className="bg-white border border-blue-200 text-blue-600 px-2.5 py-0.5 rounded-full text-[10px] font-bold shadow-sm flex items-center gap-1 hover:bg-blue-50 transition-colors"><Icon name="plus-circle" className="w-3 h-3" /> 기관 추가 요청</button>
+                    <button onClick={() => setShowNotify(true)} className="bg-blue-600 text-white px-2.5 py-0.5 rounded-full text-[10px] font-bold shadow-sm flex items-center gap-1 hover:bg-blue-700 transition-colors"><Icon name="bell" className="w-3 h-3" /> 채용 알림 받기</button>
                 </div>
                 <div className="space-y-2.5">
                     <h1 className="text-[26px] md:text-[34px] font-black text-slate-900 leading-[1.22] tracking-tight break-keep">
@@ -622,6 +735,8 @@ const App = () => {
             <footer className="mt-20 pt-10 pb-6 border-t border-slate-200 text-center space-y-6">
                 <div className="flex justify-center gap-6 text-[12px] font-bold text-slate-500">
                     <a href="about.html" className="hover:text-slate-800 transition-colors">소개·운영정책</a>
+                    <span className="text-slate-300">·</span>
+                    <a href="privacy.html" className="hover:text-slate-800 transition-colors">개인정보처리방침</a>
                     <span className="text-slate-200">|</span>
                     <button onClick={() => setShowContact(true)} className="hover:text-slate-800 transition-colors">문의하기</button>
                 </div>
@@ -682,6 +797,7 @@ const App = () => {
             )}
 
             <RequestModal open={showRequest} onClose={() => setShowRequest(false)} />
+            <NotifyModal open={showNotify} onClose={() => setShowNotify(false)} institutions={institutions} />
         </div>
     );
 };
