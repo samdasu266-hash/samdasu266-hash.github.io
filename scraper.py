@@ -68,7 +68,7 @@ KNOWN_ORG_REGIONS = {
     "국립중앙의료원": "서울",
     "국립정신건강센터": "서울",
     "국립재활원": "서울",
-    "건강증진개발원": "서울",     # 한국건강증진개발원 (중구)
+    "건강증진개발원": "서울",     # 한국건강증진개발원 (광진구 보건복지행정타운)
     "국립암센터": "경기",         # 고양
     "국립춘천병원": "강원",
     "국립공주병원": "대전충남",
@@ -296,7 +296,9 @@ async def scrape_site(browser, inst_id, url):
                 clean_title = clean_title.replace('[마감]', '').replace('[새글]', '').replace('새글', '').replace('~', '').strip()
                 # 목록 페이지의 상태 배지·D-day 부스러기 제거
                 # (예: "접수중 의료기관평가인증원 … 공고(연구직) D-17" → "의료기관평가인증원 … 공고(연구직)")
-                clean_title = re.sub(r'^\s*(?:접수중|접수예정|진행중|모집중|마감임박|신규)\s+', '', clean_title)
+                clean_title = re.sub(r'^\s*(?:접수중|접수전|접수예정|진행중|모집중|마감임박|신규)\s+', '', clean_title)
+                # 목록 배지가 제목 뒤에 붙는 경우 제거 (예: '… 공고 공채 일반채용 신입')
+                clean_title = re.sub(r'(?:\s+(?:공채|일반채용|수시채용|상시채용|신입|경력|신입/경력))+\s*$', '', clean_title)
                 clean_title = re.sub(r'\s*D\s*-\s*\d+\s*', ' ', clean_title)
                 clean_title = re.sub(r'\s+', ' ', clean_title).strip()
 
