@@ -326,6 +326,12 @@ async def scrape_site(browser, inst_id, url):
                                     "작업치료", "임상병리", "치과위생"]
                     if any(k in clean_title for k in nmc_clinical):
                         continue
+                    # ⚠️ 임상 제외만 하고 끝내면 사이트 메뉴 링크까지 통과하므로,
+                    #    아래 공통 키워드 검사도 반드시 함께 적용한다.
+                    if not any(k in clean_title for k in
+                               ["채용", "공고", "모집", "선발", "정규직", "계약직",
+                                "무기계약직", "기간제", "연구원", "행정", "촉탁직"]):
+                        continue
                 elif inst_id not in ['redcross', 'neca']:
                     valid_keywords = ["채용", "공고", "모집", "선발", "정규직",
                                       "계약직", "무기계약직", "간호사", "보조원",
@@ -342,7 +348,22 @@ async def scrape_site(browser, inst_id, url):
                     "등록폐지", "윤리위원회", "기준보험료", "심사위원", "변호사"
                 ]
                 if any(ex in clean_title for ex in exclude_words): continue
-                
+
+                # 🔥 사이트 내비게이션·안내 문구 제외 (공고가 아닌 메뉴 링크가 수집되는 것 방지)
+                #    목록 선택자가 안 맞아 <a> 전체 폴백으로 갈 때 메뉴가 딸려 들어오는 문제 대응.
+                #    예: '지원서 작성', '마이페이지', '채용 FAQ', '문의하기 채용관련 …', '채용공고 리스트'
+                nav_words = [
+                    "지원서", "마이페이지", "로그인", "회원가입", "문의하기", "채용문의",
+                    "FAQ", "QnA", "Q&A", "자주묻는", "자주 묻는",
+                    "비전", "미션", "인재상", "찾아오시는", "오시는 길", "이용약관",
+                    "개인정보처리", "사이트맵", "바로가기", "더보기", "전체보기",
+                    "리스트", "목록", "공고 검색", "채용안내", "채용 안내", "복리후생",
+                ]
+                if any(w in clean_title for w in nav_words): continue
+                # 배너·홍보 문구 제외 (평서형 권유문은 공고 제목이 아니다)
+                if re.search(r'(하세요|하십시오|해보세요|보세요|찾으세요|입니다)\s*[!.]?$', clean_title): continue
+                if clean_title.endswith('!'): continue
+
                 # 의사/전문의 정밀 제외
                 clean_title_for_regex = clean_title.replace('[', ' ').replace(']', ' ')
                 if re.search(r'\b(?:의사|전문의|수련의|전공의)\b', clean_title_for_regex):
