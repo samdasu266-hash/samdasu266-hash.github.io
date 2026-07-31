@@ -344,6 +344,42 @@ const App = () => {
       cert: '관련 실무경력 중시',
       summary: '다양한 공무직 및 임기제 채용이 진행됩니다.'
     }
+  }, {
+    id: 'khepi',
+    name: '한국건강증진개발원',
+    shortName: '건강증진원',
+    url: 'https://khepi-hr.jobnlab.co.kr/',
+    specs: {
+      recruitSchedule: '수시 및 상·하반기 채용',
+      salary: '기관 보수규정 적용',
+      language: '직무별 상이',
+      cert: '보건교육사·건강증진 실무경력 우대',
+      summary: '건강증진 사업 기획·평가 직무가 중심이며 서울 근무입니다.'
+    }
+  }, {
+    id: 'nmc',
+    name: '국립중앙의료원',
+    shortName: '중앙의료원',
+    url: 'https://nmc.recruiter.co.kr/app/jobnotice/list',
+    specs: {
+      recruitSchedule: '수시 채용',
+      salary: '기관 보수규정 적용',
+      language: '직무별 상이',
+      cert: '직무 관련 자격·경력 중시',
+      summary: '공공보건의료 중추 기관으로 행정·연구 직무를 함께 채용합니다.'
+    }
+  }, {
+    id: 'kac',
+    name: '한국공항공사(보건관리자)',
+    shortName: '공항공사',
+    url: 'https://kac.careerlink.kr/jobs',
+    specs: {
+      recruitSchedule: '결원 발생 시 수시',
+      salary: '기관 보수규정 적용',
+      language: '직무별 상이',
+      cert: '산업보건·보건관리자 자격 필요',
+      summary: '보건관리자 직무만 선별해 수집합니다.'
+    }
   }];
   useEffect(() => {
     const loadJobs = () => {

@@ -128,7 +128,8 @@ def detect_region(inst_id, title, row_text, combined_text):
 
     # 5) 공고에 근무지가 명시되지 않은 경우: 본부 소재지 + 짧은 확인 안내 표시
     #    (필터는 문자열 포함 매칭이라 꼬리표가 붙어도 그대로 동작)
-    if inst_id in ["neca", "kuksiwon", "koiha"]: return "서울(본부·공고확인)"
+    if inst_id in ["neca", "kuksiwon", "koiha", "khepi", "nmc"]: return "서울(본부·공고확인)"
+    if inst_id == "kac": return "서울(본사·공고확인)"
     if inst_id in ["hira", "nhis", "redcross"]: return "강원(본부·공고확인)"
     if inst_id == "nps": return "전북(본부·공고확인)"
     if inst_id == "comwel": return "울산(본부·공고확인)"
@@ -309,6 +310,19 @@ async def scrape_site(browser, inst_id, url):
                 if inst_id == 'mohw':
                     mohw_keywords = ["채용", "모집", "선발", "공무직", "기간제"]
                     if not any(k in clean_title for k in mohw_keywords):
+                        continue
+                elif inst_id == 'kac':
+                    # 한국공항공사는 보건의료 기관이 아니므로 '보건관리자' 직무만 수집한다.
+                    if not re.search(r'보건\s*관리(자|직)?', clean_title):
+                        continue
+                elif inst_id == 'nmc':
+                    # 국립중앙의료원은 병원이라 임상 채용이 대부분 → 탈임상 사이트 성격에 맞게
+                    # 진료·병동 등 임상 포지션은 제외하고 행정·연구·보건직 위주로 수집한다.
+                    nmc_clinical = ["전공의", "전임의", "레지던트", "인턴의", "임상강사", "촉탁의",
+                                    "병동", "수술실", "중환자실", "응급실", "분만", "마취",
+                                    "간호조무", "임상", "진료", "병리사", "방사선사", "물리치료",
+                                    "작업치료", "임상병리", "치과위생"]
+                    if any(k in clean_title for k in nmc_clinical):
                         continue
                 elif inst_id not in ['redcross', 'neca']:
                     valid_keywords = ["채용", "공고", "모집", "선발", "정규직",
@@ -549,7 +563,11 @@ async def main():
             {"id": "comwel", "url": "https://www.comwel.or.kr/recruit/hp/pblanc/pblancList.do"},
             {"id": "redcross", "url": "https://www.redcross.or.kr/recruit/"},
             {"id": "redcross", "url": "https://bloodinfo.careeron.co.kr/#/recruitment/list"},
-            {"id": "mohw", "url": "https://www.mohw.go.kr/board.es?mid=a10501010400&bid=0003"}
+            {"id": "mohw", "url": "https://www.mohw.go.kr/board.es?mid=a10501010400&bid=0003"},
+            # 사용자 요청으로 추가된 기관 (요청 접수 시트 반영)
+            {"id": "khepi", "url": "https://khepi-hr.jobnlab.co.kr/"},
+            {"id": "nmc", "url": "https://nmc.recruiter.co.kr/app/jobnotice/list"},
+            {"id": "kac", "url": "https://kac.careerlink.kr/jobs"}
         ]
         
         all_jobs = []
