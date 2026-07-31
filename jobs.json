@@ -1,16 +1,6 @@
 {
- "lastSync": "2026-07-31T13:27:03.007183+09:00",
+ "lastSync": "2026-07-31T13:57:32.016111+09:00",
  "jobs": [
-  {
-   "instId": "hira",
-   "title": "심사평가정책연구소장(개방형 직위) 채용",
-   "startDate": "26.07.28",
-   "endDate": "26.08.11 18:00",
-   "status": "진행중",
-   "jobType": "정규직",
-   "region": "서울",
-   "link": "https://hira.recruitlab.co.kr/app/recruitment-announcement/view/978"
-  },
   {
    "instId": "neca",
    "title": "한국보건의료연구원 2026년 제2차 직원채용 공고",
@@ -50,6 +40,136 @@
    "jobType": "정규직",
    "region": "강원",
    "link": "https://bloodinfo.careeron.co.kr/#/recruitment/detail/38"
+  },
+  {
+   "instId": "khepi",
+   "title": "채용공고 리스트",
+   "startDate": "상세참조",
+   "endDate": "상세참조",
+   "status": "진행중",
+   "jobType": "정규직",
+   "region": "서울",
+   "link": "https://khepi-hr.jobnlab.co.kr/jobnotice/list/"
+  },
+  {
+   "instId": "khepi",
+   "title": "채용공고 한국건강증진개발원과 함께 새로운 내일을 찾으세요!",
+   "startDate": "상세참조",
+   "endDate": "상세참조",
+   "status": "진행중",
+   "jobType": "정규직",
+   "region": "서울",
+   "link": "https://khepi-hr.jobnlab.co.kr/jobnotice/list/"
+  },
+  {
+   "instId": "khepi",
+   "title": "문의하기 채용관련 궁금하신 사항을 물어보세요.",
+   "startDate": "상세참조",
+   "endDate": "상세참조",
+   "status": "진행중",
+   "jobType": "정규직",
+   "region": "서울",
+   "link": "https://khepi-hr.jobnlab.co.kr/board/qna/write/"
+  },
+  {
+   "instId": "nmc",
+   "title": "지원서 작성",
+   "startDate": "상세참조",
+   "endDate": "상세참조",
+   "status": "진행중",
+   "jobType": "정규직",
+   "region": "대전충남",
+   "link": "https://nmc.recruiter.co.kr/app/applicant/registResume"
+  },
+  {
+   "instId": "nmc",
+   "title": "지원서 수정",
+   "startDate": "상세참조",
+   "endDate": "상세참조",
+   "status": "진행중",
+   "jobType": "정규직",
+   "region": "서울(본부·공고확인)",
+   "link": "https://nmc.recruiter.co.kr/app/applicant/modifyResume"
+  },
+  {
+   "instId": "nmc",
+   "title": "마이페이지",
+   "startDate": "상세참조",
+   "endDate": "상세참조",
+   "status": "진행중",
+   "jobType": "정규직",
+   "region": "서울(본부·공고확인)",
+   "link": "https://nmc.recruiter.co.kr/app/applicant/myPage/login"
+  },
+  {
+   "instId": "nmc",
+   "title": "지원서 조회",
+   "startDate": "상세참조",
+   "endDate": "상세참조",
+   "status": "진행중",
+   "jobType": "정규직",
+   "region": "서울(본부·공고확인)",
+   "link": "https://nmc.recruiter.co.kr/app/applicant/inquiryResume"
+  },
+  {
+   "instId": "nmc",
+   "title": "비전/미션",
+   "startDate": "상세참조",
+   "endDate": "상세참조",
+   "status": "진행중",
+   "jobType": "정규직",
+   "region": "서울",
+   "link": "https://www.nmc.or.kr/nmc/contents/mission_vision_corevalue"
+  },
+  {
+   "instId": "nmc",
+   "title": "찾아오시는 길",
+   "startDate": "상세참조",
+   "endDate": "상세참조",
+   "status": "진행중",
+   "jobType": "정규직",
+   "region": "서울",
+   "link": "https://www.nmc.or.kr/nmc/contents/come_way"
+  },
+  {
+   "instId": "nmc",
+   "title": "채용 FAQ",
+   "startDate": "상세참조",
+   "endDate": "상세참조",
+   "status": "진행중",
+   "jobType": "정규직",
+   "region": "서울(본부·공고확인)",
+   "link": "https://nmc.recruiter.co.kr/bbs/appsite/faq/list"
+  },
+  {
+   "instId": "nmc",
+   "title": "채용 QnA",
+   "startDate": "상세참조",
+   "endDate": "상세참조",
+   "status": "진행중",
+   "jobType": "정규직",
+   "region": "서울",
+   "link": "https://nmc.recruiter.co.kr/bbs/appsite/qna/write"
+  },
+  {
+   "instId": "nmc",
+   "title": "무기계약직 연구원(모자의료지원팀) 채용 공고",
+   "startDate": "26.07.29",
+   "endDate": "26.08.13 23:59",
+   "status": "진행중",
+   "jobType": "무기계약직",
+   "region": "서울(본부·공고확인)",
+   "link": "https://nmc.recruiter.co.kr/app/jobnotice/view?systemKindCode=MRS2&jobnoticeSn=261673"
+  },
+  {
+   "instId": "nmc",
+   "title": "무기계약직 간호사(약물안전센터) 채용 공고",
+   "startDate": "26.07.29",
+   "endDate": "26.08.13 23:59",
+   "status": "진행중",
+   "jobType": "무기계약직",
+   "region": "서울(본부·공고확인)",
+   "link": "https://nmc.recruiter.co.kr/app/jobnotice/view?systemKindCode=MRS2&jobnoticeSn=261665"
   },
   {
    "instId": "mohw",
