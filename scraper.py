@@ -287,8 +287,12 @@ async def scrape_site(browser, inst_id, url):
                 raw_title = (await link_el.inner_text()).strip()
                 if len(raw_title) < 5: continue
 
-                clean_title = raw_title
-                
+                # 목록 셀이 여러 줄일 때(제목/등록일/마감일이 줄바꿈으로 분리) 아래 날짜
+                # 꼬리표 정규식의 `.*$`가 줄을 넘지 못해 첫 번째 날짜만 살아남는다.
+                # (예: "…공고(연구직)\n2026.07.24\n2026.08.12 18:00" → "…공고(연구직) 2026.07.24")
+                # 먼저 공백을 한 칸으로 정규화해 한 줄로 만든 뒤 꼬리표를 제거한다.
+                clean_title = re.sub(r'\s+', ' ', raw_title).strip()
+
                 # 🔥 제목에 붙어있는 날짜 꼬리표 깔끔하게 날리기 (ex. 2026-03-11(수) 17:00 ~ ...)
                 date_suffix_pattern = r'\s*\(?(?:(?:20)?\d{2}[-./]\d{1,2}[-./]\d{1,2}).*$'
                 date_match = re.search(date_suffix_pattern, clean_title)
@@ -302,6 +306,11 @@ async def scrape_site(browser, inst_id, url):
                 # 목록 배지가 제목 뒤에 붙는 경우 제거 (예: '… 공고 공채 일반채용 신입')
                 clean_title = re.sub(r'(?:\s+(?:공채|일반채용|수시채용|상시채용|신입|경력|신입/경력))+\s*$', '', clean_title)
                 clean_title = re.sub(r'\s*D\s*-\s*\d+\s*', ' ', clean_title)
+                # 표 형태 목록에서 셀 구분자(|)와 뒤따르는 배지가 제목에 섞여 들어오는 경우
+                # (예: "… 공개채용 | 경력 | 2026.07.29 …" → 날짜 제거 후 "… 공개채용 | 경력 |")
+                clean_title = re.sub(
+                    r'(?:\s*\|\s*(?:경력|신입|신입/경력|공채|일반채용|수시채용|상시채용|정규직|계약직)?)+\s*$',
+                    '', clean_title)
                 clean_title = re.sub(r'\s+', ' ', clean_title).strip()
 
                 # 적십자사: 본문에 있는 소속기관명 낚아채기
