@@ -3,7 +3,7 @@
  "jobs": [
   {
    "instId": "koiha",
-   "title": "의료기관평가인증원 2026년 제2회 직원채용 공고(연구직) 2026.07.24 2026.08.12 18:00",
+   "title": "의료기관평가인증원 2026년 제2회 직원채용 공고(연구직)",
    "startDate": "26.07.24",
    "endDate": "26.08.12 18:00",
    "status": "진행중",
@@ -99,7 +99,7 @@
   },
   {
    "instId": "kac",
-   "title": "한국공항공사 경력직 등 공개채용 2026년 하반기 체험형 인턴 및 경력직 등 공개채용 | 경력 | 2026.07.29 2026.08.10 16:00 |",
+   "title": "한국공항공사 경력직 등 공개채용 2026년 하반기 체험형 인턴 및 경력직 등 공개채용",
    "startDate": "26.07.29",
    "endDate": "26.08.10 16:00",
    "status": "진행중",
@@ -204,18 +204,6 @@
    "link": "https://www.mohw.go.kr/board.es?mid=a10501010400&bid=0003&act=view&list_no=1491428&tag=&nPage=1",
    "firstSeen": "2026-07-27",
    "lastSeen": "2026-07-28"
-  },
-  {
-   "instId": "koiha",
-   "title": "의료기관평가인증원 2026년 제2회 직원채용 공고(연구직)",
-   "startDate": "26.07.24",
-   "endDate": "26.08.12 18:00",
-   "status": "진행중",
-   "jobType": "정규직",
-   "region": "서울(본부·공고확인)",
-   "link": "https://koiha.recruiter.co.kr/career/jobs/122728",
-   "firstSeen": "2026-07-24",
-   "lastSeen": "2026-07-31"
   },
   {
    "instId": "mohw",
