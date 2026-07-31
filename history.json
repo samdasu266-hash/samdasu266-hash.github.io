@@ -1,6 +1,114 @@
 {
- "generated": "",
+ "generated": "2026-07-31T17:16:05.742532+09:00",
  "jobs": [
+  {
+   "instId": "koiha",
+   "title": "의료기관평가인증원 2026년 제2회 직원채용 공고(연구직) 2026.07.24 2026.08.12 18:00",
+   "startDate": "26.07.24",
+   "endDate": "26.08.12 18:00",
+   "status": "진행중",
+   "jobType": "정규직",
+   "region": "서울(본부·공고확인)",
+   "link": "https://koiha.recruiter.co.kr/career/jobs/122728",
+   "firstSeen": "2026-07-31",
+   "lastSeen": "2026-07-31"
+  },
+  {
+   "instId": "nmc",
+   "title": "계약직 연구원B-휴직대체(지역의료교육팀) 재공고",
+   "startDate": "26.07.31",
+   "endDate": "26.08.10 23:59",
+   "status": "진행중",
+   "jobType": "계약직/기간제",
+   "region": "서울(본부·공고확인)",
+   "link": "https://nmc.recruiter.co.kr/app/jobnotice/view?systemKindCode=MRS2&jobnoticeSn=261843",
+   "firstSeen": "2026-07-31",
+   "lastSeen": "2026-07-31"
+  },
+  {
+   "instId": "nmc",
+   "title": "계약직 간호사(감염내과-상담실) 재공고",
+   "startDate": "26.07.31",
+   "endDate": "26.08.10 23:59",
+   "status": "진행중",
+   "jobType": "계약직/기간제",
+   "region": "서울(본부·공고확인)",
+   "link": "https://nmc.recruiter.co.kr/app/jobnotice/view?systemKindCode=MRS2&jobnoticeSn=261841",
+   "firstSeen": "2026-07-31",
+   "lastSeen": "2026-07-31"
+  },
+  {
+   "instId": "nmc",
+   "title": "계약직 간호사(간호부-소화기내과) 재공고",
+   "startDate": "26.07.31",
+   "endDate": "26.08.10 23:59",
+   "status": "진행중",
+   "jobType": "계약직/기간제",
+   "region": "서울(본부·공고확인)",
+   "link": "https://nmc.recruiter.co.kr/app/jobnotice/view?systemKindCode=MRS2&jobnoticeSn=261840",
+   "firstSeen": "2026-07-31",
+   "lastSeen": "2026-07-31"
+  },
+  {
+   "instId": "nmc",
+   "title": "계약직 간호사(간호부-소아청소년과) 재공고",
+   "startDate": "26.07.31",
+   "endDate": "26.08.10 23:59",
+   "status": "진행중",
+   "jobType": "계약직/기간제",
+   "region": "서울(본부·공고확인)",
+   "link": "https://nmc.recruiter.co.kr/app/jobnotice/view?systemKindCode=MRS2&jobnoticeSn=261839",
+   "firstSeen": "2026-07-31",
+   "lastSeen": "2026-07-31"
+  },
+  {
+   "instId": "nmc",
+   "title": "계약직 연구원(치매정책기획팀) 채용 공고",
+   "startDate": "26.07.31",
+   "endDate": "26.08.18 10:00",
+   "status": "진행중",
+   "jobType": "계약직/기간제",
+   "region": "서울(본부·공고확인)",
+   "link": "https://nmc.recruiter.co.kr/app/jobnotice/view?systemKindCode=MRS2&jobnoticeSn=261835",
+   "firstSeen": "2026-07-31",
+   "lastSeen": "2026-07-31"
+  },
+  {
+   "instId": "nmc",
+   "title": "계약직 연구원A-휴직대체(지역의료교육팀) 채용 공고",
+   "startDate": "26.07.31",
+   "endDate": "26.08.18 10:00",
+   "status": "진행중",
+   "jobType": "계약직/기간제",
+   "region": "서울(본부·공고확인)",
+   "link": "https://nmc.recruiter.co.kr/app/jobnotice/view?systemKindCode=MRS2&jobnoticeSn=261834",
+   "firstSeen": "2026-07-31",
+   "lastSeen": "2026-07-31"
+  },
+  {
+   "instId": "nmc",
+   "title": "계약직 전산행정(정보운영팀) 채용 공고",
+   "startDate": "26.07.31",
+   "endDate": "26.08.18 10:00",
+   "status": "진행중",
+   "jobType": "계약직/기간제",
+   "region": "서울(본부·공고확인)",
+   "link": "https://nmc.recruiter.co.kr/app/jobnotice/view?systemKindCode=MRS2&jobnoticeSn=261833",
+   "firstSeen": "2026-07-31",
+   "lastSeen": "2026-07-31"
+  },
+  {
+   "instId": "kac",
+   "title": "한국공항공사 경력직 등 공개채용 2026년 하반기 체험형 인턴 및 경력직 등 공개채용 | 경력 | 2026.07.29 2026.08.10 16:00 |",
+   "startDate": "26.07.29",
+   "endDate": "26.08.10 16:00",
+   "status": "진행중",
+   "jobType": "인턴",
+   "region": "광주, 대구, 울산, 인천, 제주",
+   "link": "https://kac.careerlink.kr/jobs/RC20260724032417",
+   "firstSeen": "2026-07-31",
+   "lastSeen": "2026-07-31"
+  },
   {
    "instId": "koiha",
    "title": "채용 프로세스",
@@ -24,18 +132,6 @@
    "link": "https://koiha.recruiter.co.kr/career/notice",
    "firstSeen": "2026-07-30",
    "lastSeen": "2026-07-30"
-  },
-  {
-   "instId": "koiha",
-   "title": "의료기관평가인증원 2026년 제2회 직원채용 공고(연구직)",
-   "startDate": "26.07.24",
-   "endDate": "26.08.12 18:00",
-   "status": "진행중",
-   "jobType": "정규직",
-   "region": "서울(본부·공고확인)",
-   "link": "https://koiha.recruiter.co.kr/career/jobs/122728",
-   "firstSeen": "2026-07-24",
-   "lastSeen": "2026-07-31"
   },
   {
    "instId": "neca",
@@ -108,6 +204,18 @@
    "link": "https://www.mohw.go.kr/board.es?mid=a10501010400&bid=0003&act=view&list_no=1491428&tag=&nPage=1",
    "firstSeen": "2026-07-27",
    "lastSeen": "2026-07-28"
+  },
+  {
+   "instId": "koiha",
+   "title": "의료기관평가인증원 2026년 제2회 직원채용 공고(연구직)",
+   "startDate": "26.07.24",
+   "endDate": "26.08.12 18:00",
+   "status": "진행중",
+   "jobType": "정규직",
+   "region": "서울(본부·공고확인)",
+   "link": "https://koiha.recruiter.co.kr/career/jobs/122728",
+   "firstSeen": "2026-07-24",
+   "lastSeen": "2026-07-31"
   },
   {
    "instId": "mohw",
