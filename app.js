@@ -179,6 +179,7 @@ const NotifyModal = ({
   const [jobTypes, setJobTypes] = useState([]); // 빈 배열 = 전체 고용형태
   const [agree, setAgree] = useState(false);
   const [status, setStatus] = useState("idle"); // idle | sending | done | error
+  const [mode, setMode] = useState("subscribe"); // subscribe | cancel
 
   if (!open) return null;
   const domain = emailDomain === "__custom__" ? customDomain.trim() : emailDomain;
@@ -191,12 +192,24 @@ const NotifyModal = ({
     setJobTypes([]);
     setAgree(false);
     setStatus("idle");
+    setMode("subscribe");
   };
   const close = () => {
     reset();
     onClose();
   };
   const toggle = (setter, value) => setter(prev => prev.includes(value) ? prev.filter(v => v !== value) : [...prev, value]);
+  const post = payload => {
+    setStatus("sending");
+    fetch(REQUEST_ENDPOINT, {
+      method: "POST",
+      mode: "no-cors",
+      headers: {
+        "Content-Type": "text/plain;charset=utf-8"
+      },
+      body: JSON.stringify(payload)
+    }).then(() => setStatus("done")).catch(() => setStatus("error"));
+  };
   const submit = () => {
     if (!/.+@.+\..+/.test(email)) {
       alert("이메일 주소를 정확히 입력해주세요.");
@@ -206,20 +219,25 @@ const NotifyModal = ({
       alert("개인정보 수집·이용에 동의해주세요.");
       return;
     }
-    setStatus("sending");
-    fetch(REQUEST_ENDPOINT, {
-      method: "POST",
-      mode: "no-cors",
-      headers: {
-        "Content-Type": "text/plain;charset=utf-8"
-      },
-      body: JSON.stringify({
-        type: "채용알림 신청",
-        email,
-        insts: insts.join(","),
-        jobTypes: jobTypes.join(",")
-      })
-    }).then(() => setStatus("done")).catch(() => setStatus("error"));
+    post({
+      type: "채용알림 신청",
+      email,
+      insts: insts.join(","),
+      jobTypes: jobTypes.join(",")
+    });
+  };
+
+  // 해지는 이메일만 받고, 본인 확인을 위해 해당 주소로 해지 링크를 보낸다
+  // (즉시 해지하면 제3자가 남의 주소를 해지시킬 수 있다)
+  const requestCancel = () => {
+    if (!/.+@.+\..+/.test(email)) {
+      alert("이메일 주소를 정확히 입력해주세요.");
+      return;
+    }
+    post({
+      type: "채용알림 해지",
+      email
+    });
   };
   const JOB_TYPES = ["정규직", "무기계약직", "계약직/기간제", "공무직", "인턴"];
   return /*#__PURE__*/React.createElement("div", {
@@ -240,16 +258,74 @@ const NotifyModal = ({
   }, /*#__PURE__*/React.createElement(Icon, {
     name: "mail-check",
     className: "w-8 h-8"
-  })), /*#__PURE__*/React.createElement("h2", {
+  })), mode === "cancel" ? /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h2", {
+    className: "text-lg font-black text-slate-900 mb-2"
+  }, "해지 확인 메일을 보냈어요"), /*#__PURE__*/React.createElement("p", {
+    className: "text-sm text-slate-500 font-medium leading-relaxed mb-6"
+  }, "입력하신 주소로 ", /*#__PURE__*/React.createElement("strong", {
+    className: "text-slate-700"
+  }, "해지 링크"), "를 보내드렸습니다. 메일에서 링크를 누르시면 알림이 해지되고 이메일 주소가 즉시 파기됩니다.")) : /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h2", {
     className: "text-lg font-black text-slate-900 mb-2"
   }, "알림 신청이 완료되었어요!"), /*#__PURE__*/React.createElement("p", {
     className: "text-sm text-slate-500 font-medium leading-relaxed mb-6"
   }, "확인 메일을 보내드렸어요. 새 공고가 올라온 날 ", /*#__PURE__*/React.createElement("strong", {
     className: "text-slate-700"
-  }, "오전 8시"), "에 한 통으로 모아 보내드립니다."), /*#__PURE__*/React.createElement("button", {
+  }, "오전 8시"), "에 한 통으로 모아 보내드립니다.")), /*#__PURE__*/React.createElement("button", {
     onClick: close,
     className: "w-full py-3.5 bg-slate-900 text-white rounded-2xl font-bold hover:bg-blue-600 transition-colors"
-  }, "닫기")) : /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h2", {
+  }, "닫기")) : mode === "cancel" ? /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h2", {
+    className: "text-lg font-black text-slate-900 mb-1 flex items-center gap-2"
+  }, /*#__PURE__*/React.createElement(Icon, {
+    name: "bell-off",
+    className: "text-slate-500 w-5 h-5"
+  }), " 채용 알림 해지"), /*#__PURE__*/React.createElement("p", {
+    className: "text-[12px] text-slate-400 font-medium mb-5"
+  }, "신청하신 이메일 주소를 입력해주세요."), /*#__PURE__*/React.createElement("div", {
+    className: "space-y-4 text-left"
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
+    className: "text-[11px] font-bold text-slate-500 mb-1.5 block"
+  }, "이메일 ", /*#__PURE__*/React.createElement("span", {
+    className: "text-red-400"
+  }, "*")), /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center gap-1.5"
+  }, /*#__PURE__*/React.createElement("input", {
+    value: emailLocal,
+    onChange: e => setEmailLocal(e.target.value),
+    placeholder: "아이디",
+    className: "flex-1 min-w-0 px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
+  }), /*#__PURE__*/React.createElement("span", {
+    className: "text-slate-400 font-bold shrink-0"
+  }, "@"), /*#__PURE__*/React.createElement("select", {
+    value: emailDomain,
+    onChange: e => setEmailDomain(e.target.value),
+    className: "shrink-0 px-2 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-[13px] focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
+  }, EMAIL_DOMAINS.map(d => /*#__PURE__*/React.createElement("option", {
+    key: d,
+    value: d
+  }, d)), /*#__PURE__*/React.createElement("option", {
+    value: "__custom__"
+  }, "직접입력"))), emailDomain === "__custom__" && /*#__PURE__*/React.createElement("input", {
+    value: customDomain,
+    onChange: e => setCustomDomain(e.target.value),
+    placeholder: "도메인 직접입력 (예: company.co.kr)",
+    className: "mt-1.5 w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
+  })), /*#__PURE__*/React.createElement("div", {
+    className: "bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-[11.5px] text-slate-500 font-medium leading-relaxed"
+  }, "🔒 본인 확인을 위해 ", /*#__PURE__*/React.createElement("strong", {
+    className: "text-slate-700"
+  }, "입력하신 주소로 해지 링크를 보내드립니다."), " 메일에서 링크를 눌러야 해지가 완료되며, 그때 이메일 주소는 즉시 파기됩니다. 받으신 알림 메일 하단의 수신거부 링크로도 바로 해지하실 수 있습니다."), status === "error" && /*#__PURE__*/React.createElement("p", {
+    className: "text-[12px] text-red-500 font-bold"
+  }, "전송에 실패했어요. 잠시 후 다시 시도해주세요."), /*#__PURE__*/React.createElement("button", {
+    onClick: requestCancel,
+    disabled: status === "sending",
+    className: "w-full py-3.5 bg-slate-900 text-white rounded-2xl font-bold hover:bg-slate-800 transition-colors shadow-lg disabled:opacity-60"
+  }, status === "sending" ? "전송 중..." : "해지 링크 받기"), /*#__PURE__*/React.createElement("button", {
+    onClick: () => {
+      setStatus("idle");
+      setMode("subscribe");
+    },
+    className: "w-full text-[12px] text-slate-400 font-bold hover:text-slate-600 transition-colors"
+  }, "← 알림 신청으로 돌아가기"))) : /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h2", {
     className: "text-lg font-black text-slate-900 mb-1 flex items-center gap-2"
   }, /*#__PURE__*/React.createElement(Icon, {
     name: "bell",
@@ -333,7 +409,13 @@ const NotifyModal = ({
     onClick: submit,
     disabled: status === "sending",
     className: "w-full py-3.5 bg-blue-600 text-white rounded-2xl font-bold hover:bg-blue-700 transition-colors shadow-lg disabled:opacity-60"
-  }, status === "sending" ? "신청 중..." : "알림 신청하기")))));
+  }, status === "sending" ? "신청 중..." : "알림 신청하기"), /*#__PURE__*/React.createElement("button", {
+    onClick: () => {
+      setStatus("idle");
+      setMode("cancel");
+    },
+    className: "w-full text-[12px] text-slate-400 font-bold hover:text-slate-600 transition-colors"
+  }, "이미 신청하셨나요? 알림 취소하기")))));
 };
 
 // 가로 스크롤 필터 줄: 오른쪽에 더 있을 때만 그라데이션+화살표 힌트를 보여준다

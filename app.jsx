@@ -103,6 +103,7 @@ const NotifyModal = ({ open, onClose, institutions }) => {
     const [jobTypes, setJobTypes] = useState([]); // 빈 배열 = 전체 고용형태
     const [agree, setAgree] = useState(false);
     const [status, setStatus] = useState("idle"); // idle | sending | done | error
+    const [mode, setMode] = useState("subscribe"); // subscribe | cancel
 
     if (!open) return null;
 
@@ -111,28 +112,34 @@ const NotifyModal = ({ open, onClose, institutions }) => {
 
     const reset = () => {
         setEmailLocal(""); setEmailDomain("naver.com"); setCustomDomain("");
-        setInsts([]); setJobTypes([]); setAgree(false); setStatus("idle");
+        setInsts([]); setJobTypes([]); setAgree(false); setStatus("idle"); setMode("subscribe");
     };
     const close = () => { reset(); onClose(); };
 
     const toggle = (setter, value) =>
         setter(prev => prev.includes(value) ? prev.filter(v => v !== value) : [...prev, value]);
 
-    const submit = () => {
-        if (!/.+@.+\..+/.test(email)) { alert("이메일 주소를 정확히 입력해주세요."); return; }
-        if (!agree) { alert("개인정보 수집·이용에 동의해주세요."); return; }
+    const post = (payload) => {
         setStatus("sending");
         fetch(REQUEST_ENDPOINT, {
             method: "POST",
             mode: "no-cors",
             headers: { "Content-Type": "text/plain;charset=utf-8" },
-            body: JSON.stringify({
-                type: "채용알림 신청",
-                email,
-                insts: insts.join(","),
-                jobTypes: jobTypes.join(","),
-            }),
+            body: JSON.stringify(payload),
         }).then(() => setStatus("done")).catch(() => setStatus("error"));
+    };
+
+    const submit = () => {
+        if (!/.+@.+\..+/.test(email)) { alert("이메일 주소를 정확히 입력해주세요."); return; }
+        if (!agree) { alert("개인정보 수집·이용에 동의해주세요."); return; }
+        post({ type: "채용알림 신청", email, insts: insts.join(","), jobTypes: jobTypes.join(",") });
+    };
+
+    // 해지는 이메일만 받고, 본인 확인을 위해 해당 주소로 해지 링크를 보낸다
+    // (즉시 해지하면 제3자가 남의 주소를 해지시킬 수 있다)
+    const requestCancel = () => {
+        if (!/.+@.+\..+/.test(email)) { alert("이메일 주소를 정확히 입력해주세요."); return; }
+        post({ type: "채용알림 해지", email });
     };
 
     const JOB_TYPES = ["정규직", "무기계약직", "계약직/기간제", "공무직", "인턴"];
@@ -144,9 +151,47 @@ const NotifyModal = ({ open, onClose, institutions }) => {
                 {status === "done" ? (
                     <div className="text-center py-6">
                         <div className="w-16 h-16 mx-auto rounded-full bg-blue-50 text-blue-500 flex items-center justify-center mb-4"><Icon name="mail-check" className="w-8 h-8" /></div>
-                        <h2 className="text-lg font-black text-slate-900 mb-2">알림 신청이 완료되었어요!</h2>
-                        <p className="text-sm text-slate-500 font-medium leading-relaxed mb-6">확인 메일을 보내드렸어요. 새 공고가 올라온 날 <strong className="text-slate-700">오전 8시</strong>에 한 통으로 모아 보내드립니다.</p>
+                        {mode === "cancel" ? (
+                            <div>
+                                <h2 className="text-lg font-black text-slate-900 mb-2">해지 확인 메일을 보냈어요</h2>
+                                <p className="text-sm text-slate-500 font-medium leading-relaxed mb-6">입력하신 주소로 <strong className="text-slate-700">해지 링크</strong>를 보내드렸습니다. 메일에서 링크를 누르시면 알림이 해지되고 이메일 주소가 즉시 파기됩니다.</p>
+                            </div>
+                        ) : (
+                            <div>
+                                <h2 className="text-lg font-black text-slate-900 mb-2">알림 신청이 완료되었어요!</h2>
+                                <p className="text-sm text-slate-500 font-medium leading-relaxed mb-6">확인 메일을 보내드렸어요. 새 공고가 올라온 날 <strong className="text-slate-700">오전 8시</strong>에 한 통으로 모아 보내드립니다.</p>
+                            </div>
+                        )}
                         <button onClick={close} className="w-full py-3.5 bg-slate-900 text-white rounded-2xl font-bold hover:bg-blue-600 transition-colors">닫기</button>
+                    </div>
+                ) : mode === "cancel" ? (
+                    <div>
+                        <h2 className="text-lg font-black text-slate-900 mb-1 flex items-center gap-2"><Icon name="bell-off" className="text-slate-500 w-5 h-5" /> 채용 알림 해지</h2>
+                        <p className="text-[12px] text-slate-400 font-medium mb-5">신청하신 이메일 주소를 입력해주세요.</p>
+                        <div className="space-y-4 text-left">
+                            <div>
+                                <label className="text-[11px] font-bold text-slate-500 mb-1.5 block">이메일 <span className="text-red-400">*</span></label>
+                                <div className="flex items-center gap-1.5">
+                                    <input value={emailLocal} onChange={e => setEmailLocal(e.target.value)} placeholder="아이디" className="flex-1 min-w-0 px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium" />
+                                    <span className="text-slate-400 font-bold shrink-0">@</span>
+                                    <select value={emailDomain} onChange={e => setEmailDomain(e.target.value)} className="shrink-0 px-2 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-[13px] focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium">
+                                        {EMAIL_DOMAINS.map(d => <option key={d} value={d}>{d}</option>)}
+                                        <option value="__custom__">직접입력</option>
+                                    </select>
+                                </div>
+                                {emailDomain === "__custom__" && (
+                                    <input value={customDomain} onChange={e => setCustomDomain(e.target.value)} placeholder="도메인 직접입력 (예: company.co.kr)" className="mt-1.5 w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium" />
+                                )}
+                            </div>
+
+                            <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-[11.5px] text-slate-500 font-medium leading-relaxed">
+                                🔒 본인 확인을 위해 <strong className="text-slate-700">입력하신 주소로 해지 링크를 보내드립니다.</strong> 메일에서 링크를 눌러야 해지가 완료되며, 그때 이메일 주소는 즉시 파기됩니다. 받으신 알림 메일 하단의 수신거부 링크로도 바로 해지하실 수 있습니다.
+                            </div>
+
+                            {status === "error" && <p className="text-[12px] text-red-500 font-bold">전송에 실패했어요. 잠시 후 다시 시도해주세요.</p>}
+                            <button onClick={requestCancel} disabled={status === "sending"} className="w-full py-3.5 bg-slate-900 text-white rounded-2xl font-bold hover:bg-slate-800 transition-colors shadow-lg disabled:opacity-60">{status === "sending" ? "전송 중..." : "해지 링크 받기"}</button>
+                            <button onClick={() => { setStatus("idle"); setMode("subscribe"); }} className="w-full text-[12px] text-slate-400 font-bold hover:text-slate-600 transition-colors">← 알림 신청으로 돌아가기</button>
+                        </div>
                     </div>
                 ) : (
                     <div>
@@ -208,6 +253,7 @@ const NotifyModal = ({ open, onClose, institutions }) => {
 
                             {status === "error" && <p className="text-[12px] text-red-500 font-bold">전송에 실패했어요. 잠시 후 다시 시도해주세요.</p>}
                             <button onClick={submit} disabled={status === "sending"} className="w-full py-3.5 bg-blue-600 text-white rounded-2xl font-bold hover:bg-blue-700 transition-colors shadow-lg disabled:opacity-60">{status === "sending" ? "신청 중..." : "알림 신청하기"}</button>
+                            <button onClick={() => { setStatus("idle"); setMode("cancel"); }} className="w-full text-[12px] text-slate-400 font-bold hover:text-slate-600 transition-colors">이미 신청하셨나요? 알림 취소하기</button>
                         </div>
                     </div>
                 )}

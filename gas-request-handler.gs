@@ -49,9 +49,12 @@ function doPost(e) {
   try {
     var data = JSON.parse(e.postData.contents);
 
-    // 채용 알림 구독 신청은 별도 탭으로 분리 처리
+    // 채용 알림 구독/해지는 별도 탭으로 분리 처리
     if (data.type === "채용알림 신청") {
       return handleSubscribe_(data);
+    }
+    if (data.type === "채용알림 해지") {
+      return handleUnsubRequest_(data);
     }
 
     var ss = SpreadsheetApp.openById(SHEET_ID);
@@ -180,16 +183,59 @@ function sendWelcome_(email, token, data, isUpdate) {
   });
 }
 
+/**
+ * 수신거부 = 해당 행을 삭제한다.
+ * 개인정보처리방침에 "해지 요청 시 지체 없이 파기"로 고지했으므로,
+ * 상태만 '해지'로 바꾸고 이메일을 남겨두면 고지 내용과 어긋난다.
+ */
 function unsubscribe_(token) {
   var sheet = subSheet_();
   var rows = sheet.getDataRange().getValues();
   for (var i = 1; i < rows.length; i++) {
     if (String(rows[i][4]) === String(token)) {
-      sheet.getRange(i + 1, 6).setValue("해지");
+      sheet.deleteRow(i + 1);
       return true;
     }
   }
   return false;
+}
+
+/**
+ * 사이트에서 "알림 취소"를 요청한 경우.
+ * 이메일만으로 즉시 해지하면 제3자가 남의 주소를 해지시킬 수 있으므로,
+ * 본인 확인을 위해 해당 주소로 해지 링크를 보내고 링크를 눌러야 완료된다.
+ * 구독 중이 아닌 주소여도 응답은 동일하게 하여 가입 여부가 노출되지 않게 한다.
+ */
+function handleUnsubRequest_(data) {
+  var email = (data.email || "").trim();
+  if (!/.+@.+\..+/.test(email)) return json_({ ok: false, error: "invalid email" });
+
+  var rows = subSheet_().getDataRange().getValues();
+  for (var i = 1; i < rows.length; i++) {
+    if (String(rows[i][1]).trim().toLowerCase() === email.toLowerCase()) {
+      var token = String(rows[i][4]);
+      var link = WEBAPP_URL ? (WEBAPP_URL + "?unsub=" + encodeURIComponent(token)) : "";
+      MailApp.sendEmail({
+        to: email,
+        subject: "[보건공기업 알리미] 채용 알림 해지 확인",
+        htmlBody:
+          '<div style="font-family:sans-serif;line-height:1.7;color:#0f172a;max-width:520px">' +
+          '<h2 style="margin:0 0 12px">채용 알림 해지</h2>' +
+          '<p style="color:#475569;margin:0 0 18px">아래 버튼을 누르시면 채용 알림이 해지되고, ' +
+          '등록하신 이메일 주소는 즉시 파기됩니다.</p>' +
+          (link
+            ? '<p style="margin:0 0 18px"><a href="' + link + '" style="display:inline-block;' +
+              'background:#0f172a;color:#fff;text-decoration:none;font-weight:bold;font-size:14px;' +
+              'padding:12px 22px;border-radius:10px">알림 해지하기</a></p>'
+            : '<p style="margin:0 0 18px;color:#475569">이 메일에 회신해 주시면 해지 처리해 드리겠습니다.</p>') +
+          '<p style="font-size:12px;color:#94a3b8;margin:0">본인이 요청하지 않았다면 이 메일을 무시하셔도 됩니다. ' +
+          '링크를 누르지 않으면 아무것도 변경되지 않습니다.</p></div>'
+      });
+      break;
+    }
+  }
+  // 구독 중이 아니어도 동일하게 성공 응답 (가입 여부 노출 방지)
+  return json_({ ok: true });
 }
 
 /* ──────────────────────────── 일일 알림 메일 ──────────────────────────── */
