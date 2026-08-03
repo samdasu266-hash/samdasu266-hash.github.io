@@ -1,5 +1,5 @@
 {
- "lastSync": "2026-08-03T08:04:42.932589+09:00",
+ "lastSync": "2026-08-03T09:11:46.044849+09:00",
  "jobs": [
   {
    "instId": "hira",
@@ -52,26 +52,6 @@
    "link": "https://bloodinfo.careeron.co.kr/#/recruitment/detail/38"
   },
   {
-   "instId": "mohw",
-   "title": "2026년 보건복지부 공무직근로자(영문에디터) 채용 공고(수정)",
-   "startDate": "26.07.27",
-   "endDate": "26.08.03 18:00",
-   "status": "진행중",
-   "jobType": "공무직",
-   "region": "전국(공고확인)",
-   "link": "https://www.mohw.go.kr/board.es?mid=a10501010400&bid=0003&act=view&list_no=1491428&tag=&nPage=1"
-  },
-  {
-   "instId": "mohw",
-   "title": "의료기술직 공무원 경력경쟁채용시험 공고",
-   "startDate": "26.07.27",
-   "endDate": "26.08.06 18:00",
-   "status": "진행중",
-   "jobType": "정규직",
-   "region": "전국(공고확인)",
-   "link": "https://www.mohw.go.kr/board.es?mid=a10501010400&bid=0003&act=view&list_no=1491426&tag=&nPage=1"
-  },
-  {
    "instId": "nmc",
    "title": "계약직 연구원B-휴직대체(지역의료교육팀) 재공고",
    "startDate": "26.07.31",
@@ -120,6 +100,26 @@
    "jobType": "인턴",
    "region": "광주, 대구, 울산, 인천, 제주",
    "link": "https://kac.careerlink.kr/jobs/RC20260724032417"
+  },
+  {
+   "instId": "mohw",
+   "title": "2026년 보건복지부 공무직근로자(영문에디터) 채용 공고(수정)",
+   "startDate": "26.07.27",
+   "endDate": "26.08.03 18:00",
+   "status": "진행중",
+   "jobType": "공무직",
+   "region": "전국(공고확인)",
+   "link": "https://www.mohw.go.kr/board.es?mid=a10501010400&bid=0003&act=view&list_no=1491428&tag=&nPage=1"
+  },
+  {
+   "instId": "mohw",
+   "title": "의료기술직 공무원 경력경쟁채용시험 공고",
+   "startDate": "26.07.27",
+   "endDate": "26.08.06 18:00",
+   "status": "진행중",
+   "jobType": "정규직",
+   "region": "전국(공고확인)",
+   "link": "https://www.mohw.go.kr/board.es?mid=a10501010400&bid=0003&act=view&list_no=1491426&tag=&nPage=1"
   }
  ]
 }
