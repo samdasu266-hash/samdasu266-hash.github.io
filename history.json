@@ -1,6 +1,18 @@
 {
- "generated": "2026-08-03T17:34:18.564010+09:00",
+ "generated": "2026-08-03T21:29:12.143239+09:00",
  "jobs": [
+  {
+   "instId": "hira",
+   "title": "진료심사평가위원장 채용",
+   "startDate": "26.08.03",
+   "endDate": "26.08.18 18:00",
+   "status": "진행중",
+   "jobType": "정규직",
+   "region": "강원",
+   "link": "https://hira.recruitlab.co.kr/app/recruitment-announcement/view/987",
+   "firstSeen": "2026-08-03",
+   "lastSeen": "2026-08-03"
+  },
   {
    "instId": "koiha",
    "title": "의료기관평가인증원 2026년 제2회 직원채용 공고(연구직)",
