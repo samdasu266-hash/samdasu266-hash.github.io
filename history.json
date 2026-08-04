@@ -1,6 +1,18 @@
 {
- "generated": "2026-08-04T14:52:43.502137+09:00",
+ "generated": "2026-08-04T17:42:36.986518+09:00",
  "jobs": [
+  {
+   "instId": "nmc",
+   "title": "계약직 단시간 근로자-장애인(공공사회사업팀) 채용 재공고",
+   "startDate": "26.08.04",
+   "endDate": "26.08.14 23:59",
+   "status": "진행중",
+   "jobType": "계약직/기간제",
+   "region": "서울(본부·공고확인)",
+   "link": "https://nmc.recruiter.co.kr/app/jobnotice/view?systemKindCode=MRS2&jobnoticeSn=262165",
+   "firstSeen": "2026-08-04",
+   "lastSeen": "2026-08-04"
+  },
   {
    "instId": "hira",
    "title": "진료심사평가위원장 채용",
