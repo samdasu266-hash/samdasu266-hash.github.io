@@ -1,5 +1,5 @@
 {
- "lastSync": "2026-08-06T22:02:09.207671+09:00",
+ "lastSync": "2026-08-07T00:23:18.217644+09:00",
  "jobs": [
   {
    "instId": "neca",
@@ -30,6 +30,16 @@
    "jobType": "정규직",
    "region": "서울, 전북",
    "link": "https://www.nps.or.kr/pnsgdnc/hiregdnc/getOHAE0004M1.do?menuId=MN24000969&pstId=ZZ202600000000000843&hmpgCd=01&hmpgBbsCd=BS20240138&sortSe=FR&pageIndex=1&searchText=&searchGbu=&pstSeCd="
+  },
+  {
+   "instId": "mohw",
+   "title": "2026년 제1회 국립공주병원 간호직 공무원 경력경쟁채용시험 공고",
+   "startDate": "26.08.03",
+   "endDate": "26.08.14 18:00",
+   "status": "진행중",
+   "jobType": "정규직",
+   "region": "대전충남",
+   "link": "https://www.mohw.go.kr/board.es?mid=a10501010400&bid=0003&act=view&list_no=1491521&tag=&nPage=1"
   },
   {
    "instId": "nmc",
@@ -80,16 +90,6 @@
    "jobType": "인턴",
    "region": "광주, 대구, 울산, 인천, 제주",
    "link": "https://kac.careerlink.kr/jobs/RC20260724032417"
-  },
-  {
-   "instId": "mohw",
-   "title": "2026년 제1회 국립공주병원 간호직 공무원 경력경쟁채용시험 공고",
-   "startDate": "26.08.03",
-   "endDate": "26.08.14 18:00",
-   "status": "진행중",
-   "jobType": "정규직",
-   "region": "대전충남",
-   "link": "https://www.mohw.go.kr/board.es?mid=a10501010400&bid=0003&act=view&list_no=1491521&tag=&nPage=1"
   }
  ]
 }
