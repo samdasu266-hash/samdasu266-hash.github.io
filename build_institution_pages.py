@@ -16,12 +16,22 @@ history.json(누적 공고 이력) + jobs.json(현재 공고) + 기관 메타데
 
 import json
 import os
+import re
 from collections import Counter
 from datetime import datetime, timezone, timedelta
 
 BASE = os.path.dirname(os.path.abspath(__file__))
 KST = timezone(timedelta(hours=9))
 SITE = "https://samdasu266-hash.github.io"
+
+# 색인 기준 — 아카이브가 이만큼 쌓인 기관 페이지만 색인·sitemap에 넣는다.
+#
+# 수집 이력이 0~수건뿐인 페이지는 기관 소개 문단과 빈 통계표만 남아, 12개가
+# 서로 비슷한 얇은 페이지로 보인다. 이 상태로 전부 색인하면 사이트 전체가
+# '자동 생성된 유사 페이지 묶음'으로 평가돼 품질 심사에 불리하다.
+# 기준 미만이면 noindex(단 follow — 링크는 계속 따라가게 둔다)를 걸고
+# sitemap에서 빼며, 데이터가 쌓이면 다음 주간 실행에서 자동으로 색인 대상이 된다.
+MIN_ARCHIVE_FOR_INDEX = 5
 
 # 기관 메타데이터 — app.jsx institutions 및 guide.html 카드와 정합을 유지한다.
 INSTITUTIONS = [
@@ -176,6 +186,10 @@ def build_page(inst, hist_jobs, live_jobs, version, today):
     live = [j for j in live_jobs if j.get("instId") == iid]
     mine_sorted = sorted(mine, key=lambda x: x.get("firstSeen", ""), reverse=True)
 
+    indexable = len(mine) >= MIN_ARCHIVE_FOR_INDEX
+    robots = ("" if indexable else
+              '\n    <meta name="robots" content="noindex,follow">')
+
     types = Counter((j.get("jobType") or "정규직") for j in mine)
     regions = Counter((j.get("region") or "전국").split("(")[0].strip() for j in mine)
     first_seen = min((j.get("firstSeen", "") for j in mine), default="")
@@ -251,7 +265,7 @@ def build_page(inst, hist_jobs, live_jobs, version, today):
   gtag('config', 'G-7297NMP8GQ');
 </script>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">{robots}
     <!-- Google AdSense -->
     <meta name="google-adsense-account" content="ca-pub-2720320967054456">
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2720320967054456" crossorigin="anonymous"></script>
@@ -355,24 +369,37 @@ def main():
             f.write(html)
         n = len([j for j in hist if j.get("instId") == inst["id"]])
         written.append((fn, n))
-        print(f"  생성: {fn} (아카이브 {n}건)")
+        mark = "색인" if n >= MIN_ARCHIVE_FOR_INDEX else "noindex"
+        print(f"  생성: {fn} (아카이브 {n}건, {mark})")
 
-    # sitemap.xml 갱신 — 기관 페이지를 색인 대상에 포함한다.
+    # sitemap.xml 갱신 — 아카이브가 MIN_ARCHIVE_FOR_INDEX 이상인 기관만 넣는다.
+    # 기준을 밑도는 페이지는 이미 색인돼 있었더라도 항목을 도로 걷어내, 페이지의
+    # noindex 상태와 sitemap이 서로 어긋나지 않게 맞춘다.
     sm_path = os.path.join(BASE, "sitemap.xml")
     try:
         sm = open(sm_path, encoding="utf-8").read()
         d = now.strftime("%Y-%m-%d")
-        entries = "".join(
-            f"<url>\n  <loc>{SITE}/{fn}</loc>\n  <lastmod>{d}</lastmod>\n</url>\n\n"
-            for fn, _ in written if f"/{fn}<" not in sm)
-        if entries:
-            sm = sm.replace("</urlset>", entries + "</urlset>")
-            open(sm_path, "w", encoding="utf-8").write(sm)
-            print(f"  sitemap.xml에 기관 페이지 추가")
+
+        for fn, n in written:
+            listed = f"/{fn}<" in sm
+            if n >= MIN_ARCHIVE_FOR_INDEX and not listed:
+                sm = sm.replace(
+                    "</urlset>",
+                    f"<url>\n  <loc>{SITE}/{fn}</loc>\n  <lastmod>{d}</lastmod>\n</url>\n\n</urlset>")
+                print(f"  sitemap 추가: {fn} (아카이브 {n}건)")
+            elif n < MIN_ARCHIVE_FOR_INDEX and listed:
+                sm = re.sub(
+                    r"[ \t]*<url>\s*<loc>[^<]*/" + re.escape(fn) + r"</loc>.*?</url>\s*",
+                    "", sm, flags=re.S)
+                print(f"  sitemap 제외: {fn} (아카이브 {n}건 < {MIN_ARCHIVE_FOR_INDEX})")
+
+        open(sm_path, "w", encoding="utf-8").write(sm)
     except Exception as e:
         print(f"  sitemap 갱신 건너뜀: {e}")
 
-    print(f"✅ 기관 페이지 {len(written)}개 생성 완료 (총 아카이브 {len(hist)}건)")
+    indexed = sum(1 for _, n in written if n >= MIN_ARCHIVE_FOR_INDEX)
+    print(f"✅ 기관 페이지 {len(written)}개 생성 완료 "
+          f"(색인 {indexed}개 / noindex {len(written) - indexed}개, 총 아카이브 {len(hist)}건)")
 
 
 if __name__ == "__main__":

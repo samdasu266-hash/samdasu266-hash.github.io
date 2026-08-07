@@ -139,7 +139,6 @@
         .no-scrollbar::-webkit-scrollbar { display: none; }
     </style>
 </head>
-    <meta name="google-site-verification" content="miIpr60m6L8r7oqLsNfgxJNk8U-CTmodfQyy0uqysv0" />
 <body class="bg-slate-50 text-left relative">
 
     <div id="root"></div>
@@ -154,6 +153,41 @@
                 <p>공고는 기관·고용형태(정규직·무기계약직·계약직·공무직·체험형 인턴)·근무지역으로 필터링할 수 있고, 마감임박순 정렬과 공고명 검색을 지원합니다. 마감된 공고도 기관별 상세 페이지에 아카이브로 남겨, 해당 기관이 어떤 직무를 어떤 고용형태로 뽑아 왔는지 확인할 수 있습니다.</p>
                 <p>준비 정보는 세 갈래로 나눠 제공합니다. <strong>기관별 합격 가이드</strong>는 전형 단계와 필기 과목, 서류 요건·가점을 다룹니다(건보공단 직업기초능력 60문항 + 직무시험 20문항, 국민연금 필기·면접 5:5 합산 등). <strong>기관별 근무환경·워라밸</strong>은 본사 위치, 순환 근무 여부, 업무 강도, 육아휴직·유연근무 분위기와 ALIO 공시 기준 신입 초임을 정리했습니다. 그 외 채용 트렌드 칼럼, 임상 경력 활용법, 서류 가점 전략(컴퓨터활용능력 1급·한국사능력검정 1급·사회복지사 1급 등), 면접 대비 가이드를 함께 운영하며 반기마다 갱신합니다.</p>
             </div>
+        </div>
+    </section>
+
+    <!-- 기관별 채용 시기: 자바스크립트 없이도 읽히는 정적 요약 -->
+    <section class="max-w-5xl mx-auto px-4 md:px-8 pb-16">
+        <div class="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm space-y-4 text-left">
+            <h2 class="text-lg font-black text-slate-900">기관별 채용 시기 한눈에 보기</h2>
+            <p class="text-[13.5px] text-slate-600 font-medium leading-relaxed">공공기관 채용은 공채 시즌에 몰리지만, 기관마다 시기가 다르고 수시 채용 비중도 작지 않습니다. 아래는 수집 대상 12개 기관의 본사 소재지와 통상적인 채용 주기입니다. 실제 일정은 해마다 달라지므로 반드시 각 기관 공식 공고로 확인하세요.</p>
+            <div class="overflow-x-auto">
+                <table class="w-full text-[13px] border-collapse min-w-[560px]">
+                    <thead>
+                        <tr class="bg-slate-50 text-slate-700">
+                            <th class="border border-slate-200 px-3 py-2 text-left font-bold">기관</th>
+                            <th class="border border-slate-200 px-3 py-2 text-left font-bold">본사 소재지</th>
+                            <th class="border border-slate-200 px-3 py-2 text-left font-bold">통상 채용 주기</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-slate-600">
+                        <tr><td class="border border-slate-200 px-3 py-2 font-bold">국민건강보험공단</td><td class="border border-slate-200 px-3 py-2">강원 원주</td><td class="border border-slate-200 px-3 py-2">연 2회 (상반기 3~4월, 하반기 8~9월)</td></tr>
+                        <tr><td class="border border-slate-200 px-3 py-2 font-bold">건강보험심사평가원</td><td class="border border-slate-200 px-3 py-2">강원 원주</td><td class="border border-slate-200 px-3 py-2">연 2회 (상반기 4~5월, 하반기 9~10월)</td></tr>
+                        <tr><td class="border border-slate-200 px-3 py-2 font-bold">국민연금공단</td><td class="border border-slate-200 px-3 py-2">전북 전주</td><td class="border border-slate-200 px-3 py-2">연 2회 (상반기 4월, 하반기 9월)</td></tr>
+                        <tr><td class="border border-slate-200 px-3 py-2 font-bold">근로복지공단</td><td class="border border-slate-200 px-3 py-2">울산</td><td class="border border-slate-200 px-3 py-2">연 2회 (상반기 4~5월, 하반기 9~10월)</td></tr>
+                        <tr><td class="border border-slate-200 px-3 py-2 font-bold">국립중앙의료원</td><td class="border border-slate-200 px-3 py-2">서울 중구</td><td class="border border-slate-200 px-3 py-2">상반기 3~5월 · 하반기 9~11월 집중</td></tr>
+                        <tr><td class="border border-slate-200 px-3 py-2 font-bold">한국보건의료인국가시험원</td><td class="border border-slate-200 px-3 py-2">서울 광진</td><td class="border border-slate-200 px-3 py-2">연 1~2회 (하반기 집중)</td></tr>
+                        <tr><td class="border border-slate-200 px-3 py-2 font-bold">한국보건의료연구원</td><td class="border border-slate-200 px-3 py-2">서울 광진</td><td class="border border-slate-200 px-3 py-2">수시 및 상·하반기 통합 채용</td></tr>
+                        <tr><td class="border border-slate-200 px-3 py-2 font-bold">의료기관평가인증원</td><td class="border border-slate-200 px-3 py-2">서울 영등포</td><td class="border border-slate-200 px-3 py-2">상·하반기 및 결원 수시</td></tr>
+                        <tr><td class="border border-slate-200 px-3 py-2 font-bold">한국건강증진개발원</td><td class="border border-slate-200 px-3 py-2">서울 광진</td><td class="border border-slate-200 px-3 py-2">수시 및 상·하반기 채용</td></tr>
+                        <tr><td class="border border-slate-200 px-3 py-2 font-bold">대한적십자사</td><td class="border border-slate-200 px-3 py-2">강원 원주 (본사)</td><td class="border border-slate-200 px-3 py-2">본사 통합 및 각 지사·혈액원별 수시</td></tr>
+                        <tr><td class="border border-slate-200 px-3 py-2 font-bold">보건복지부 및 소속기관</td><td class="border border-slate-200 px-3 py-2">세종 (소속기관 전국)</td><td class="border border-slate-200 px-3 py-2">수시 채용</td></tr>
+                        <tr><td class="border border-slate-200 px-3 py-2 font-bold">한국공항공사 (보건관리자)</td><td class="border border-slate-200 px-3 py-2">서울 강서 (전국 14개 공항)</td><td class="border border-slate-200 px-3 py-2">결원 발생 시 수시</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <p class="text-[13px] text-slate-500 leading-relaxed">표에서 보이듯 <strong>수시 채용을 운영하는 기관이 절반 가까이</strong> 됩니다. 상·하반기 공채만 기다리면 기회의 상당수를 놓치게 되므로, 수시 공고를 상시 확인하는 편이 유리합니다. 본사가 강원 원주(건보·심평원·적십자사)와 전북 전주(국민연금)에 몰려 있다는 점도 지원 전 고려할 현실 조건입니다.</p>
+            <p class="text-[13px] text-slate-500 leading-relaxed">준비 단계별 안내는 <a href="license.html" class="text-blue-600 underline">서류 가점 전략</a>(자격증·어학·우대 가점), <a href="career.html" class="text-blue-600 underline">임상경력 활용</a>(경력기술서 작성), <a href="interview.html" class="text-blue-600 underline">면접 필승 가이드</a>(블라인드·구조화 면접), <a href="guide.html" class="text-blue-600 underline">근무환경·워라밸</a>(초임·순환근무), <a href="tips.html" class="text-blue-600 underline">채용 트렌드</a>에서 이어서 확인할 수 있습니다.</p>
         </div>
     </section>
 
