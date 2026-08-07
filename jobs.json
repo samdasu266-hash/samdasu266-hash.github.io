@@ -1,6 +1,26 @@
 {
- "lastSync": "2026-08-07T00:23:18.217644+09:00",
+ "lastSync": "2026-08-07T09:04:20.940542+09:00",
  "jobs": [
+  {
+   "instId": "hira",
+   "title": "진료심사평가위원장 채용",
+   "startDate": "26.08.03",
+   "endDate": "26.08.18 18:00",
+   "status": "진행중",
+   "jobType": "정규직",
+   "region": "강원",
+   "link": "https://hira.recruitlab.co.kr/app/recruitment-announcement/view/987"
+  },
+  {
+   "instId": "hira",
+   "title": "심사평가정책연구소장(개방형 직위) 채용",
+   "startDate": "26.07.28",
+   "endDate": "26.08.11 18:00",
+   "status": "진행중",
+   "jobType": "정규직",
+   "region": "서울",
+   "link": "https://hira.recruitlab.co.kr/app/recruitment-announcement/view/978"
+  },
   {
    "instId": "neca",
    "title": "한국보건의료연구원 2026년 제2차 직원채용 공고",
