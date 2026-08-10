@@ -149,6 +149,7 @@ NAV = [
     ("index.html", "홈"),
     ("index.html#guide", "기관별 합격 가이드"),
     ("guide.html", "근무환경·워라밸"),
+    ("gongmujik.html", "공무직·무기계약직"),
     ("tips.html", "채용 트렌드"),
     ("career.html", "임상경력 활용"),
     ("license.html", "서류 가점 전략"),
