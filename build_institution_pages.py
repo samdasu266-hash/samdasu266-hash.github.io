@@ -151,6 +151,7 @@ NAV = [
     ("guide.html", "근무환경·워라밸"),
     ("gongmujik.html", "공무직·무기계약직"),
     ("bogeon-manager.html", "보건관리자"),
+    ("ganhojik.html", "간호직 공무원"),
     ("tips.html", "채용 트렌드"),
     ("career.html", "임상경력 활용"),
     ("license.html", "서류 가점 전략"),

@@ -377,6 +377,7 @@ const App = () => {
                 <a href="guide.html" className="nav-link text-slate-500 hover:text-slate-800">근무환경·워라밸</a>
                 <a href="gongmujik.html" className="nav-link text-slate-500 hover:text-slate-800">공무직·무기계약직</a>
                 <a href="bogeon-manager.html" className="nav-link text-slate-500 hover:text-slate-800">보건관리자</a>
+                <a href="ganhojik.html" className="nav-link text-slate-500 hover:text-slate-800">간호직 공무원</a>
                 <a href="tips.html" className="nav-link text-slate-500 hover:text-slate-800">채용 트렌드</a>
                 <a href="career.html" className="nav-link text-slate-500 hover:text-slate-800">임상경력 활용</a>
                 <a href="license.html" className="nav-link text-slate-500 hover:text-slate-800">서류 가점 전략</a>
