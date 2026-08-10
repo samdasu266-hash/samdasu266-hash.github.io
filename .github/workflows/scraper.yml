@@ -36,14 +36,20 @@ jobs:
           PYTHONIOENCODING: utf-8
         run: python scraper.py
 
+      # 홈 본문은 React가 그리므로 HTML 소스에는 공고가 남지 않는다.
+      # 수집 직후 정적 목록을 다시 만들어 크롤러가 읽을 본문을 유지한다.
+      - name: 홈 정적 콘텐츠 재생성
+        run: python3 build_static_home.py
+
       - name: Commit jobs.json / history.json
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          # 스크래퍼는 jobs.json(현재 공고)과 history.json(누적 이력)을 함께 쓴다.
-          # 둘 다 스테이징해야 rebase 단계에서 'unstaged changes' 오류가 나지 않는다.
-          if ! git diff --quiet jobs.json history.json; then
-            git add jobs.json history.json
+          # 스크래퍼는 jobs.json(현재 공고)과 history.json(누적 이력)을 쓰고,
+          # build_static_home.py 가 index.html 의 정적 영역을 갱신한다.
+          # 셋 다 스테이징해야 rebase 단계에서 'unstaged changes' 오류가 나지 않는다.
+          if ! git diff --quiet jobs.json history.json index.html; then
+            git add jobs.json history.json index.html
             git commit -m "Update jobs data [skip ci]"
             git pull --rebase origin main
             git push
