@@ -573,6 +573,15 @@ const App = () => {
     href: "guide.html",
     className: "nav-link text-slate-500 hover:text-slate-800"
   }, "근무환경·워라밸"), /*#__PURE__*/React.createElement("a", {
+    href: "gongmujik.html",
+    className: "nav-link text-slate-500 hover:text-slate-800"
+  }, "공무직·무기계약직"), /*#__PURE__*/React.createElement("a", {
+    href: "bogeon-manager.html",
+    className: "nav-link text-slate-500 hover:text-slate-800"
+  }, "보건관리자"), /*#__PURE__*/React.createElement("a", {
+    href: "ganhojik.html",
+    className: "nav-link text-slate-500 hover:text-slate-800"
+  }, "간호직 공무원"), /*#__PURE__*/React.createElement("a", {
     href: "tips.html",
     className: "nav-link text-slate-500 hover:text-slate-800"
   }, "채용 트렌드"), /*#__PURE__*/React.createElement("a", {
