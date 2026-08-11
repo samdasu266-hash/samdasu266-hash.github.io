@@ -625,6 +625,8 @@ const App = () => {
             <footer className="mt-20 pt-10 pb-6 border-t border-slate-200 text-center space-y-6">
                 <div className="flex justify-center gap-6 text-[12px] font-bold text-slate-500">
                     <a href="about.html" className="hover:text-slate-800 transition-colors">소개·운영정책</a>
+                    <span className="text-slate-300">·</span>
+                    <a href="privacy.html" className="hover:text-slate-800 transition-colors">개인정보처리방침</a>
                     <span className="text-slate-200">|</span>
                     <button onClick={() => setShowContact(true)} className="hover:text-slate-800 transition-colors">문의하기</button>
                 </div>

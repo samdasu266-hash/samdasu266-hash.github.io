@@ -30,8 +30,10 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          if ! git diff --quiet inst-*.html sitemap.xml; then
-            git add inst-*.html sitemap.xml
+          # institutions.json 은 기관 목록을 사이트에 공개해 GAS 알림 메일이
+          # 같은 목록을 읽게 하는 파일이라, 함께 커밋해야 반영된다.
+          if ! git diff --quiet inst-*.html sitemap.xml institutions.json; then
+            git add inst-*.html sitemap.xml institutions.json
             git commit -m "기관별 상세 페이지 주간 갱신 (아카이브·통계) [skip ci]"
             git push
           else

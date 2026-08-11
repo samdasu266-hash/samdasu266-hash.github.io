@@ -1,0 +1,101 @@
+{
+ "generated": "2026-08-11T09:30:27+09:00",
+ "institutions": [
+  {
+   "id": "nhis",
+   "name": "국민건강보험공단",
+   "short": "건보공단",
+   "url": "https://nhis.kpcice.kr",
+   "location": "강원특별자치도 원주시",
+   "schedule": "연 2회 (상반기 3~4월, 하반기 8~9월)"
+  },
+  {
+   "id": "hira",
+   "name": "건강보험심사평가원",
+   "short": "심평원",
+   "url": "https://hira.recruitlab.co.kr",
+   "location": "강원특별자치도 원주시",
+   "schedule": "연 2회 (상반기 4~5월, 하반기 9~10월)"
+  },
+  {
+   "id": "nps",
+   "name": "국민연금공단",
+   "short": "국민연금",
+   "url": "https://nps.saramin.co.kr",
+   "location": "전북특별자치도 전주시",
+   "schedule": "연 2회 (상반기 4월, 하반기 9월)"
+  },
+  {
+   "id": "comwel",
+   "name": "근로복지공단",
+   "short": "근로복지",
+   "url": "https://www.comwel.or.kr/recruit",
+   "location": "울산광역시",
+   "schedule": "연 2회 (상반기 4~5월, 하반기 9~10월)"
+  },
+  {
+   "id": "neca",
+   "name": "한국보건의료연구원",
+   "short": "보의연",
+   "url": "https://www.neca.re.kr",
+   "location": "서울특별시 광진구 (보건복지행정타운)",
+   "schedule": "수시 및 상·하반기 통합 채용"
+  },
+  {
+   "id": "kuksiwon",
+   "name": "한국보건의료인국가시험원",
+   "short": "국시원",
+   "url": "https://dware.intojob.co.kr",
+   "location": "서울특별시 광진구",
+   "schedule": "연 1~2회 (하반기 집중)"
+  },
+  {
+   "id": "koiha",
+   "name": "의료기관평가인증원",
+   "short": "인증원",
+   "url": "https://koiha.recruiter.co.kr",
+   "location": "서울특별시 영등포구",
+   "schedule": "상·하반기 및 결원 수시 채용"
+  },
+  {
+   "id": "redcross",
+   "name": "대한적십자사",
+   "short": "적십자사",
+   "url": "https://www.redcross.or.kr/recruit/",
+   "location": "강원특별자치도 원주시 (본사) · 전국 혈액원",
+   "schedule": "본사 통합 및 각 지사·혈액원별 수시"
+  },
+  {
+   "id": "mohw",
+   "name": "보건복지부 및 소속기관",
+   "short": "보건복지부",
+   "url": "https://www.mohw.go.kr",
+   "location": "세종특별자치시 (소속기관 전국)",
+   "schedule": "수시 채용"
+  },
+  {
+   "id": "khepi",
+   "name": "한국건강증진개발원",
+   "short": "건강증진원",
+   "url": "https://khepi-hr.jobnlab.co.kr/",
+   "location": "서울특별시 광진구 능동로 400 (보건복지행정타운)",
+   "schedule": "수시 및 상·하반기 채용"
+  },
+  {
+   "id": "nmc",
+   "name": "국립중앙의료원",
+   "short": "중앙의료원",
+   "url": "https://nmc.recruiter.co.kr/app/jobnotice/list",
+   "location": "서울특별시 중구 을지로 245",
+   "schedule": "상반기 3~5월 · 하반기 9~11월 집중"
+  },
+  {
+   "id": "kac",
+   "name": "한국공항공사",
+   "short": "공항공사",
+   "url": "https://kac.careerlink.kr/jobs",
+   "location": "서울특별시 강서구 (전국 14개 공항)",
+   "schedule": "결원 발생 시 수시"
+  }
+ ]
+}
