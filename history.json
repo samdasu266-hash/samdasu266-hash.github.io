@@ -1,6 +1,18 @@
 {
- "generated": "2026-08-12T00:02:24.055062+09:00",
+ "generated": "2026-08-12T01:09:39.962750+09:00",
  "jobs": [
+  {
+   "instId": "koiha",
+   "title": "의료기관평가인증원 2026년 제2회 직원채용 공고(연구직) D-Day",
+   "startDate": "26.07.24",
+   "endDate": "26.08.12 18:00",
+   "status": "진행중",
+   "jobType": "정규직",
+   "region": "서울(본부·공고확인)",
+   "link": "https://koiha.recruiter.co.kr/career/jobs/122728",
+   "firstSeen": "2026-08-12",
+   "lastSeen": "2026-08-12"
+  },
   {
    "instId": "mohw",
    "title": "보건복지부 출산정책과 파견근무자 모집 안내",
@@ -107,7 +119,7 @@
    "region": "강원",
    "link": "https://hira.recruitlab.co.kr/app/recruitment-announcement/view/987",
    "firstSeen": "2026-08-03",
-   "lastSeen": "2026-08-11"
+   "lastSeen": "2026-08-12"
   },
   {
    "instId": "koiha",
