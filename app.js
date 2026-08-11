@@ -229,13 +229,32 @@ const App = () => {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  // 모바일 가로 네비: 현재 선택된 항목이 화면에 보이도록 스크롤
+  // 모바일 가로 네비: 현재 선택된 항목이 화면에 보이도록 스크롤한다.
+  // (정적 페이지는 nav.js 가 같은 일을 하지만, 여기 네비는 React 가 그리므로
+  //  nav.js 가 못 잡는다. 양 끝 페이드 표시도 함께 처리한다)
   useEffect(() => {
-    const el = navRef.current?.querySelector('.nav-link.active');
-    if (el && el.scrollIntoView) el.scrollIntoView({
-      inline: 'center',
-      block: 'nearest'
+    const nav = navRef.current;
+    if (!nav) return;
+    const wrap = nav.parentElement;
+    const el = nav.querySelector('.site-nav-link.is-active');
+    if (el && nav.scrollWidth > nav.clientWidth) {
+      nav.scrollLeft = Math.max(0, el.offsetLeft - (nav.clientWidth - el.offsetWidth) / 2);
+    }
+    const syncFade = () => {
+      if (!wrap) return;
+      const max = nav.scrollWidth - nav.clientWidth;
+      wrap.classList.toggle('is-start', nav.scrollLeft <= 1);
+      wrap.classList.toggle('is-end', max - nav.scrollLeft <= 1);
+    };
+    syncFade();
+    nav.addEventListener('scroll', syncFade, {
+      passive: true
     });
+    window.addEventListener('resize', syncFade);
+    return () => {
+      nav.removeEventListener('scroll', syncFade);
+      window.removeEventListener('resize', syncFade);
+    };
   }, [mainView]);
   const institutions = [{
     id: 'nhis',
@@ -554,46 +573,48 @@ const App = () => {
   };
   return /*#__PURE__*/React.createElement("div", {
     className: "max-w-5xl mx-auto p-4 md:p-8 flex flex-col min-h-[100dvh]"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "site-nav-wrap mb-10 -mx-4 md:mx-0 border-b border-slate-200 pb-2"
   }, /*#__PURE__*/React.createElement("nav", {
     ref: navRef,
-    className: "mb-10 -mx-4 md:mx-0 px-4 md:px-0 border-b border-slate-200 flex items-center gap-0.5 overflow-x-auto no-scrollbar whitespace-nowrap text-[12.5px] md:text-[13px] font-bold"
+    className: "site-nav px-4 md:px-0 text-[12.5px] md:text-[13px]"
   }, /*#__PURE__*/React.createElement("button", {
     onClick: () => {
       setMainView('jobs');
       if (history.replaceState) history.replaceState(null, '', location.pathname);
     },
-    className: `nav-link ${mainView === 'jobs' ? 'active' : 'text-slate-500 hover:text-slate-800'}`
+    className: `site-nav-link ${mainView === 'jobs' ? 'is-active' : ''}`
   }, "홈"), /*#__PURE__*/React.createElement("button", {
     onClick: () => {
       setMainView('guide');
       if (history.replaceState) history.replaceState(null, '', '#guide');
     },
-    className: `nav-link ${mainView === 'guide' ? 'active' : 'text-slate-500 hover:text-slate-800'}`
+    className: `site-nav-link ${mainView === 'guide' ? 'is-active' : ''}`
   }, "기관별 합격 가이드"), /*#__PURE__*/React.createElement("a", {
     href: "guide.html",
-    className: "nav-link text-slate-500 hover:text-slate-800"
+    className: "site-nav-link"
   }, "근무환경·워라밸"), /*#__PURE__*/React.createElement("a", {
     href: "gongmujik.html",
-    className: "nav-link text-slate-500 hover:text-slate-800"
+    className: "site-nav-link"
   }, "공무직·무기계약직"), /*#__PURE__*/React.createElement("a", {
     href: "bogeon-manager.html",
-    className: "nav-link text-slate-500 hover:text-slate-800"
+    className: "site-nav-link"
   }, "보건관리자"), /*#__PURE__*/React.createElement("a", {
     href: "ganhojik.html",
-    className: "nav-link text-slate-500 hover:text-slate-800"
+    className: "site-nav-link"
   }, "간호직 공무원"), /*#__PURE__*/React.createElement("a", {
     href: "tips.html",
-    className: "nav-link text-slate-500 hover:text-slate-800"
+    className: "site-nav-link"
   }, "채용 트렌드"), /*#__PURE__*/React.createElement("a", {
     href: "career.html",
-    className: "nav-link text-slate-500 hover:text-slate-800"
+    className: "site-nav-link"
   }, "임상경력 활용"), /*#__PURE__*/React.createElement("a", {
     href: "license.html",
-    className: "nav-link text-slate-500 hover:text-slate-800"
+    className: "site-nav-link"
   }, "서류 가점 전략"), /*#__PURE__*/React.createElement("a", {
     href: "interview.html",
-    className: "nav-link text-slate-500 hover:text-slate-800"
-  }, "면접 필승 가이드")), /*#__PURE__*/React.createElement("header", {
+    className: "site-nav-link"
+  }, "면접 필승 가이드"))), /*#__PURE__*/React.createElement("header", {
     className: "mb-10 space-y-4"
   }, /*#__PURE__*/React.createElement("div", {
     className: "flex flex-wrap gap-2"

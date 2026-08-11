@@ -46,7 +46,7 @@
     </script>
     <title>보건의료 공공기관 근무환경·초임 비교 — 건보공단·근로복지공단·심평원 | 보건공기업 알리미</title>
     <meta name="description" content="국민건강보험공단·근로복지공단·건강보험심사평가원·국민연금공단 등 주요 공공기관의 본사 위치, 순환근무 여부, 업무 강도와 ALIO 공시 기준 신입 초임·평균 보수를 비교합니다.">
-    <link rel="stylesheet" href="tailwind.css?v=202607311633">
+    <link rel="stylesheet" href="tailwind.css?v=202608110038">
     <style>
         @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css');
         body { font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif; background-color: #f8fafc; color: #1e293b; line-height: 1.8; }
@@ -55,18 +55,20 @@
     </style>
 </head>
 <body class="p-4 md:p-8 max-w-5xl mx-auto text-left">
-    <nav class="mb-8 -mx-4 md:mx-0 px-4 md:px-0 border-b border-slate-200 flex items-center gap-0.5 overflow-x-auto whitespace-nowrap text-[12.5px] md:text-[13px] font-bold" style="scrollbar-width:none;-ms-overflow-style:none;">
-        <a href="index.html" class="inline-flex items-center h-11 px-3 border-b-2 border-transparent text-slate-500 hover:text-slate-800 transition-colors">홈</a>
-        <a href="index.html#guide" class="inline-flex items-center h-11 px-3 border-b-2 border-transparent text-slate-500 hover:text-slate-800 transition-colors">기관별 합격 가이드</a>
-        <a href="guide.html" class="inline-flex items-center h-11 px-3 border-b-2 border-blue-600 text-blue-600">근무환경·워라밸</a>
-        <a href="gongmujik.html" class="inline-flex items-center h-11 px-3 border-b-2 border-transparent text-slate-500 hover:text-slate-800 transition-colors">공무직·무기계약직</a>
-        <a href="bogeon-manager.html" class="inline-flex items-center h-11 px-3 border-b-2 border-transparent text-slate-500 hover:text-slate-800 transition-colors">보건관리자</a>
-        <a href="ganhojik.html" class="inline-flex items-center h-11 px-3 border-b-2 border-transparent text-slate-500 hover:text-slate-800 transition-colors">간호직 공무원</a>
-        <a href="tips.html" class="inline-flex items-center h-11 px-3 border-b-2 border-transparent text-slate-500 hover:text-slate-800 transition-colors">채용 트렌드</a>
-        <a href="career.html" class="inline-flex items-center h-11 px-3 border-b-2 border-transparent text-slate-500 hover:text-slate-800 transition-colors">임상경력 활용</a>
-        <a href="license.html" class="inline-flex items-center h-11 px-3 border-b-2 border-transparent text-slate-500 hover:text-slate-800 transition-colors">서류 가점 전략</a>
-        <a href="interview.html" class="inline-flex items-center h-11 px-3 border-b-2 border-transparent text-slate-500 hover:text-slate-800 transition-colors">면접 필승 가이드</a>
-    </nav>
+    <div class="site-nav-wrap mb-8 -mx-4 md:mx-0 border-b border-slate-200 pb-2">
+      <nav class="site-nav px-4 md:px-0 text-[12.5px] md:text-[13px]">
+        <a href="index.html" class="site-nav-link">홈</a>
+        <a href="index.html#guide" class="site-nav-link">기관별 합격 가이드</a>
+        <a href="guide.html" class="site-nav-link is-active">근무환경·워라밸</a>
+        <a href="gongmujik.html" class="site-nav-link">공무직·무기계약직</a>
+        <a href="bogeon-manager.html" class="site-nav-link">보건관리자</a>
+        <a href="ganhojik.html" class="site-nav-link">간호직 공무원</a>
+        <a href="tips.html" class="site-nav-link">채용 트렌드</a>
+        <a href="career.html" class="site-nav-link">임상경력 활용</a>
+        <a href="license.html" class="site-nav-link">서류 가점 전략</a>
+        <a href="interview.html" class="site-nav-link">면접 필승 가이드</a>
+      </nav>
+    </div>
 
     <header class="mb-12">
         <h1 class="text-3xl md:text-4xl font-black text-slate-900 mb-4 leading-tight text-center">보건의료 공공기관 '진짜' 근무 환경 비교</h1>
@@ -262,5 +264,6 @@
   window.addEventListener('scroll', function(){ btn.style.display = window.scrollY > 400 ? 'flex' : 'none'; }, {passive:true});
 })();
 </script>
+    <script src="nav.js?v=202608110038" defer></script>
 </body>
 </html>

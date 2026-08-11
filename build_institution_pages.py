@@ -173,14 +173,12 @@ def load(fn, default):
 
 
 def nav_html():
-    return ('    <nav class="mb-8 -mx-4 md:mx-0 px-4 md:px-0 border-b border-slate-200 flex items-center '
-            'gap-0.5 overflow-x-auto whitespace-nowrap text-[12.5px] md:text-[13px] font-bold" '
-            'style="scrollbar-width:none;-ms-overflow-style:none;">\n'
-            + "\n".join(
-                f'        <a href="{h}" class="inline-flex items-center h-11 px-3 border-b-2 '
-                f'border-transparent text-slate-500 hover:text-slate-800 transition-colors">{l}</a>'
-                for h, l in NAV)
-            + "\n    </nav>")
+    # 마크업·스타일은 tailwind.input.css 의 .site-nav 규칙과 짝을 이룬다.
+    # (항목 10개가 한 줄에 안 들어가 데스크톱은 줄바꿈, 모바일은 가로 스크롤)
+    return ('    <div class="site-nav-wrap mb-8 -mx-4 md:mx-0 border-b border-slate-200 pb-2">\n'
+            '      <nav class="site-nav px-4 md:px-0 text-[12.5px] md:text-[13px]">\n'
+            + "\n".join(f'        <a href="{h}" class="site-nav-link">{l}</a>' for h, l in NAV)
+            + '\n      </nav>\n    </div>')
 
 
 def build_page(inst, hist_jobs, live_jobs, version, today):
@@ -352,6 +350,7 @@ def build_page(inst, hist_jobs, live_jobs, version, today):
         <p class="mt-1">본 아카이브는 각 기관 공식 채용 페이지에서 자동 수집한 기록입니다. 정확한 내용은 반드시 원본 공고문을 확인하세요.</p>
         <p class="mt-2"><a href="about.html" class="text-slate-500 hover:text-blue-600 underline">사이트 소개·운영정책</a></p>
     </footer>
+    <script src="nav.js?v=202608110038" defer></script>
 </body>
 </html>
 """
