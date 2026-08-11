@@ -17,6 +17,8 @@
  *    (이미 트리거가 있으면 중복 생성하지 않는다)
  * 7) 테스트하려면 함수 목록에서 sendTestDigest 를 선택하고 [실행].
  *    → TEST_EMAIL 주소로 "오늘 신규 공고" 메일이 1통 발송된다.
+ * 8) 설정이 제대로 됐는지 보려면 checkSetup 을 [실행] 하고 실행 기록을 본다.
+ *    (웹앱 URL·구독자 수·수신거부 링크 예시·발송 개시일을 출력)
  *
  * [중요 - 개인정보]
  * 구독자 이메일은 이 스프레드시트에만 저장한다. GitHub 저장소는 공개이며
@@ -32,7 +34,11 @@ var ADMIN_EMAIL = "samdasu266@gmail.com"; // 새 요청 알림을 받을 운영�
 var SITE_URL = "https://samdasu266-hash.github.io/";
 var HISTORY_URL = "https://raw.githubusercontent.com/samdasu266-hash/samdasu266-hash.github.io/main/history.json";
 var INSTITUTIONS_URL = "https://raw.githubusercontent.com/samdasu266-hash/samdasu266-hash.github.io/main/institutions.json";
-var WEBAPP_URL = "";  // ← 배포 후 웹앱 URL 을 여기에 넣으면 메일에 수신거부 링크가 붙는다
+// 웹앱 URL. 비워두면 ScriptApp 이 현재 배포 URL 을 스스로 알아낸다.
+// 손으로 붙여넣던 방식은 편집기 URL·배포 ID 등을 잘못 넣기 쉬웠고, 그러면
+// 수신거부 링크가 구글 드라이브 오류 페이지로 떨어졌다. 자동 조회가 기본이며
+// 아래 값은 자동 조회가 안 되는 경우에만 채운다.
+var WEBAPP_URL = "";
 
 var TEST_EMAIL = "jh941223@naver.com"; // sendTestDigest 가 사용할 테스트 수신 주소
 
@@ -79,6 +85,22 @@ function instNames_() {
   }
   _instNames = INST_NAMES_FALLBACK;
   return _instNames;
+}
+
+/**
+ * 수신거부 링크에 쓸 웹앱 주소.
+ * WEBAPP_URL 이 비어 있으면 배포된 웹앱 주소를 스스로 조회한다.
+ * 편집기에서 실행하면 /dev 가 나올 수 있어 /exec 로 맞춘다.
+ */
+function webappUrl_() {
+  if (WEBAPP_URL) return WEBAPP_URL;
+  try {
+    var u = ScriptApp.getService().getUrl();
+    if (u) return u.replace(/\/dev$/, "/exec");
+  } catch (e) {
+    Logger.log("웹앱 URL 자동 조회 실패: " + e);
+  }
+  return "";
 }
 
 /** 기관 ID 를 표시 이름으로 (알 수 없으면 ID 를 그대로 돌려준다) */
@@ -257,7 +279,8 @@ function handleUnsubRequest_(data) {
   for (var i = 1; i < rows.length; i++) {
     if (String(rows[i][1]).trim().toLowerCase() === email.toLowerCase()) {
       var token = String(rows[i][4]);
-      var link = WEBAPP_URL ? (WEBAPP_URL + "?unsub=" + encodeURIComponent(token)) : "";
+      var base = webappUrl_();
+  var link = base ? (base + "?unsub=" + encodeURIComponent(token)) : "";
       MailApp.sendEmail({
         to: email,
         subject: "[보건공기업 알리미] 채용 알림 해지 확인",
@@ -365,6 +388,38 @@ function sendTestDigest() {
   Logger.log(TEST_EMAIL + " 로 테스트 메일 " + fresh.length + "건 발송");
 }
 
+/**
+ * 설정 점검. 함수 목록에서 골라 [실행] 하면 실행 기록에 결과가 찍힌다.
+ * 배포 직후 이걸 먼저 돌려 보면 수신거부 링크가 제대로 만들어지는지 알 수 있다.
+ */
+function checkSetup() {
+  var url = webappUrl_();
+  Logger.log("웹앱 URL: " + (url || "(비어 있음 — 웹앱으로 배포되지 않았을 수 있음)"));
+  Logger.log(url && url.indexOf("/exec") > -1
+    ? "  → 형식 정상"
+    : "  → ⚠️ /exec 로 끝나야 정상. 배포 관리에서 웹 앱으로 배포했는지 확인하세요.");
+
+  var sheet = subSheet_();
+  var rows = sheet.getDataRange().getValues();
+  Logger.log("구독자 시트: " + (rows.length - 1) + "명");
+
+  if (rows.length > 1) {
+    var token = String(rows[1][4]);
+    Logger.log("수신거부 링크 예시(첫 구독자): " + (url ? url + "?unsub=" + encodeURIComponent(token) : "(URL 없음)"));
+    Logger.log("  → 이 주소를 브라우저에 붙여넣어 열리는지 확인하세요.");
+  }
+
+  try {
+    var n = (JSON.parse(UrlFetchApp.fetch(INSTITUTIONS_URL, { muteHttpExceptions: true })
+             .getContentText()).institutions || []).length;
+    Logger.log("기관 목록: " + n + "개 (institutions.json)");
+  } catch (e) {
+    Logger.log("기관 목록: 조회 실패 — 내장 예비 목록 사용 (" + e + ")");
+  }
+
+  Logger.log("발송 개시일: " + (DIGEST_START_DATE || "(제한 없음)") + " / 오늘 " + todayKst_());
+}
+
 /* ──────────────────────────────── 유틸 ──────────────────────────────── */
 
 function fetchHistory_() {
@@ -405,7 +460,8 @@ function escapeHtml_(s) {
 }
 
 function unsubFooter_(token) {
-  var link = WEBAPP_URL ? (WEBAPP_URL + "?unsub=" + encodeURIComponent(token)) : "";
+  var base = webappUrl_();
+  var link = base ? (base + "?unsub=" + encodeURIComponent(token)) : "";
   return '<hr style="border:none;border-top:1px solid #e2e8f0;margin:28px 0 14px">' +
     '<p style="font-size:11.5px;color:#94a3b8;line-height:1.6;margin:0">' +
     '이 메일은 보건공기업 알리미 채용 알림을 신청하신 분께 발송됩니다.<br>' +
