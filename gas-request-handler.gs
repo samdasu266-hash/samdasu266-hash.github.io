@@ -34,11 +34,14 @@ var ADMIN_EMAIL = "samdasu266@gmail.com"; // 새 요청 알림을 받을 운영�
 var SITE_URL = "https://samdasu266-hash.github.io/";
 var HISTORY_URL = "https://raw.githubusercontent.com/samdasu266-hash/samdasu266-hash.github.io/main/history.json";
 var INSTITUTIONS_URL = "https://raw.githubusercontent.com/samdasu266-hash/samdasu266-hash.github.io/main/institutions.json";
-// 웹앱 URL. 비워두면 ScriptApp 이 현재 배포 URL 을 스스로 알아낸다.
-// 손으로 붙여넣던 방식은 편집기 URL·배포 ID 등을 잘못 넣기 쉬웠고, 그러면
-// 수신거부 링크가 구글 드라이브 오류 페이지로 떨어졌다. 자동 조회가 기본이며
-// 아래 값은 자동 조회가 안 되는 경우에만 채운다.
-var WEBAPP_URL = "";
+// 웹앱 URL — 사이트(app.jsx)의 REQUEST_ENDPOINT 와 반드시 같은 값이어야 한다.
+// 이 주소로 신청 폼이 실제 POST 되고 있으므로 동작이 검증된 배포다.
+//
+// ScriptApp.getService().getUrl() 로 자동 조회하는 방법도 있으나, 게시된
+// 배포가 아니라 head 배포 주소(짧은 ID)를 돌려주는 경우가 있어 수신거부
+// 링크가 구글 드라이브 오류 페이지로 떨어졌다. 그래서 이 값을 우선한다.
+// 재배포로 URL 이 바뀌면 app.jsx 의 REQUEST_ENDPOINT 와 함께 고쳐야 한다.
+var WEBAPP_URL = "https://script.google.com/macros/s/AKfycbxef_fTDTuHv2P4ORGhgIcZGxz2QbAAc-68AfdEV1Dx5YnhQs-_sozST89ik2_sUbB_uw/exec";
 
 var TEST_EMAIL = "jh941223@naver.com"; // sendTestDigest 가 사용할 테스트 수신 주소
 
@@ -394,10 +397,17 @@ function sendTestDigest() {
  */
 function checkSetup() {
   var url = webappUrl_();
-  Logger.log("웹앱 URL: " + (url || "(비어 있음 — 웹앱으로 배포되지 않았을 수 있음)"));
-  Logger.log(url && url.indexOf("/exec") > -1
-    ? "  → 형식 정상"
-    : "  → ⚠️ /exec 로 끝나야 정상. 배포 관리에서 웹 앱으로 배포했는지 확인하세요.");
+  Logger.log("사용 중인 웹앱 URL: " + (url || "(비어 있음)"));
+
+  // 자동 조회값과 다르면 알려준다. getUrl() 은 게시된 배포가 아닌 head 배포를
+  // 돌려주는 경우가 있어, 둘이 다른 것 자체는 문제가 아니다.
+  try {
+    var auto = ScriptApp.getService().getUrl();
+    if (auto && auto.replace(/\/dev$/, "/exec") !== url) {
+      Logger.log("  (참고) 자동 조회값은 다름: " + auto);
+      Logger.log("  → 수신거부가 안 열리면 배포 관리의 '웹 앱' URL 을 WEBAPP_URL 에 넣으세요.");
+    }
+  } catch (e) {}
 
   var sheet = subSheet_();
   var rows = sheet.getDataRange().getValues();
