@@ -1,5 +1,5 @@
 {
- "lastSync": "2026-08-11T20:48:18.719329+09:00",
+ "lastSync": "2026-08-11T22:10:08.605095+09:00",
  "jobs": [
   {
    "instId": "hira",
@@ -10,16 +10,6 @@
    "jobType": "정규직",
    "region": "강원",
    "link": "https://hira.recruitlab.co.kr/app/recruitment-announcement/view/987"
-  },
-  {
-   "instId": "neca",
-   "title": "한국보건의료연구원 2026년 제2차 직원채용 공고",
-   "startDate": "26.07.29",
-   "endDate": "26.08.12 18:00",
-   "status": "진행중",
-   "jobType": "정규직",
-   "region": "서울",
-   "link": "https://www.neca.re.kr/lay1/program/S1T207C209/people/index.do?page=view&seq=441"
   },
   {
    "instId": "koiha",
@@ -130,6 +120,16 @@
    "jobType": "무기계약직",
    "region": "서울(본부·공고확인)",
    "link": "https://nmc.recruiter.co.kr/app/jobnotice/view?systemKindCode=MRS2&jobnoticeSn=261665"
+  },
+  {
+   "instId": "neca",
+   "title": "한국보건의료연구원 2026년 제2차 직원채용 공고",
+   "startDate": "26.07.29",
+   "endDate": "26.08.12 18:00",
+   "status": "진행중",
+   "jobType": "정규직",
+   "region": "서울",
+   "link": "https://www.neca.re.kr/lay1/program/S1T207C209/people/index.do?page=view&seq=441"
   }
  ]
 }
