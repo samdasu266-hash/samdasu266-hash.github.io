@@ -158,8 +158,8 @@ const NotifyModal = ({ open, onClose, institutions }) => {
                             </div>
                         ) : (
                             <div>
-                                <h2 className="text-lg font-black text-slate-900 mb-2">알림 신청이 완료되었어요!</h2>
-                                <p className="text-sm text-slate-500 font-medium leading-relaxed mb-6">확인 메일을 보내드렸어요. 새 공고가 올라온 날 <strong className="text-slate-700">오전 8시</strong>에 한 통으로 모아 보내드립니다.</p>
+                                <h2 className="text-lg font-black text-slate-900 mb-2">사전 신청이 완료되었어요!</h2>
+                                <p className="text-sm text-slate-500 font-medium leading-relaxed mb-6">확인 메일을 보내드렸어요. <strong className="text-slate-700">9월 1일부터</strong> 새 공고가 올라온 날 오전 8시에 한 통으로 모아 보내드립니다. 그때까지는 메일이 가지 않습니다.</p>
                             </div>
                         )}
                         <button onClick={close} className="w-full py-3.5 bg-slate-900 text-white rounded-2xl font-bold hover:bg-blue-600 transition-colors">닫기</button>
@@ -195,8 +195,8 @@ const NotifyModal = ({ open, onClose, institutions }) => {
                     </div>
                 ) : (
                     <div>
-                        <h2 className="text-lg font-black text-slate-900 mb-1 flex items-center gap-2"><Icon name="bell" className="text-blue-600 w-5 h-5" /> 채용 알림 받기</h2>
-                        <p className="text-[12px] text-slate-400 font-medium mb-5">새 공고가 올라온 날에만 오전 8시에 메일로 알려드립니다.</p>
+                        <h2 className="text-lg font-black text-slate-900 mb-1 flex items-center gap-2"><Icon name="bell" className="text-blue-600 w-5 h-5" /> 채용 알림 사전 신청</h2>
+                        <p className="text-[12px] text-slate-400 font-medium mb-5">지금 신청해 두시면 <strong className="text-blue-600">9월 1일 첫 발송</strong>부터 받아보실 수 있습니다.</p>
                         <div className="space-y-4 text-left">
                             <div>
                                 <label className="text-[11px] font-bold text-slate-500 mb-1.5 block">이메일 <span className="text-red-400">*</span></label>
@@ -236,7 +236,7 @@ const NotifyModal = ({ open, onClose, institutions }) => {
 
                             {/* 조건을 좁게 잡으면 메일이 안 올 수 있다는 점을 미리 알려, 발송 누락으로 오해하지 않게 한다 */}
                             <div className="bg-blue-50 border border-blue-100 rounded-xl p-3.5 text-[11.5px] text-blue-900 font-medium leading-relaxed">
-                                📮 <strong>선택한 조건에 맞는 새 공고가 있는 날에만</strong> 메일을 보내드립니다. 해당하는 공고가 없는 날은 메일이 발송되지 않으니, 알림이 오지 않아도 정상입니다.
+                                📮 발송은 <strong>9월 1일부터</strong> 시작합니다. 이후 <strong>선택한 조건에 맞는 새 공고가 있는 날에만</strong> 메일을 보내드리며, 해당하는 공고가 없는 날은 발송되지 않습니다.
                                 {(insts.length > 0 || jobTypes.length > 0) && (
                                     <span className="block mt-1.5 text-blue-700">
                                         현재 조건: {insts.length > 0 ? insts.map(id => (institutions.find(i => i.id === id) || {}).shortName).join(' · ') : '전체 기관'} / {jobTypes.length > 0 ? jobTypes.join(' · ') : '전체 고용형태'}
@@ -252,7 +252,7 @@ const NotifyModal = ({ open, onClose, institutions }) => {
                             </label>
 
                             {status === "error" && <p className="text-[12px] text-red-500 font-bold">전송에 실패했어요. 잠시 후 다시 시도해주세요.</p>}
-                            <button onClick={submit} disabled={status === "sending"} className="w-full py-3.5 bg-blue-600 text-white rounded-2xl font-bold hover:bg-blue-700 transition-colors shadow-lg disabled:opacity-60">{status === "sending" ? "신청 중..." : "알림 신청하기"}</button>
+                            <button onClick={submit} disabled={status === "sending"} className="w-full py-3.5 bg-blue-600 text-white rounded-2xl font-bold hover:bg-blue-700 transition-colors shadow-lg disabled:opacity-60">{status === "sending" ? "신청 중..." : "사전 신청하기"}</button>
                             <button onClick={() => { setStatus("idle"); setMode("cancel"); }} className="w-full text-[12px] text-slate-400 font-bold hover:text-slate-600 transition-colors">이미 신청하셨나요? 알림 취소하기</button>
                         </div>
                     </div>
@@ -585,7 +585,7 @@ const App = () => {
                     <span className="bg-white border border-slate-200 text-slate-600 px-2.5 py-0.5 rounded-full text-[10px] font-bold shadow-sm flex items-center gap-1"><Icon name="calendar" className="w-3 h-3 text-blue-500" /> 기준일자: {formatDate(lastSync)}</span>
                     <span className="bg-white border border-slate-200 text-slate-500 px-2.5 py-0.5 rounded-full text-[10px] font-bold shadow-sm flex items-center gap-1"><Icon name="clock" className="w-3 h-3" /> 최근 수집: {formatTime(lastSync)} KST</span>
                     <button onClick={() => setShowRequest(true)} className="bg-white border border-blue-200 text-blue-600 px-2.5 py-0.5 rounded-full text-[10px] font-bold shadow-sm flex items-center gap-1 hover:bg-blue-50 transition-colors"><Icon name="plus-circle" className="w-3 h-3" /> 기관 추가 요청</button>
-                    <button onClick={() => setShowNotify(true)} className="bg-blue-600 text-white px-2.5 py-0.5 rounded-full text-[10px] font-bold shadow-sm flex items-center gap-1 hover:bg-blue-700 transition-colors"><Icon name="bell" className="w-3 h-3" /> 채용 알림 받기</button>
+                    <button onClick={() => setShowNotify(true)} className="bg-blue-600 text-white px-2.5 py-0.5 rounded-full text-[10px] font-bold shadow-sm flex items-center gap-1 hover:bg-blue-700 transition-colors"><Icon name="bell" className="w-3 h-3" /> 채용 알림 사전 신청 · 9월 오픈</button>
                 </div>
                 <div className="space-y-2.5">
                     <h1 className="text-[26px] md:text-[34px] font-black text-slate-900 leading-[1.22] tracking-tight break-keep">

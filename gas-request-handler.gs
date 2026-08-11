@@ -36,6 +36,12 @@ var WEBAPP_URL = "";  // ← 배포 후 웹앱 URL 을 여기에 넣으면 메�
 
 var TEST_EMAIL = "jh941223@naver.com"; // sendTestDigest 가 사용할 테스트 수신 주소
 
+// 정기 발송 개시일 (YYYY-MM-DD). 이 날짜 전에는 sendDailyDigest 가 아무것도
+// 보내지 않는다. 8월에 사전 신청만 받고 9월부터 발송하기 위한 안전장치로,
+// 트리거를 미리 켜 두어도 예정보다 일찍 나가지 않는다.
+// 개시 후에는 이 값을 지우거나 과거 날짜로 두면 된다.
+var DIGEST_START_DATE = "2026-09-01";
+
 /**
  * 기관 ID → 표시 이름.
  *
@@ -210,7 +216,7 @@ function sendWelcome_(email, token, data, isUpdate) {
     htmlBody:
       '<div style="font-family:sans-serif;line-height:1.7;color:#0f172a;max-width:560px">' +
       '<h2 style="margin:0 0 12px">채용 알림 ' + (isUpdate ? "설정이 변경" : "신청이 완료") + '되었습니다</h2>' +
-      '<p style="color:#475569;margin:0 0 16px">아래 조건에 맞는 새 공고가 올라온 날 <strong>오전 8시</strong>에 한 통으로 모아 보내드립니다. 해당하는 공고가 없는 날은 메일을 보내지 않으니, 알림이 오지 않아도 정상입니다.</p>' +
+      '<p style="color:#475569;margin:0 0 16px">발송은 <strong>' + (DIGEST_START_DATE || '바로') + '</strong> 부터 시작합니다. 이후 아래 조건에 맞는 새 공고가 올라온 날 <strong>오전 8시</strong>에 한 통으로 모아 보내드리며, 해당하는 공고가 없는 날은 메일을 보내지 않습니다.</p>' +
       '<table style="border-collapse:collapse;font-size:14px;color:#334155">' +
       '<tr><td style="padding:4px 12px 4px 0;color:#94a3b8">관심 기관</td><td>' + escapeHtml_(instLabel) + '</td></tr>' +
       '<tr><td style="padding:4px 12px 4px 0;color:#94a3b8">관심 고용형태</td><td>' + escapeHtml_(data.jobTypes || "전체") + '</td></tr>' +
@@ -284,6 +290,12 @@ function handleUnsubRequest_(data) {
  */
 function sendDailyDigest() {
   var today = todayKst_();
+
+  // 개시일 전에는 발송하지 않는다 (사전 신청 기간)
+  if (DIGEST_START_DATE && today < DIGEST_START_DATE) {
+    Logger.log("발송 개시일(" + DIGEST_START_DATE + ") 이전이라 건너뜀 — 오늘 " + today);
+    return;
+  }
 
   // 같은 날 중복 발송 방지
   var props = PropertiesService.getScriptProperties();

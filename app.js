@@ -266,11 +266,11 @@ const NotifyModal = ({
     className: "text-slate-700"
   }, "해지 링크"), "를 보내드렸습니다. 메일에서 링크를 누르시면 알림이 해지되고 이메일 주소가 즉시 파기됩니다.")) : /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h2", {
     className: "text-lg font-black text-slate-900 mb-2"
-  }, "알림 신청이 완료되었어요!"), /*#__PURE__*/React.createElement("p", {
+  }, "사전 신청이 완료되었어요!"), /*#__PURE__*/React.createElement("p", {
     className: "text-sm text-slate-500 font-medium leading-relaxed mb-6"
-  }, "확인 메일을 보내드렸어요. 새 공고가 올라온 날 ", /*#__PURE__*/React.createElement("strong", {
+  }, "확인 메일을 보내드렸어요. ", /*#__PURE__*/React.createElement("strong", {
     className: "text-slate-700"
-  }, "오전 8시"), "에 한 통으로 모아 보내드립니다.")), /*#__PURE__*/React.createElement("button", {
+  }, "9월 1일부터"), " 새 공고가 올라온 날 오전 8시에 한 통으로 모아 보내드립니다. 그때까지는 메일이 가지 않습니다.")), /*#__PURE__*/React.createElement("button", {
     onClick: close,
     className: "w-full py-3.5 bg-slate-900 text-white rounded-2xl font-bold hover:bg-blue-600 transition-colors"
   }, "닫기")) : mode === "cancel" ? /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h2", {
@@ -330,9 +330,11 @@ const NotifyModal = ({
   }, /*#__PURE__*/React.createElement(Icon, {
     name: "bell",
     className: "text-blue-600 w-5 h-5"
-  }), " 채용 알림 받기"), /*#__PURE__*/React.createElement("p", {
+  }), " 채용 알림 사전 신청"), /*#__PURE__*/React.createElement("p", {
     className: "text-[12px] text-slate-400 font-medium mb-5"
-  }, "새 공고가 올라온 날에만 오전 8시에 메일로 알려드립니다."), /*#__PURE__*/React.createElement("div", {
+  }, "지금 신청해 두시면 ", /*#__PURE__*/React.createElement("strong", {
+    className: "text-blue-600"
+  }, "9월 1일 첫 발송"), "부터 받아보실 수 있습니다."), /*#__PURE__*/React.createElement("div", {
     className: "space-y-4 text-left"
   }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
     className: "text-[11px] font-bold text-slate-500 mb-1.5 block"
@@ -385,7 +387,7 @@ const NotifyModal = ({
     className: `px-2.5 py-1.5 rounded-lg text-[11.5px] font-bold border transition-all ${jobTypes.includes(t) ? 'bg-purple-600 text-white border-purple-600' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'}`
   }, t)))), /*#__PURE__*/React.createElement("div", {
     className: "bg-blue-50 border border-blue-100 rounded-xl p-3.5 text-[11.5px] text-blue-900 font-medium leading-relaxed"
-  }, "📮 ", /*#__PURE__*/React.createElement("strong", null, "선택한 조건에 맞는 새 공고가 있는 날에만"), " 메일을 보내드립니다. 해당하는 공고가 없는 날은 메일이 발송되지 않으니, 알림이 오지 않아도 정상입니다.", (insts.length > 0 || jobTypes.length > 0) && /*#__PURE__*/React.createElement("span", {
+  }, "📮 발송은 ", /*#__PURE__*/React.createElement("strong", null, "9월 1일부터"), " 시작합니다. 이후 ", /*#__PURE__*/React.createElement("strong", null, "선택한 조건에 맞는 새 공고가 있는 날에만"), " 메일을 보내드리며, 해당하는 공고가 없는 날은 발송되지 않습니다.", (insts.length > 0 || jobTypes.length > 0) && /*#__PURE__*/React.createElement("span", {
     className: "block mt-1.5 text-blue-700"
   }, "현재 조건: ", insts.length > 0 ? insts.map(id => (institutions.find(i => i.id === id) || {}).shortName).join(' · ') : '전체 기관', " / ", jobTypes.length > 0 ? jobTypes.join(' · ') : '전체 고용형태')), /*#__PURE__*/React.createElement("label", {
     className: "flex items-start gap-2.5 bg-slate-50 border border-slate-200 rounded-xl p-3.5 cursor-pointer"
@@ -409,7 +411,7 @@ const NotifyModal = ({
     onClick: submit,
     disabled: status === "sending",
     className: "w-full py-3.5 bg-blue-600 text-white rounded-2xl font-bold hover:bg-blue-700 transition-colors shadow-lg disabled:opacity-60"
-  }, status === "sending" ? "신청 중..." : "알림 신청하기"), /*#__PURE__*/React.createElement("button", {
+  }, status === "sending" ? "신청 중..." : "사전 신청하기"), /*#__PURE__*/React.createElement("button", {
     onClick: () => {
       setStatus("idle");
       setMode("cancel");
@@ -899,7 +901,7 @@ const App = () => {
   }, /*#__PURE__*/React.createElement(Icon, {
     name: "bell",
     className: "w-3 h-3"
-  }), " 채용 알림 받기")), /*#__PURE__*/React.createElement("div", {
+  }), " 채용 알림 사전 신청 · 9월 오픈")), /*#__PURE__*/React.createElement("div", {
     className: "space-y-2.5"
   }, /*#__PURE__*/React.createElement("h1", {
     className: "text-[26px] md:text-[34px] font-black text-slate-900 leading-[1.22] tracking-tight break-keep"
