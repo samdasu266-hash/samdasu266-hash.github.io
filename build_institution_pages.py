@@ -400,6 +400,24 @@ def main():
     except Exception as e:
         print(f"  sitemap 갱신 건너뜀: {e}")
 
+    # institutions.json — 기관 목록을 사이트에 공개해, 저장소 밖(GAS 등)에서도
+    # 같은 목록을 읽어 쓰게 한다.
+    #
+    # 기관을 추가할 때 이 파일의 INSTITUTIONS 한 곳만 고치면 되도록 하기 위한 것이다.
+    # 이게 없으면 기관을 추가할 때마다 GAS 의 INST_NAMES 를 손으로 고치고 재배포해야
+    # 하고, 빠뜨리면 알림 메일에 기관명 대신 'khepi' 같은 ID 가 그대로 찍힌다.
+    meta_path = os.path.join(BASE, "institutions.json")
+    meta = {
+        "generated": now.isoformat(timespec="seconds"),
+        "institutions": [
+            {k: inst[k] for k in ("id", "name", "short", "url", "location", "schedule")}
+            for inst in INSTITUTIONS
+        ],
+    }
+    with open(meta_path, "w", encoding="utf-8") as f:
+        json.dump(meta, f, ensure_ascii=False, indent=1)
+    print(f"  institutions.json 생성 ({len(INSTITUTIONS)}개 기관)")
+
     indexed = sum(1 for _, n in written if n >= MIN_ARCHIVE_FOR_INDEX)
     print(f"✅ 기관 페이지 {len(written)}개 생성 완료 "
           f"(색인 {indexed}개 / noindex {len(written) - indexed}개, 총 아카이브 {len(hist)}건)")

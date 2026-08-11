@@ -29,7 +29,10 @@ KST = timezone(timedelta(hours=9))
 START = "<!--STATIC_HOME_START-->"
 END = "<!--STATIC_HOME_END-->"
 
-INST = {  # id: (기관명, 본사 소재지, 채용 주기)
+# 기관 목록은 build_institution_pages.py 가 만드는 institutions.json 에서 읽는다.
+# 기관을 추가할 때 그쪽 INSTITUTIONS 한 곳만 고치면 여기와 GAS 알림 메일에
+# 함께 반영된다. 아래 예비값은 institutions.json 이 없을 때만 쓰인다.
+INST_FALLBACK = {  # id: (기관명, 본사 소재지, 채용 주기)
     "nhis": ("국민건강보험공단", "강원특별자치도 원주시", "연 2회 (상반기 3~4월, 하반기 8~9월)"),
     "hira": ("건강보험심사평가원", "강원특별자치도 원주시", "연 2회 (상반기 4~5월, 하반기 9~10월)"),
     "nps": ("국민연금공단", "전북특별자치도 전주시", "연 2회 (상반기 4월, 하반기 9월)"),
@@ -43,6 +46,23 @@ INST = {  # id: (기관명, 본사 소재지, 채용 주기)
     "nmc": ("국립중앙의료원", "서울특별시 중구 을지로 245", "수시 채용 (직무별 개별 공고)"),
     "kac": ("한국공항공사(보건관리자)", "서울특별시 강서구 (전국 14개 공항)", "결원 발생 시 수시"),
 }
+
+
+def load_inst():
+    """institutions.json → {id: (name, location, schedule)}"""
+    try:
+        with open(os.path.join(BASE, "institutions.json"), encoding="utf-8") as f:
+            rows = json.load(f).get("institutions", [])
+        out = {r["id"]: (r.get("name", r["id"]), r.get("location", ""), r.get("schedule", ""))
+               for r in rows if r.get("id")}
+        if out:
+            return out
+    except Exception:
+        pass
+    return INST_FALLBACK
+
+
+INST = load_inst()
 
 
 FAQ = [

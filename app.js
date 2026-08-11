@@ -991,6 +991,11 @@ const App = () => {
     href: "about.html",
     className: "hover:text-slate-800 transition-colors"
   }, "소개·운영정책"), /*#__PURE__*/React.createElement("span", {
+    className: "text-slate-300"
+  }, "·"), /*#__PURE__*/React.createElement("a", {
+    href: "privacy.html",
+    className: "hover:text-slate-800 transition-colors"
+  }, "개인정보처리방침"), /*#__PURE__*/React.createElement("span", {
     className: "text-slate-200"
   }, "|"), /*#__PURE__*/React.createElement("button", {
     onClick: () => setShowContact(true),
