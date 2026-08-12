@@ -179,8 +179,7 @@ const NotifyModal = ({
   const [jobTypes, setJobTypes] = useState([]); // 빈 배열 = 전체 고용형태
   const [agree, setAgree] = useState(false);
   const [status, setStatus] = useState("idle"); // idle | sending | done | error
-  const [mode, setMode] = useState("subscribe"); // subscribe | cancel
-
+  const [mode, setMode] = useState(typeof location !== 'undefined' && location.hash === '#notify-cancel' ? "cancel" : "subscribe");
   if (!open) return null;
   const domain = emailDomain === "__custom__" ? customDomain.trim() : emailDomain;
   const email = emailLocal.trim() && domain ? `${emailLocal.trim()}@${domain}` : "";
@@ -260,11 +259,11 @@ const NotifyModal = ({
     className: "w-8 h-8"
   })), mode === "cancel" ? /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h2", {
     className: "text-lg font-black text-slate-900 mb-2"
-  }, "해지 확인 메일을 보냈어요"), /*#__PURE__*/React.createElement("p", {
+  }, "알림이 해지되었어요"), /*#__PURE__*/React.createElement("p", {
     className: "text-sm text-slate-500 font-medium leading-relaxed mb-6"
-  }, "입력하신 주소로 ", /*#__PURE__*/React.createElement("strong", {
+  }, "더 이상 알림 메일을 보내지 않으며, 등록하셨던 ", /*#__PURE__*/React.createElement("strong", {
     className: "text-slate-700"
-  }, "해지 링크"), "를 보내드렸습니다. 메일에서 링크를 누르시면 알림이 해지되고 이메일 주소가 즉시 파기됩니다.")) : /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h2", {
+  }, "이메일 주소는 파기"), "했습니다. 확인 메일을 한 통 보내드렸어요.")) : /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h2", {
     className: "text-lg font-black text-slate-900 mb-2"
   }, "사전 신청이 완료되었어요!"), /*#__PURE__*/React.createElement("p", {
     className: "text-sm text-slate-500 font-medium leading-relaxed mb-6"
@@ -311,15 +310,15 @@ const NotifyModal = ({
     className: "mt-1.5 w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
   })), /*#__PURE__*/React.createElement("div", {
     className: "bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-[11.5px] text-slate-500 font-medium leading-relaxed"
-  }, "🔒 본인 확인을 위해 ", /*#__PURE__*/React.createElement("strong", {
+  }, "🔒 신청하신 이메일 주소를 입력하시면 ", /*#__PURE__*/React.createElement("strong", {
     className: "text-slate-700"
-  }, "입력하신 주소로 해지 링크를 보내드립니다."), " 메일에서 링크를 눌러야 해지가 완료되며, 그때 이메일 주소는 즉시 파기됩니다. 받으신 알림 메일 하단의 수신거부 링크로도 바로 해지하실 수 있습니다."), status === "error" && /*#__PURE__*/React.createElement("p", {
+  }, "바로 해지"), "되고, 저장된 주소는 즉시 파기됩니다. 확인 메일이 한 통 발송되니 본인이 요청하지 않은 해지라면 다시 신청해 주세요."), status === "error" && /*#__PURE__*/React.createElement("p", {
     className: "text-[12px] text-red-500 font-bold"
   }, "전송에 실패했어요. 잠시 후 다시 시도해주세요."), /*#__PURE__*/React.createElement("button", {
     onClick: requestCancel,
     disabled: status === "sending",
     className: "w-full py-3.5 bg-slate-900 text-white rounded-2xl font-bold hover:bg-slate-800 transition-colors shadow-lg disabled:opacity-60"
-  }, status === "sending" ? "전송 중..." : "해지 링크 받기"), /*#__PURE__*/React.createElement("button", {
+  }, status === "sending" ? "처리 중..." : "알림 해지하기"), /*#__PURE__*/React.createElement("button", {
     onClick: () => {
       setStatus("idle");
       setMode("subscribe");
@@ -471,7 +470,8 @@ const App = () => {
   const [mainView, setMainView] = useState(typeof location !== 'undefined' && location.hash === '#guide' ? 'guide' : 'jobs');
   const [showContact, setShowContact] = useState(false);
   const [showRequest, setShowRequest] = useState(false);
-  const [showNotify, setShowNotify] = useState(false);
+  // 알림 메일 하단 링크(#notify-cancel)로 들어오면 해지 화면을 바로 띄운다
+  const [showNotify, setShowNotify] = useState(typeof location !== 'undefined' && location.hash === '#notify-cancel');
   const [copied, setCopied] = useState(false);
   const [showTop, setShowTop] = useState(false);
   const navRef = React.useRef(null);

@@ -32,6 +32,8 @@ var SUB_TAB_NAME = "구독자";    // 채용 알림 구독자가 쌓일 탭 이�
 var ADMIN_EMAIL = "samdasu266@gmail.com"; // 새 요청 알림을 받을 운영자 메일 (빈 문자열이면 알림 안 보냄)
 
 var SITE_URL = "https://samdasu266-hash.github.io/";
+// 사이트의 알림 취소 화면을 바로 여는 해시. app.jsx 가 이 값을 보고 팝업을 연다.
+var UNSUB_HASH = "#notify-cancel";
 var HISTORY_URL = "https://raw.githubusercontent.com/samdasu266-hash/samdasu266-hash.github.io/main/history.json";
 var INSTITUTIONS_URL = "https://raw.githubusercontent.com/samdasu266-hash/samdasu266-hash.github.io/main/institutions.json";
 // 웹앱 URL — 사이트(app.jsx)의 REQUEST_ENDPOINT 와 반드시 같은 값이어야 한다.
@@ -269,36 +271,34 @@ function unsubscribe_(token) {
 }
 
 /**
- * 사이트에서 "알림 취소"를 요청한 경우.
- * 이메일만으로 즉시 해지하면 제3자가 남의 주소를 해지시킬 수 있으므로,
- * 본인 확인을 위해 해당 주소로 해지 링크를 보내고 링크를 눌러야 완료된다.
+ * 사이트에서 "알림 취소"를 요청한 경우 — 즉시 해지한다.
+ *
+ * 전에는 본인 확인을 위해 해지 링크를 메일로 보내고 링크를 눌러야 완료되게
+ * 했는데, 그 링크가 열리지 않아 해지 자체가 막혔다. 해지가 안 되는 것이
+ * 제3자가 남의 알림을 끄는 것보다 나쁘다고 보고 즉시 해지로 바꿨다.
+ * 대신 해지 완료 메일을 보내, 본인이 요청하지 않았다면 다시 신청하도록 알린다.
+ *
  * 구독 중이 아닌 주소여도 응답은 동일하게 하여 가입 여부가 노출되지 않게 한다.
  */
 function handleUnsubRequest_(data) {
   var email = (data.email || "").trim();
   if (!/.+@.+\..+/.test(email)) return json_({ ok: false, error: "invalid email" });
 
-  var rows = subSheet_().getDataRange().getValues();
+  var sheet = subSheet_();
+  var rows = sheet.getDataRange().getValues();
   for (var i = 1; i < rows.length; i++) {
     if (String(rows[i][1]).trim().toLowerCase() === email.toLowerCase()) {
-      var token = String(rows[i][4]);
-      var base = webappUrl_();
-  var link = base ? (base + "?unsub=" + encodeURIComponent(token)) : "";
+      sheet.deleteRow(i + 1);   // 방침에 "지체 없이 파기"로 고지했으므로 행을 지운다
       MailApp.sendEmail({
         to: email,
-        subject: "[보건공기업 알리미] 채용 알림 해지 확인",
+        subject: "[보건공기업 알리미] 채용 알림이 해지되었습니다",
         htmlBody:
           '<div style="font-family:sans-serif;line-height:1.7;color:#0f172a;max-width:520px">' +
-          '<h2 style="margin:0 0 12px">채용 알림 해지</h2>' +
-          '<p style="color:#475569;margin:0 0 18px">아래 버튼을 누르시면 채용 알림이 해지되고, ' +
-          '등록하신 이메일 주소는 즉시 파기됩니다.</p>' +
-          (link
-            ? '<p style="margin:0 0 18px"><a href="' + link + '" style="display:inline-block;' +
-              'background:#0f172a;color:#fff;text-decoration:none;font-weight:bold;font-size:14px;' +
-              'padding:12px 22px;border-radius:10px">알림 해지하기</a></p>'
-            : '<p style="margin:0 0 18px;color:#475569">이 메일에 회신해 주시면 해지 처리해 드리겠습니다.</p>') +
-          '<p style="font-size:12px;color:#94a3b8;margin:0">본인이 요청하지 않았다면 이 메일을 무시하셔도 됩니다. ' +
-          '링크를 누르지 않으면 아무것도 변경되지 않습니다.</p></div>'
+          '<h2 style="margin:0 0 12px">채용 알림이 해지되었습니다</h2>' +
+          '<p style="color:#475569;margin:0 0 18px">더 이상 알림 메일을 보내지 않으며, ' +
+          '등록하셨던 이메일 주소는 파기했습니다.</p>' +
+          '<p style="font-size:12px;color:#94a3b8;margin:0">본인이 요청하지 않으셨다면 ' +
+          '<a href="' + SITE_URL + '" style="color:#64748b">사이트</a>에서 다시 신청하실 수 있습니다.</p></div>'
       });
       break;
     }
@@ -469,15 +469,23 @@ function escapeHtml_(s) {
     .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 
+/**
+ * 메일 하단 수신거부 안내.
+ *
+ * 예전에는 GAS 웹앱의 doGet(?unsub=토큰) 으로 바로 링크를 걸었는데, 배포
+ * 주소를 브라우저로 열면 구글 드라이브 오류 페이지가 뜨는 문제가 반복됐다.
+ * 그래서 해지 경로를 사이트로 옮겼다. GitHub Pages 는 확실히 열리고,
+ * 사이트 팝업에서 이메일만 넣으면 즉시 해지된다.
+ *
+ * doGet(?unsub=) 처리는 그대로 남겨 두어 예전 메일의 링크도 계속 동작한다.
+ */
 function unsubFooter_(token) {
-  var base = webappUrl_();
-  var link = base ? (base + "?unsub=" + encodeURIComponent(token)) : "";
   return '<hr style="border:none;border-top:1px solid #e2e8f0;margin:28px 0 14px">' +
     '<p style="font-size:11.5px;color:#94a3b8;line-height:1.6;margin:0">' +
     '이 메일은 보건공기업 알리미 채용 알림을 신청하신 분께 발송됩니다.<br>' +
-    (link
-      ? '더 이상 받고 싶지 않으시면 <a href="' + link + '" style="color:#64748b">수신거부</a>를 눌러주세요.'
-      : '수신거부를 원하시면 이 메일에 회신해 주세요.') +
+    '더 이상 받고 싶지 않으시면 <a href="' + SITE_URL + UNSUB_HASH +
+    '" style="color:#64748b;text-decoration:underline">알림 취소하기</a>' +
+    ' 에서 이메일을 입력해 주세요. 바로 해지됩니다.' +
     '</p>';
 }
 

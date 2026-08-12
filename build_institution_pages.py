@@ -350,7 +350,7 @@ def build_page(inst, hist_jobs, live_jobs, version, today):
         <p class="mt-1">본 아카이브는 각 기관 공식 채용 페이지에서 자동 수집한 기록입니다. 정확한 내용은 반드시 원본 공고문을 확인하세요.</p>
         <p class="mt-2"><a href="about.html" class="text-slate-500 hover:text-blue-600 underline">사이트 소개·운영정책</a></p>
     </footer>
-    <script src="nav.js?v=202608110038" defer></script>
+    <script src="nav.js?v=202608120000" defer></script>
 </body>
 </html>
 """

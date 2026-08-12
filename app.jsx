@@ -103,7 +103,8 @@ const NotifyModal = ({ open, onClose, institutions }) => {
     const [jobTypes, setJobTypes] = useState([]); // 빈 배열 = 전체 고용형태
     const [agree, setAgree] = useState(false);
     const [status, setStatus] = useState("idle"); // idle | sending | done | error
-    const [mode, setMode] = useState("subscribe"); // subscribe | cancel
+    const [mode, setMode] = useState(
+        typeof location !== 'undefined' && location.hash === '#notify-cancel' ? "cancel" : "subscribe");
 
     if (!open) return null;
 
@@ -153,8 +154,8 @@ const NotifyModal = ({ open, onClose, institutions }) => {
                         <div className="w-16 h-16 mx-auto rounded-full bg-blue-50 text-blue-500 flex items-center justify-center mb-4"><Icon name="mail-check" className="w-8 h-8" /></div>
                         {mode === "cancel" ? (
                             <div>
-                                <h2 className="text-lg font-black text-slate-900 mb-2">해지 확인 메일을 보냈어요</h2>
-                                <p className="text-sm text-slate-500 font-medium leading-relaxed mb-6">입력하신 주소로 <strong className="text-slate-700">해지 링크</strong>를 보내드렸습니다. 메일에서 링크를 누르시면 알림이 해지되고 이메일 주소가 즉시 파기됩니다.</p>
+                                <h2 className="text-lg font-black text-slate-900 mb-2">알림이 해지되었어요</h2>
+                                <p className="text-sm text-slate-500 font-medium leading-relaxed mb-6">더 이상 알림 메일을 보내지 않으며, 등록하셨던 <strong className="text-slate-700">이메일 주소는 파기</strong>했습니다. 확인 메일을 한 통 보내드렸어요.</p>
                             </div>
                         ) : (
                             <div>
@@ -185,11 +186,11 @@ const NotifyModal = ({ open, onClose, institutions }) => {
                             </div>
 
                             <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-[11.5px] text-slate-500 font-medium leading-relaxed">
-                                🔒 본인 확인을 위해 <strong className="text-slate-700">입력하신 주소로 해지 링크를 보내드립니다.</strong> 메일에서 링크를 눌러야 해지가 완료되며, 그때 이메일 주소는 즉시 파기됩니다. 받으신 알림 메일 하단의 수신거부 링크로도 바로 해지하실 수 있습니다.
+                                🔒 신청하신 이메일 주소를 입력하시면 <strong className="text-slate-700">바로 해지</strong>되고, 저장된 주소는 즉시 파기됩니다. 확인 메일이 한 통 발송되니 본인이 요청하지 않은 해지라면 다시 신청해 주세요.
                             </div>
 
                             {status === "error" && <p className="text-[12px] text-red-500 font-bold">전송에 실패했어요. 잠시 후 다시 시도해주세요.</p>}
-                            <button onClick={requestCancel} disabled={status === "sending"} className="w-full py-3.5 bg-slate-900 text-white rounded-2xl font-bold hover:bg-slate-800 transition-colors shadow-lg disabled:opacity-60">{status === "sending" ? "전송 중..." : "해지 링크 받기"}</button>
+                            <button onClick={requestCancel} disabled={status === "sending"} className="w-full py-3.5 bg-slate-900 text-white rounded-2xl font-bold hover:bg-slate-800 transition-colors shadow-lg disabled:opacity-60">{status === "sending" ? "처리 중..." : "알림 해지하기"}</button>
                             <button onClick={() => { setStatus("idle"); setMode("subscribe"); }} className="w-full text-[12px] text-slate-400 font-bold hover:text-slate-600 transition-colors">← 알림 신청으로 돌아가기</button>
                         </div>
                     </div>
@@ -310,7 +311,9 @@ const App = () => {
     const [mainView, setMainView] = useState(typeof location !== 'undefined' && location.hash === '#guide' ? 'guide' : 'jobs');
     const [showContact, setShowContact] = useState(false);
     const [showRequest, setShowRequest] = useState(false);
-    const [showNotify, setShowNotify] = useState(false);
+    // 알림 메일 하단 링크(#notify-cancel)로 들어오면 해지 화면을 바로 띄운다
+    const [showNotify, setShowNotify] = useState(
+        typeof location !== 'undefined' && location.hash === '#notify-cancel');
     const [copied, setCopied] = useState(false);
     const [showTop, setShowTop] = useState(false);
     const navRef = React.useRef(null);
