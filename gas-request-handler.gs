@@ -18,7 +18,7 @@
  * 7) 테스트하려면 함수 목록에서 sendTestDigest 를 선택하고 [실행].
  *    → TEST_EMAIL 주소로 "오늘 신규 공고" 메일이 1통 발송된다.
  * 8) 설정이 제대로 됐는지 보려면 checkSetup 을 [실행] 하고 실행 기록을 본다.
- *    (웹앱 URL·구독자 수·수신거부 링크 예시·발송 개시일을 출력)
+ *    (신청 폼 수신 주소·수신거부 링크·구독자 수·발송 개시일을 출력)
  *
  * [중요 - 개인정보]
  * 구독자 이메일은 이 스프레드시트에만 저장한다. GitHub 저장소는 공개이며
@@ -396,29 +396,30 @@ function sendTestDigest() {
  * 배포 직후 이걸 먼저 돌려 보면 수신거부 링크가 제대로 만들어지는지 알 수 있다.
  */
 function checkSetup() {
+  // 1) 신청 폼 수신 주소 — 사이트(app.jsx)의 REQUEST_ENDPOINT 와 같아야 한다.
+  //    이 주소로 신청·해지 요청이 POST 된다.
   var url = webappUrl_();
-  Logger.log("사용 중인 웹앱 URL: " + (url || "(비어 있음)"));
+  Logger.log("신청 폼 수신 주소(POST): " + (url || "(비어 있음)"));
+  Logger.log(url && url.indexOf("/exec") > -1 ? "  → 형식 정상" : "  → ⚠️ /exec 로 끝나야 정상");
 
-  // 자동 조회값과 다르면 알려준다. getUrl() 은 게시된 배포가 아닌 head 배포를
-  // 돌려주는 경우가 있어, 둘이 다른 것 자체는 문제가 아니다.
   try {
     var auto = ScriptApp.getService().getUrl();
-    if (auto && auto.replace(/\/dev$/, "/exec") !== url) {
-      Logger.log("  (참고) 자동 조회값은 다름: " + auto);
-      Logger.log("  → 수신거부가 안 열리면 배포 관리의 '웹 앱' URL 을 WEBAPP_URL 에 넣으세요.");
+    if (auto && auto !== url) {
+      Logger.log("  (참고) ScriptApp 자동 조회값: " + auto);
+      Logger.log("  → 이 값이 /dev 로 끝나면 테스트 배포라 브라우저로 열리지 않는다.");
+      Logger.log("     수신거부는 이 주소를 쓰지 않으므로 달라도 문제없다.");
     }
   } catch (e) {}
 
-  var sheet = subSheet_();
-  var rows = sheet.getDataRange().getValues();
+  // 2) 메일 하단 수신거부 링크 — 사이트 해지 화면으로 보낸다.
+  Logger.log("메일 하단 수신거부 링크: " + SITE_URL + UNSUB_HASH);
+  Logger.log("  → 이 주소를 브라우저로 열면 해지 팝업이 바로 떠야 정상.");
+
+  // 3) 구독자
+  var rows = subSheet_().getDataRange().getValues();
   Logger.log("구독자 시트: " + (rows.length - 1) + "명");
 
-  if (rows.length > 1) {
-    var token = String(rows[1][4]);
-    Logger.log("수신거부 링크 예시(첫 구독자): " + (url ? url + "?unsub=" + encodeURIComponent(token) : "(URL 없음)"));
-    Logger.log("  → 이 주소를 브라우저에 붙여넣어 열리는지 확인하세요.");
-  }
-
+  // 4) 기관 목록
   try {
     var n = (JSON.parse(UrlFetchApp.fetch(INSTITUTIONS_URL, { muteHttpExceptions: true })
              .getContentText()).institutions || []).length;
@@ -427,7 +428,12 @@ function checkSetup() {
     Logger.log("기관 목록: 조회 실패 — 내장 예비 목록 사용 (" + e + ")");
   }
 
-  Logger.log("발송 개시일: " + (DIGEST_START_DATE || "(제한 없음)") + " / 오늘 " + todayKst_());
+  // 5) 발송 개시일
+  var today = todayKst_();
+  Logger.log("발송 개시일: " + (DIGEST_START_DATE || "(제한 없음)") + " / 오늘 " + today);
+  Logger.log(DIGEST_START_DATE && today < DIGEST_START_DATE
+    ? "  → 아직 사전 신청 기간. 정기 발송은 나가지 않는다."
+    : "  → 정기 발송 기간.");
 }
 
 /* ──────────────────────────────── 유틸 ──────────────────────────────── */
