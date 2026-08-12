@@ -1,5 +1,5 @@
 {
- "lastSync": "2026-08-12T15:20:11.291865+09:00",
+ "lastSync": "2026-08-12T17:23:21.621744+09:00",
  "jobs": [
   {
    "instId": "hira",
@@ -73,6 +73,66 @@
   },
   {
    "instId": "nmc",
+   "title": "무기계약직 간호사/응급구조사(전북응급의료지원센터) 채용 공고",
+   "startDate": "26.08.12",
+   "endDate": "26.08.27 23:59",
+   "status": "진행중",
+   "jobType": "무기계약직",
+   "region": "전북",
+   "link": "https://nmc.recruiter.co.kr/app/jobnotice/view?systemKindCode=MRS2&jobnoticeSn=263006"
+  },
+  {
+   "instId": "nmc",
+   "title": "계약직(휴직대체) 간호사/응급구조사(대구경북광역응급의료상황팀) 채용 공고",
+   "startDate": "26.08.12",
+   "endDate": "26.08.27 23:59",
+   "status": "진행중",
+   "jobType": "계약직/기간제",
+   "region": "경북, 대구",
+   "link": "https://nmc.recruiter.co.kr/app/jobnotice/view?systemKindCode=MRS2&jobnoticeSn=263004"
+  },
+  {
+   "instId": "nmc",
+   "title": "계약직 간호사/응급구조사(서울인천광역응급의료상황팀) 채용 공고",
+   "startDate": "26.08.12",
+   "endDate": "26.08.27 23:59",
+   "status": "진행중",
+   "jobType": "계약직/기간제",
+   "region": "서울, 인천",
+   "link": "https://nmc.recruiter.co.kr/app/jobnotice/view?systemKindCode=MRS2&jobnoticeSn=263001"
+  },
+  {
+   "instId": "nmc",
+   "title": "계약직 연구원(전남응급의료지원센터) 채용 공고",
+   "startDate": "26.08.12",
+   "endDate": "26.08.27 23:59",
+   "status": "진행중",
+   "jobType": "계약직/기간제",
+   "region": "전남",
+   "link": "https://nmc.recruiter.co.kr/app/jobnotice/view?systemKindCode=MRS2&jobnoticeSn=262996"
+  },
+  {
+   "instId": "nmc",
+   "title": "계약직 연구원(울산응급의료지원센터) 채용 공고",
+   "startDate": "26.08.12",
+   "endDate": "26.08.27 23:59",
+   "status": "진행중",
+   "jobType": "계약직/기간제",
+   "region": "울산",
+   "link": "https://nmc.recruiter.co.kr/app/jobnotice/view?systemKindCode=MRS2&jobnoticeSn=262993"
+  },
+  {
+   "instId": "nmc",
+   "title": "계약직 연구원 (닥터헬기·현장이송팀) 채용 공고",
+   "startDate": "26.08.12",
+   "endDate": "26.08.27 23:59",
+   "status": "진행중",
+   "jobType": "계약직/기간제",
+   "region": "서울(본부·공고확인)",
+   "link": "https://nmc.recruiter.co.kr/app/jobnotice/view?systemKindCode=MRS2&jobnoticeSn=262971"
+  },
+  {
+   "instId": "nmc",
    "title": "계약직 단시간 근로자-장애인(공공사회사업팀) 채용 재공고",
    "startDate": "26.08.04",
    "endDate": "26.08.14 23:59",
@@ -100,46 +160,6 @@
    "jobType": "계약직/기간제",
    "region": "서울(본부·공고확인)",
    "link": "https://nmc.recruiter.co.kr/app/jobnotice/view?systemKindCode=MRS2&jobnoticeSn=261834"
-  },
-  {
-   "instId": "nmc",
-   "title": "계약직 전산행정(정보운영팀) 채용 공고",
-   "startDate": "26.07.31",
-   "endDate": "26.08.18 10:00",
-   "status": "진행중",
-   "jobType": "계약직/기간제",
-   "region": "서울(본부·공고확인)",
-   "link": "https://nmc.recruiter.co.kr/app/jobnotice/view?systemKindCode=MRS2&jobnoticeSn=261833"
-  },
-  {
-   "instId": "nmc",
-   "title": "계약직 간호사-휴직대체(외상센터) 채용 공고",
-   "startDate": "26.07.31",
-   "endDate": "26.08.18 10:00",
-   "status": "진행중",
-   "jobType": "계약직/기간제",
-   "region": "서울(본부·공고확인)",
-   "link": "https://nmc.recruiter.co.kr/app/jobnotice/view?systemKindCode=MRS2&jobnoticeSn=261832"
-  },
-  {
-   "instId": "nmc",
-   "title": "무기계약직 연구원(모자의료지원팀) 채용 공고",
-   "startDate": "26.07.29",
-   "endDate": "26.08.13 23:59",
-   "status": "진행중",
-   "jobType": "무기계약직",
-   "region": "서울(본부·공고확인)",
-   "link": "https://nmc.recruiter.co.kr/app/jobnotice/view?systemKindCode=MRS2&jobnoticeSn=261673"
-  },
-  {
-   "instId": "nmc",
-   "title": "무기계약직 간호사(약물안전센터) 채용 공고",
-   "startDate": "26.07.29",
-   "endDate": "26.08.13 23:59",
-   "status": "진행중",
-   "jobType": "무기계약직",
-   "region": "서울(본부·공고확인)",
-   "link": "https://nmc.recruiter.co.kr/app/jobnotice/view?systemKindCode=MRS2&jobnoticeSn=261665"
   }
  ]
 }
