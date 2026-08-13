@@ -281,29 +281,44 @@ function unsubscribe_(token) {
  * 구독 중이 아닌 주소여도 응답은 동일하게 하여 가입 여부가 노출되지 않게 한다.
  */
 function handleUnsubRequest_(data) {
+  var token = (data.token || "").trim();
   var email = (data.email || "").trim();
-  if (!/.+@.+\..+/.test(email)) return json_({ ok: false, error: "invalid email" });
+
+  // 두 가지 경로를 지원한다.
+  //  1) 토큰 경로 — 알림 메일 하단 링크로 들어온 경우. 토큰을 가진 것 자체가
+  //     그 주소의 메일함을 연다는 뜻이라 본인 확인이 된다. (권장 경로)
+  //  2) 이메일 경로 — 사이트에서 주소를 직접 입력한 경우. 제3자가 남의 주소를
+  //     해지시킬 수 있으므로, 해지 알림 메일에 재신청 링크를 함께 보낸다.
+  if (!token && !/.+@.+\..+/.test(email)) {
+    return json_({ ok: false, error: "invalid request" });
+  }
 
   var sheet = subSheet_();
   var rows = sheet.getDataRange().getValues();
   for (var i = 1; i < rows.length; i++) {
-    if (String(rows[i][1]).trim().toLowerCase() === email.toLowerCase()) {
-      sheet.deleteRow(i + 1);   // 방침에 "지체 없이 파기"로 고지했으므로 행을 지운다
-      MailApp.sendEmail({
-        to: email,
-        subject: "[보건공기업 알리미] 채용 알림이 해지되었습니다",
-        htmlBody:
-          '<div style="font-family:sans-serif;line-height:1.7;color:#0f172a;max-width:520px">' +
-          '<h2 style="margin:0 0 12px">채용 알림이 해지되었습니다</h2>' +
-          '<p style="color:#475569;margin:0 0 18px">더 이상 알림 메일을 보내지 않으며, ' +
-          '등록하셨던 이메일 주소는 파기했습니다.</p>' +
-          '<p style="font-size:12px;color:#94a3b8;margin:0">본인이 요청하지 않으셨다면 ' +
-          '<a href="' + SITE_URL + '" style="color:#64748b">사이트</a>에서 다시 신청하실 수 있습니다.</p></div>'
-      });
-      break;
-    }
+    var rowEmail = String(rows[i][1]).trim();
+    var rowToken = String(rows[i][4]).trim();
+    var matched = token
+      ? rowToken === token
+      : rowEmail.toLowerCase() === email.toLowerCase();
+    if (!matched) continue;
+
+    sheet.deleteRow(i + 1);   // 방침에 "지체 없이 파기"로 고지했으므로 행을 지운다
+    MailApp.sendEmail({
+      to: rowEmail,
+      subject: "[보건공기업 알리미] 채용 알림이 해지되었습니다",
+      htmlBody:
+        '<div style="font-family:sans-serif;line-height:1.7;color:#0f172a;max-width:520px">' +
+        '<h2 style="margin:0 0 12px">채용 알림이 해지되었습니다</h2>' +
+        '<p style="color:#475569;margin:0 0 18px">더 이상 알림 메일을 보내지 않으며, ' +
+        '등록하셨던 이메일 주소는 파기했습니다.</p>' +
+        '<p style="font-size:12px;color:#94a3b8;margin:0">본인이 요청하지 않으셨다면 ' +
+        '<a href="' + SITE_URL + '" style="color:#2563eb;font-weight:bold">다시 신청하기</a>' +
+        ' 에서 몇 초 만에 복구하실 수 있습니다.</p></div>'
+    });
+    break;
   }
-  // 구독 중이 아니어도 동일하게 성공 응답 (가입 여부 노출 방지)
+  // 구독 중이 아니거나 토큰이 맞지 않아도 동일하게 성공 응답 (가입 여부 노출 방지)
   return json_({ ok: true });
 }
 
@@ -488,12 +503,17 @@ function escapeHtml_(s) {
  * doGet(?unsub=) 처리는 그대로 남겨 두어 예전 메일의 링크도 계속 동작한다.
  */
 function unsubFooter_(token) {
+  // 링크는 GAS 가 아니라 **사이트**를 가리킨다. GAS 웹앱 링크(doGet)는 배포 주소가
+  // 바뀌면 열리지 않는 문제가 반복돼 걷어냈다. 대신 구독 때 발급한 토큰을 실어 보내,
+  // 사이트가 그 토큰으로 해지를 요청하면 GAS 가 토큰으로 본인 확인을 한다.
+  // (이메일만 입력하는 경로도 남아 있지만, 메일에서 온 사람은 토큰 경로를 탄다)
+  var link = SITE_URL + '?unsub=' + encodeURIComponent(token) + UNSUB_HASH;
   return '<hr style="border:none;border-top:1px solid #e2e8f0;margin:28px 0 14px">' +
     '<p style="font-size:11.5px;color:#94a3b8;line-height:1.6;margin:0">' +
     '이 메일은 보건공기업 알리미 채용 알림을 신청하신 분께 발송됩니다.<br>' +
-    '더 이상 받고 싶지 않으시면 <a href="' + SITE_URL + UNSUB_HASH +
+    '더 이상 받고 싶지 않으시면 <a href="' + link +
     '" style="color:#64748b;text-decoration:underline">알림 취소하기</a>' +
-    ' 에서 이메일을 입력해 주세요. 바로 해지됩니다.' +
+    ' 를 눌러 주세요. 확인 버튼 한 번으로 해지됩니다.' +
     '</p>';
 }
 

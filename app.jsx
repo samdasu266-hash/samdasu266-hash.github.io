@@ -112,6 +112,17 @@ const NotifyModal = ({ open, onClose, institutions }) => {
     const [mode, setMode] = useState(
         typeof location !== 'undefined' && location.hash === '#notify-cancel' ? "cancel" : "subscribe");
 
+    // 알림 메일 하단 링크(?unsub=토큰#notify-cancel)로 들어온 경우.
+    // 토큰을 가졌다는 건 그 주소의 메일함을 연다는 뜻이라 본인 확인이 되므로,
+    // 이메일을 다시 입력받지 않고 확인 버튼 하나로 해지한다.
+    //
+    // ⚠️ 링크만 열려도 바로 해지시키면 안 된다. 회사 메일 보안 스캐너가 링크를
+    //    미리 열어보는 경우가 있어, 사용자가 누르지도 않았는데 해지될 수 있다.
+    //    그래서 확인 버튼을 한 번 거치게 둔다.
+    const unsubToken = typeof location !== 'undefined'
+        ? new URLSearchParams(location.search).get('unsub')
+        : null;
+
     if (!open) return null;
 
     const domain = emailDomain === "__custom__" ? customDomain.trim() : emailDomain;
@@ -151,6 +162,7 @@ const NotifyModal = ({ open, onClose, institutions }) => {
     // 제3자가 남의 주소를 해지시킬 위험은 남지만, 해지 알림 메일을 받은 본인이
     // 다시 신청하면 복구되므로 피해가 회복 가능한 범위다.
     const requestCancel = () => {
+        if (unsubToken) { post({ type: "채용알림 해지", token: unsubToken }); return; }
         if (!/.+@.+\..+/.test(email)) { alert("이메일 주소를 정확히 입력해주세요."); return; }
         post({ type: "채용알림 해지", email });
     };
@@ -180,7 +192,17 @@ const NotifyModal = ({ open, onClose, institutions }) => {
                 ) : mode === "cancel" ? (
                     <div>
                         <h2 className="text-lg font-black text-slate-900 mb-1 flex items-center gap-2"><Icon name="bell-off" className="text-slate-500 w-5 h-5" /> 채용 알림 해지</h2>
-                        <p className="text-[12px] text-slate-400 font-medium mb-5">신청하신 이메일 주소를 입력해주세요.</p>
+                        <p className="text-[12px] text-slate-400 font-medium mb-5">{unsubToken ? "아래 버튼을 누르면 해지됩니다." : "신청하신 이메일 주소를 입력해주세요."}</p>
+                        {unsubToken ? (
+                            <div className="space-y-4 text-left">
+                                <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-[11.5px] text-slate-500 font-medium leading-relaxed">
+                                    🔒 알림 메일에 담긴 링크로 접속하셨습니다. 본인 확인이 끝났으니 <strong className="text-slate-700">이메일을 다시 입력하실 필요가 없습니다.</strong> 해지하시면 저장된 주소는 즉시 파기되고, 확인 메일이 한 통 발송됩니다.
+                                </div>
+                                {status === "error" && <p className="text-[12px] text-red-500 font-bold">전송에 실패했어요. 잠시 후 다시 시도해주세요.</p>}
+                                <button onClick={requestCancel} disabled={status === "sending"} className="w-full py-3.5 bg-slate-900 text-white rounded-2xl font-bold hover:bg-slate-800 transition-colors shadow-lg disabled:opacity-60">{status === "sending" ? "처리 중..." : "알림 해지하기"}</button>
+                                <button onClick={close} className="w-full text-[12px] text-slate-400 font-bold hover:text-slate-600 transition-colors">해지하지 않고 닫기</button>
+                            </div>
+                        ) : (
                         <div className="space-y-4 text-left">
                             <div>
                                 <label className="text-[11px] font-bold text-slate-500 mb-1.5 block">이메일 <span className="text-red-400">*</span></label>
@@ -205,6 +227,7 @@ const NotifyModal = ({ open, onClose, institutions }) => {
                             <button onClick={requestCancel} disabled={status === "sending"} className="w-full py-3.5 bg-slate-900 text-white rounded-2xl font-bold hover:bg-slate-800 transition-colors shadow-lg disabled:opacity-60">{status === "sending" ? "처리 중..." : "알림 해지하기"}</button>
                             <button onClick={() => { setStatus("idle"); setMode("subscribe"); }} className="w-full text-[12px] text-slate-400 font-bold hover:text-slate-600 transition-colors">← 알림 신청으로 돌아가기</button>
                         </div>
+                        )}
                     </div>
                 ) : (
                     <div>

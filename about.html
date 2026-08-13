@@ -1,6 +1,23 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
+<!-- Google Consent Mode v2 — EEA·영국·스위스 방문자는 동의 전 광고·분석 저장소를 막는다.
+     동의 수집은 AdSense 콘솔의 인증 CMP(개인 정보 보호 및 메시지)가 담당하고,
+     동의가 확인되면 이 기본값을 갱신한다.
+     region 을 지정했으므로 국내 방문자의 광고·분석 동작에는 영향이 없다.
+     ⚠️ 반드시 gtag.js·adsbygoogle.js 보다 먼저 실행돼야 한다. -->
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('consent', 'default', {
+    ad_storage: 'denied',
+    ad_user_data: 'denied',
+    ad_personalization: 'denied',
+    analytics_storage: 'denied',
+    region: ['AT','BE','BG','HR','CY','CZ','DK','EE','FI','FR','DE','GR','HU','IE','IT','LV','LT','LU','MT','NL','PL','PT','RO','SK','SI','ES','SE','IS','LI','NO','GB','CH'],
+    wait_for_update: 500
+  });
+</script>
 <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-7297NMP8GQ"></script>
 <script>
