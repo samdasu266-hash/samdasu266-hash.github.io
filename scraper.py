@@ -59,6 +59,89 @@ def extract_dates(text, current_year):
     parsed_dates.sort(key=lambda x: x['dt'])
     return parsed_dates
 
+def now_kst_naive():
+    return datetime.now(KST).replace(tzinfo=None)
+
+def parse_end_date(value):
+    """jobs.json에 저장된 "yy.mm.dd" 또는 "yy.mm.dd HH:MM" 형식을 datetime으로 되돌린다.
+    읽을 수 없으면 None (= 마감 여부를 판단하지 않음)."""
+    m = re.match(r'\s*(\d{2})\.(\d{1,2})\.(\d{1,2})(?:\s+(\d{1,2}):(\d{2}))?', str(value or ""))
+    if not m:
+        return None
+    try:
+        return datetime(2000 + int(m.group(1)), int(m.group(2)), int(m.group(3)),
+                        int(m.group(4) or 18), int(m.group(5) or 0))
+    except ValueError:
+        return None
+
+# 국립중앙의료원(병원)에서 제외할 임상 포지션 — 직역·근무 장소 기준
+NMC_CLINICAL = [
+    "전공의", "전임의", "레지던트", "인턴의", "임상강사", "촉탁의",
+    "병동", "수술실", "중환자실", "응급실", "분만", "마취",
+    "간호조무", "임상", "진료", "병리사", "방사선사", "물리치료",
+    "작업치료", "임상병리", "치과위생",
+    "간호부", "외래", "투석", "검진센터", "외상센터",
+    # 진료과 기준 — 제목이 "계약직 간호사(간호부-소화기내과)"처럼 배치 부서로만
+    # 임상 여부가 드러나는 공고가 많아 진료과명을 별도로 걸러낸다.
+    # ("내과"는 감염내과·소화기내과 등 세부 분과를 부분 문자열로 함께 잡는다.)
+    "내과", "외과", "소아과", "소아청소년과", "산부인과", "부인과",
+    "신경과", "신경외과", "정형외과", "흉부외과", "성형외과",
+    "정신건강의학과", "피부과", "안과", "이비인후과", "비뇨의학과",
+    "비뇨기과", "재활의학과", "영상의학과", "핵의학과",
+    "마취통증의학과", "진단검사의학과", "응급의학과", "가정의학과",
+    "직업환경의학과", "예방의학과", "병리과", "치과", "한방",
+]
+
+# 의사 면허가 필요한 직무 제외.
+#
+# 【수집 정책】이 사이트의 독자는 탈임상을 준비하는 간호사·보건직 취업준비생이다.
+# 의사 면허가 있어야 지원할 수 있는 공고는 임상이든 정책연구직이든 이들이 지원할 수
+# 없으므로 일괄 제외한다. (예: "의사직(응급의료정책연구팀)"은 비임상이지만 제외 대상)
+# 반대로 면허 요건이 간호사·응급구조사인 비병동 직무는 수집한다.
+#
+# ⚠️ \b 를 쓰면 안 된다. 파이썬 유니코드 정규식에서 한글은 워드 문자라
+#    '의사직'의 '의사'와 '직' 사이에 단어 경계가 성립하지 않아 매치되지 않는다.
+#    (이 때문에 "의사직(응급의료정책연구팀) 채용 재공고"가 그대로 수집됐다)
+#    앞뒤 한글 여부를 직접 확인해 '의사소통' 같은 단어와만 구분한다.
+DOCTOR_RE = re.compile(r'(?<![가-힣])(?:의사직|의사|전문의|수련의|전공의)(?![가-힣])')
+
+
+def is_excluded_title(inst_id, title):
+    """현재 수집 정책상 제외 대상인 제목인지 판정한다.
+
+    수집 단계와, 과거 데이터(history/직전 jobs)에서 공고를 되살릴 때 **같은 기준**을
+    적용하기 위해 함수로 분리했다. 이게 없으면 제외 규칙을 강화해도 예전에 수집된
+    공고가 복원 경로로 되살아난다.
+    """
+    t = (title or "").replace('[', ' ').replace(']', ' ')
+    if DOCTOR_RE.search(t):
+        return True
+    if inst_id == 'nmc' and any(k in title for k in NMC_CLINICAL):
+        return True
+    return False
+
+
+def classify_job_type(title):
+    """공고 제목에서 고용형태를 판정한다.
+
+    ⚠️ '전입·파견·초빙'은 신규 채용이 아니라 현직자(주로 공무원) 대상 인사 공고다.
+       분류하지 않으면 전부 '정규직'으로 떨어져 취업준비생에게 노이즈가 되므로
+       별도 유형으로 분리해 필터에서 걸러낼 수 있게 한다.
+    """
+    if any(k in title for k in ["전입", "파견", "초빙", "전출"]):
+        return "전입/파견"
+    if "무기계약직" in title:
+        return "무기계약직"
+    if "공무직" in title:
+        return "공무직"
+    if any(k in title for k in ["기간제", "계약직", "촉탁직", "휴직", "대체", "임시직"]):
+        return "계약직/기간제"
+    if "비정규직" in title:
+        return "비정규직"
+    if "인턴" in title:
+        return "인턴"
+    return "정규직"
+
 GENERAL_REGIONS = ["서울", "부산", "대구", "인천", "광주", "울산", "경기", "강원", "충북", "전북", "전남", "경북", "경남", "제주"]
 
 # 기관명 → 소재지 매핑. 공고에서 기관명이 확인되면 본문 주소보다 우선 적용한다.
@@ -219,12 +302,7 @@ def build_careeron_jobs(payload, inst_id):
                 pass
         if status == "마감":
             continue
-        job_type = "정규직"
-        if "무기계약직" in title: job_type = "무기계약직"
-        elif "공무직" in title: job_type = "공무직"
-        elif any(k in title for k in ["기간제", "계약직", "촉탁직", "휴직", "대체"]): job_type = "계약직/기간제"
-        elif "비정규직" in title: job_type = "비정규직"
-        elif "인턴" in title: job_type = "인턴"
+        job_type = classify_job_type(title)
         jobs.append({
             "instId": inst_id, "title": title,
             "startDate": start_str, "endDate": end_str, "status": status,
@@ -337,22 +415,8 @@ async def scrape_site(browser, inst_id, url):
                 elif inst_id == 'nmc':
                     # 국립중앙의료원은 병원이라 임상 채용이 대부분 → 탈임상 사이트 성격에 맞게
                     # 진료·병동 등 임상 포지션은 제외하고 행정·연구·보건직 위주로 수집한다.
-                    # 직역·근무 장소 기준
-                    nmc_clinical = ["전공의", "전임의", "레지던트", "인턴의", "임상강사", "촉탁의",
-                                    "병동", "수술실", "중환자실", "응급실", "분만", "마취",
-                                    "간호조무", "임상", "진료", "병리사", "방사선사", "물리치료",
-                                    "작업치료", "임상병리", "치과위생",
-                                    "간호부", "외래", "투석", "검진센터"]
-                    # 진료과 기준 — 제목이 "계약직 간호사(간호부-소화기내과)"처럼 배치 부서로만
-                    # 임상 여부가 드러나는 공고가 많아 진료과명을 별도로 걸러낸다.
-                    # ("내과"는 감염내과·소화기내과 등 세부 분과를 부분 문자열로 함께 잡는다.)
-                    nmc_clinical += ["내과", "외과", "소아과", "소아청소년과", "산부인과", "부인과",
-                                     "신경과", "신경외과", "정형외과", "흉부외과", "성형외과",
-                                     "정신건강의학과", "피부과", "안과", "이비인후과", "비뇨의학과",
-                                     "비뇨기과", "재활의학과", "영상의학과", "핵의학과",
-                                     "마취통증의학과", "진단검사의학과", "응급의학과", "가정의학과",
-                                     "직업환경의학과", "예방의학과", "병리과", "치과", "한방"]
-                    if any(k in clean_title for k in nmc_clinical):
+                    # (제외 목록은 NMC_CLINICAL, 복원 경로와 공유한다)
+                    if is_excluded_title(inst_id, clean_title):
                         continue
                     # ⚠️ 임상 제외만 하고 끝내면 사이트 메뉴 링크까지 통과하므로,
                     #    아래 공통 키워드 검사도 반드시 함께 적용한다.
@@ -392,18 +456,12 @@ async def scrape_site(browser, inst_id, url):
                 if re.search(r'(하세요|하십시오|해보세요|보세요|찾으세요|입니다)\s*[!.]?$', clean_title): continue
                 if clean_title.endswith('!'): continue
 
-                # 의사/전문의 정밀 제외
-                clean_title_for_regex = clean_title.replace('[', ' ').replace(']', ' ')
-                if re.search(r'\b(?:의사|전문의|수련의|전공의)\b', clean_title_for_regex):
+                # 의사 면허 필요 직무 제외 (정책·근거는 is_excluded_title 참고)
+                if is_excluded_title(inst_id, clean_title):
                     continue
 
                 # 고용 형태 분류
-                job_type = "정규직"
-                if "무기계약직" in clean_title: job_type = "무기계약직"
-                elif "공무직" in clean_title: job_type = "공무직"
-                elif any(k in clean_title for k in ["기간제", "계약직", "촉탁직", "휴직", "대체"]): job_type = "계약직/기간제"
-                elif "비정규직" in clean_title: job_type = "비정규직"
-                elif "인턴" in clean_title: job_type = "인턴"
+                job_type = classify_job_type(clean_title)
 
                 raw_href = await link_el.get_attribute("href")
                 onclick_val = await link_el.get_attribute("onclick")
@@ -648,6 +706,81 @@ async def main():
         for job in old_jobs:
             if job.get("instId") not in succeeded:
                 all_jobs.append(job)
+
+        # 이전 수집분과 대조해 이미 알아낸 정보가 후퇴하지 않게 한다.
+        #  (1) 이번 회차에서 날짜 파싱에 실패해 "상세참조"가 되어도 예전에 읽어둔
+        #      실제 마감일이 있으면 그대로 유지한다.
+        #  (2) 마감일이 아직 남았는데 목록에서 사라진 공고(다음 페이지로 밀리거나
+        #      기관이 게시판을 개편한 경우)는 마감일까지 계속 노출한다.
+        #
+        # 참조 대상은 직전 jobs.json 만으로는 부족하다. 이미 jobs.json 에서 사라져
+        # history.json 에만 남은 공고는 직전 파일에 없어 복원되지 않기 때문에,
+        # 누적 이력까지 함께 본다. 같은 공고가 양쪽에 있으면 '더 정확한 값'을 쓴다.
+        try:
+            with open(HISTORY_FILE, encoding="utf-8") as f:
+                hist_jobs = json.load(f).get("jobs", [])
+        except Exception:
+            hist_jobs = []
+
+        def _key(j):
+            return (j.get("instId"), (j.get("title") or "").replace(" ", ""))
+
+        def _date_rank(v):
+            """마감일 값의 정확도. 실제 날짜 > 그 밖의 문자열 > 없음/상세참조"""
+            if parse_end_date(v):
+                return 2
+            return 0 if v in (None, "", "상세참조") else 1
+
+        prev_by_key = {}
+        for j in hist_jobs + old_jobs:   # 뒤에 오는 old_jobs 가 동점일 때 우선
+            k = _key(j)
+            cur = prev_by_key.get(k)
+            if cur is None or _date_rank(j.get("endDate")) >= _date_rank(cur.get("endDate")):
+                prev_by_key[k] = j
+
+        for job in all_jobs:
+            prev = prev_by_key.get(_key(job))
+            if not prev:
+                continue
+            # 날짜는 '더 정확한 쪽'을 남기고, 그 외 필드는 비어 있을 때만 채운다
+            for fld in ("endDate", "startDate"):
+                if _date_rank(job.get(fld)) < _date_rank(prev.get(fld)):
+                    job[fld] = prev[fld]
+            for fld in ("region", "link"):
+                if job.get(fld) in (None, "", "상세참조") \
+                   and prev.get(fld) not in (None, "", "상세참조"):
+                    job[fld] = prev[fld]
+
+        # 마감 전인데 이번 목록에 없는 공고 복원.
+        #   · 제외 규칙이 강화된 뒤라면 되살리지 않는다(is_excluded_title).
+        #   · 오래 보이지 않던 공고는 기관이 내린 것으로 보고 되살리지 않는다.
+        current_keys = {_key(j) for j in all_jobs}
+        now_naive = now_kst_naive()
+        STALE_DAYS = 10
+        held = 0
+        for key, prev in prev_by_key.items():
+            inst_id, _ = key
+            if key in current_keys or prev.get("status") == "마감":
+                continue
+            if inst_id not in succeeded:
+                continue   # 수집 실패 기관은 위에서 이미 통째로 보존됨
+            if is_excluded_title(inst_id, prev.get("title", "")):
+                continue
+            last_seen = prev.get("lastSeen")
+            if last_seen:
+                try:
+                    if (now_naive - datetime.strptime(last_seen, "%Y-%m-%d")).days > STALE_DAYS:
+                        continue
+                except ValueError:
+                    pass
+            end_dt = parse_end_date(prev.get("endDate"))
+            if end_dt and end_dt > now_naive:
+                rec = {k: v for k, v in prev.items() if k not in ("firstSeen", "lastSeen")}
+                rec["jobType"] = classify_job_type(rec.get("title", ""))
+                all_jobs.append(rec)
+                held += 1
+        if held:
+            print(f"⏳ 목록에서 사라졌지만 마감 전인 공고 {held}건을 복원했습니다.")
 
         # 같은 기관을 여러 사이트에서 수집하는 경우(적십자사 본사 + 혈액관리본부) 중복 제거
         def _norm_title(t):

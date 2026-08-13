@@ -128,6 +128,26 @@ GUIDES = [
 ]
 
 
+# 정적 내비게이션 — 자바스크립트가 실행되지 않아도(크롤러·광고 심사 봇 포함)
+# 모든 문서와 개인정보처리방침에 도달할 수 있어야 한다.
+NAV = [
+    ("index.html", "홈"),
+    ("guide.html", "근무환경·워라밸"),
+    ("gongmujik.html", "공무직·무기계약직"),
+    ("bogeon-manager.html", "보건관리자"),
+    ("ganhojik.html", "간호직 공무원"),
+    ("tips.html", "채용 트렌드"),
+    ("career.html", "임상경력 활용"),
+    ("license.html", "서류 가점 전략"),
+    ("interview.html", "면접 필승 가이드"),
+]
+
+POLICY = [
+    ("about.html", "소개·운영정책"),
+    ("privacy.html", "개인정보처리방침"),
+]
+
+
 def esc(t):
     return (str(t or "").replace("&", "&amp;").replace("<", "&lt;")
             .replace(">", "&gt;").replace('"', "&quot;"))
@@ -144,13 +164,15 @@ def build():
     month = today.month
     now_label = today.strftime("%Y년 %m월 %d일")
 
-    P = ['<section class="max-w-5xl mx-auto px-4 md:px-8 pb-16 space-y-6">']
+    # data-static-fallback: React 가 마운트되면 app.js 가 이 영역을 숨긴다.
+    # 자바스크립트가 없거나 실패하면 그대로 남아 본문 역할을 한다.
+    P = ['<section data-static-fallback class="max-w-5xl mx-auto px-4 md:px-8 pb-16 space-y-6">']
 
     # ── 현재 진행 중인 공고 (본문 텍스트로도 남는 목록) ──────────────
     P.append('<div class="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm text-left">')
     P.append(f'<h2 class="text-lg font-black text-slate-900 mb-1">현재 접수 중인 보건의료 공공기관 채용 공고 '
              f'{len(jobs)}건</h2>')
-    P.append(f'<p class="text-[12px] text-slate-400 font-medium mb-5">{now_label} 기준 · 매시간 자동 갱신</p>')
+    P.append(f'<p class="text-[12.5px] text-slate-500 font-medium mb-5">{now_label} 기준 · 매시간 자동 갱신</p>')
     if jobs:
         P.append('<ul class="divide-y divide-slate-100 text-[13.5px]">')
         for j in jobs:
@@ -170,7 +192,7 @@ def build():
     else:
         P.append('<p class="text-slate-500 text-[13.5px]">현재 접수 중인 공고가 없습니다. '
                  '기관별 상세 페이지에서 지난 공고 아카이브를 확인하실 수 있습니다.</p>')
-    P.append('<p class="text-[12px] text-slate-400 mt-5 leading-relaxed">공고 제목을 누르면 해당 기관의 '
+    P.append('<p class="text-[12.5px] text-slate-500 mt-5 leading-relaxed">공고 제목을 누르면 해당 기관의 '
              '공식 채용 페이지 원문으로 이동합니다. 지원 자격·전형 일정·제출 서류는 반드시 원문을 '
              '확인해 주세요.</p>')
     P.append("</div>")
@@ -214,6 +236,20 @@ def build():
                  f'<p class="text-[13.5px] text-slate-600 leading-relaxed">{esc(a)}</p></div>')
     P.append("</div></div>")
 
+    # ── 정적 푸터 (JS 없이도 전 문서·개인정보처리방침 도달) ─────────────
+    P.append('<nav aria-label="사이트 문서" class="bg-white p-8 rounded-3xl border border-slate-200 '
+             'shadow-sm text-left">')
+    P.append('<h2 class="text-lg font-black text-slate-900 mb-4">사이트 내 문서</h2>')
+    P.append('<ul class="flex flex-wrap gap-x-5 gap-y-2 text-[13.5px] font-bold text-slate-600">')
+    for href, label in NAV + POLICY:
+        P.append(f'<li><a href="{href}" class="hover:text-blue-600 hover:underline">{esc(label)}</a></li>')
+    P.append("</ul>")
+    P.append(f'<p class="text-[12.5px] text-slate-500 mt-6 leading-relaxed">© {today.year} 보건공기업 알리미. '
+             '본 사이트는 각 기관이 공개한 채용 공고를 모아 보여주는 비공식 정보 서비스이며, 어떤 기관과도 '
+             '제휴 관계가 없습니다. 지원 자격·전형 일정·제출 서류는 반드시 각 기관 공식 공고문을 확인해 '
+             '주세요.</p>')
+    P.append("</nav>")
+
     P.append("</section>")
     return "\n".join(P)
 
@@ -236,8 +272,25 @@ def main():
         with open(path, "w", encoding="utf-8") as f:
             f.write(new)
         print(f"✅ index.html 정적 콘텐츠 갱신 ({len(block):,}자)")
+        touch_sitemap()
     else:
         print("변경 없음")
+
+
+def touch_sitemap():
+    """홈이 실제로 바뀐 회차에만 sitemap 의 홈 lastmod 를 오늘로 올린다.
+    (내용이 그대로인데 날짜만 올리면 크롤러에게 잘못된 신호를 준다)"""
+    sm_path = os.path.join(BASE, "sitemap.xml")
+    try:
+        sm = open(sm_path, encoding="utf-8").read()
+        today = datetime.now(KST).strftime("%Y-%m-%d")
+        new = re.sub(r"(<loc>https://samdasu266-hash\.github\.io/</loc>\s*<lastmod>)[^<]*(</lastmod>)",
+                     r"\g<1>" + today + r"\g<2>", sm, count=1)
+        if new != sm:
+            open(sm_path, "w", encoding="utf-8").write(new)
+            print(f"   sitemap 홈 lastmod → {today}")
+    except Exception as e:
+        print(f"   sitemap 갱신 건너뜀: {e}")
 
 
 if __name__ == "__main__":

@@ -461,8 +461,10 @@ function filterForSubscriber_(jobs, insts, types) {
   var typeList = types ? types.split(",").map(function (s) { return s.trim(); }).filter(String) : [];
   return jobs.filter(function (j) {
     if (instList.length && instList.indexOf(j.instId) === -1) return false;
-    if (typeList.length && typeList.indexOf(j.jobType) === -1) return false;
-    return true;
+    if (typeList.length) return typeList.indexOf(j.jobType) !== -1;
+    // 고용형태를 고르지 않은 구독자(= 전체)에게도 전입·파견 공고는 보내지 않는다.
+    // 신규 채용이 아니라 현직 공무원 대상 인사 공고이기 때문.
+    return j.jobType !== "전입/파견";
   });
 }
 

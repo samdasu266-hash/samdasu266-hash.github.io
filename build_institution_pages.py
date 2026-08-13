@@ -278,14 +278,17 @@ def build_page(inst, hist_jobs, live_jobs, version, today):
     <meta property="og:title" content="{esc(title)}">
     <meta property="og:description" content="{esc(desc)}">
     <meta property="og:url" content="{url}">
-    <meta property="og:image" content="https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?q=80&w=1200&auto=format&fit=crop">
+    <meta property="og:image" content="https://samdasu266-hash.github.io/og-image.png">
     <meta name="twitter:card" content="summary_large_image">
     <script type="application/ld+json">
 {json.dumps(ld, ensure_ascii=False, indent=2)}
     </script>
     <link rel="stylesheet" href="tailwind.css?v={version}">
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+    <link rel="icon" href="favicon.png" type="image/png">
+    <link rel="apple-touch-icon" href="favicon.png">
     <style>
-        @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css');
         body {{ font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif; background-color: #f8fafc; color: #1e293b; line-height: 1.8; }}
     </style>
 </head>
@@ -346,7 +349,7 @@ def build_page(inst, hist_jobs, live_jobs, version, today):
     </article>
 
     <footer class="mt-12 text-center text-slate-400 text-[12px] font-medium border-t pt-8">
-        <p>© 2026 보건의료 채용 포털. All rights reserved.</p>
+        <p>© 2026 보건공기업 알리미. All rights reserved.</p>
         <p class="mt-1">본 아카이브는 각 기관 공식 채용 페이지에서 자동 수집한 기록입니다. 정확한 내용은 반드시 원본 공고문을 확인하세요.</p>
         <p class="mt-2"><a href="about.html" class="text-slate-500 hover:text-blue-600 underline">사이트 소개·운영정책</a></p>
     </footer>
@@ -384,6 +387,13 @@ def main():
 
         for fn, n in written:
             listed = f"/{fn}<" in sm
+            if listed and n >= MIN_ARCHIVE_FOR_INDEX:
+                # 이미 등재된 페이지도 이번 실행에서 새 아카이브로 다시 쓰였으므로
+                # lastmod 를 갱신한다. (갱신하지 않으면 크롤러가 '변경 없음'으로 보고
+                # 재방문 주기를 늘려, 새로 쌓인 공고가 한참 뒤에야 반영된다.)
+                sm = re.sub(
+                    r"(<loc>[^<]*/" + re.escape(fn) + r"</loc>\s*<lastmod>)[^<]*(</lastmod>)",
+                    r"\g<1>" + d + r"\g<2>", sm)
             if n >= MIN_ARCHIVE_FOR_INDEX and not listed:
                 sm = sm.replace(
                     "</urlset>",

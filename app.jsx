@@ -44,12 +44,18 @@ const RequestModal = ({ open, onClose }) => {
     return (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm" onClick={close}>
             <div className="bg-white w-full max-w-md rounded-[2rem] p-7 shadow-2xl relative animate-in zoom-in duration-300 max-h-[90vh] overflow-y-auto no-scrollbar" onClick={e => e.stopPropagation()}>
-                <button onClick={close} className="absolute top-5 right-5 text-slate-300 hover:text-slate-900"><Icon name="x" /></button>
+                <button onClick={close} className="absolute top-5 right-5 text-slate-500 hover:text-slate-900"><Icon name="x" /></button>
                 {status === "done" ? (
                     <div className="text-center py-6">
                         <div className="w-16 h-16 mx-auto rounded-full bg-emerald-50 text-emerald-500 flex items-center justify-center mb-4"><Icon name="check" className="w-8 h-8" /></div>
-                        <h2 className="text-lg font-black text-slate-900 mb-2">요청이 접수되었어요!</h2>
-                        <p className="text-sm text-slate-500 font-medium leading-relaxed mb-6">보내주신 의견을 검토 후 반영하겠습니다.{email ? " 입력하신 메일로 접수 확인 메일을 보내드렸어요." : ""}</p>
+                        {/* no-cors 응답은 서버 처리 여부를 알려주지 않는다 → 접수를 단정하지 않는다.
+                            이메일을 남긴 경우에만 '확인 메일 도착'이라는 검증 수단을 안내할 수 있다. */}
+                        <h2 className="text-lg font-black text-slate-900 mb-2">요청을 전송했어요</h2>
+                        {email ? (
+                            <p className="text-sm text-slate-500 font-medium leading-relaxed mb-6"><strong className="text-slate-700">접수 확인 메일이 도착하면 정상 접수</strong>된 것입니다. 몇 분이 지나도 메일이 오지 않으면 스팸함을 확인하시고 다시 보내주세요.</p>
+                        ) : (
+                            <p className="text-sm text-slate-500 font-medium leading-relaxed mb-6">다만 <strong className="text-slate-700">전송 결과를 바로 확인할 수 없어</strong> 정상 접수되지 않았을 가능성이 있습니다. 확실하게 접수하시려면 이메일을 입력해 다시 보내주세요 — 접수되면 확인 메일이 갑니다.</p>
+                        )}
                         <button onClick={close} className="w-full py-3.5 bg-slate-900 text-white rounded-2xl font-bold hover:bg-blue-600 transition-colors">닫기</button>
                     </div>
                 ) : (
@@ -69,7 +75,7 @@ const RequestModal = ({ open, onClose }) => {
                             <input value={url} onChange={e => setUrl(e.target.value)} placeholder="채용 페이지 주소 (선택)" className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium" />
                             <textarea value={content} onChange={e => setContent(e.target.value)} placeholder="내용을 입력해주세요" rows={3} className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium resize-none" />
                             <div>
-                                <label className="text-[11px] font-bold text-slate-500 mb-1.5 block">회신 받을 이메일 <span className="text-slate-300 font-medium">(선택 · 접수 확인 메일 발송)</span></label>
+                                <label className="text-[11px] font-bold text-slate-500 mb-1.5 block">회신 받을 이메일 <span className="text-slate-500 font-medium">(선택 · 접수 확인 메일 발송)</span></label>
                                 <div className="flex items-center gap-1.5">
                                     <input value={emailLocal} onChange={e => setEmailLocal(e.target.value)} placeholder="아이디" className="flex-1 min-w-0 px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium" />
                                     <span className="text-slate-400 font-bold shrink-0">@</span>
@@ -120,6 +126,10 @@ const NotifyModal = ({ open, onClose, institutions }) => {
     const toggle = (setter, value) =>
         setter(prev => prev.includes(value) ? prev.filter(v => v !== value) : [...prev, value]);
 
+    // ⚠️ no-cors 요청의 응답은 opaque 라 상태 코드를 읽을 수 없다. 즉 이 then 은
+    //    "요청이 나갔다"만 뜻하고 "서버가 처리했다"는 뜻이 아니다. 그래서 완료 화면에서
+    //    '접수 완료'라고 단정하지 않고, 확인 메일 도착을 최종 확인 신호로 안내한다.
+    //    (GAS 웹앱은 CORS 헤더를 붙여주지 않아 no-cors 외에는 선택지가 없다)
     const post = (payload) => {
         setStatus("sending");
         fetch(REQUEST_ENDPOINT, {
@@ -136,8 +146,10 @@ const NotifyModal = ({ open, onClose, institutions }) => {
         post({ type: "채용알림 신청", email, insts: insts.join(","), jobTypes: jobTypes.join(",") });
     };
 
-    // 해지는 이메일만 받고, 본인 확인을 위해 해당 주소로 해지 링크를 보낸다
-    // (즉시 해지하면 제3자가 남의 주소를 해지시킬 수 있다)
+    // 해지는 이메일만 받아 즉시 처리하고(행 삭제), 해지되었다는 알림 메일을 한 통 보낸다.
+    // 확인 링크를 거치는 방식은 GAS 웹앱 링크가 열리지 않는 문제가 반복돼 걷어냈다.
+    // 제3자가 남의 주소를 해지시킬 위험은 남지만, 해지 알림 메일을 받은 본인이
+    // 다시 신청하면 복구되므로 피해가 회복 가능한 범위다.
     const requestCancel = () => {
         if (!/.+@.+\..+/.test(email)) { alert("이메일 주소를 정확히 입력해주세요."); return; }
         post({ type: "채용알림 해지", email });
@@ -148,19 +160,19 @@ const NotifyModal = ({ open, onClose, institutions }) => {
     return (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm" onClick={close}>
             <div className="bg-white w-full max-w-md rounded-[2rem] p-7 shadow-2xl relative animate-in zoom-in duration-300 max-h-[90vh] overflow-y-auto no-scrollbar" onClick={e => e.stopPropagation()}>
-                <button onClick={close} className="absolute top-5 right-5 text-slate-300 hover:text-slate-900"><Icon name="x" /></button>
+                <button onClick={close} className="absolute top-5 right-5 text-slate-500 hover:text-slate-900"><Icon name="x" /></button>
                 {status === "done" ? (
                     <div className="text-center py-6">
                         <div className="w-16 h-16 mx-auto rounded-full bg-blue-50 text-blue-500 flex items-center justify-center mb-4"><Icon name="mail-check" className="w-8 h-8" /></div>
                         {mode === "cancel" ? (
                             <div>
-                                <h2 className="text-lg font-black text-slate-900 mb-2">알림이 해지되었어요</h2>
-                                <p className="text-sm text-slate-500 font-medium leading-relaxed mb-6">더 이상 알림 메일을 보내지 않으며, 등록하셨던 <strong className="text-slate-700">이메일 주소는 파기</strong>했습니다. 확인 메일을 한 통 보내드렸어요.</p>
+                                <h2 className="text-lg font-black text-slate-900 mb-2">해지 요청을 보냈어요</h2>
+                                <p className="text-sm text-slate-500 font-medium leading-relaxed mb-6">처리가 끝나면 <strong className="text-slate-700">해지 완료 메일</strong>이 한 통 도착합니다. 이후로는 알림 메일을 보내지 않고 등록된 주소도 파기됩니다. 몇 분이 지나도 메일이 오지 않으면 다시 시도해 주세요.</p>
                             </div>
                         ) : (
                             <div>
-                                <h2 className="text-lg font-black text-slate-900 mb-2">사전 신청이 완료되었어요!</h2>
-                                <p className="text-sm text-slate-500 font-medium leading-relaxed mb-6">확인 메일을 보내드렸어요. <strong className="text-slate-700">9월 1일부터</strong> 새 공고가 올라온 날 오전 8시에 한 통으로 모아 보내드립니다. 그때까지는 메일이 가지 않습니다.</p>
+                                <h2 className="text-lg font-black text-slate-900 mb-2">사전 신청을 보냈어요!</h2>
+                                <p className="text-sm text-slate-500 font-medium leading-relaxed mb-6"><strong className="text-slate-700">확인 메일이 도착하면 접수 완료</strong>입니다. 이후 <strong className="text-slate-700">9월 1일부터</strong> 새 공고가 올라온 날 오전 8시에 한 통으로 모아 보내드리며, 그때까지는 메일이 가지 않습니다. 몇 분이 지나도 메일이 없으면 스팸함을 확인하시고 다시 신청해 주세요.</p>
                             </div>
                         )}
                         <button onClick={close} className="w-full py-3.5 bg-slate-900 text-white rounded-2xl font-bold hover:bg-blue-600 transition-colors">닫기</button>
@@ -245,12 +257,22 @@ const NotifyModal = ({ open, onClose, institutions }) => {
                                 )}
                             </div>
 
-                            <label className="flex items-start gap-2.5 bg-slate-50 border border-slate-200 rounded-xl p-3.5 cursor-pointer">
-                                <input type="checkbox" checked={agree} onChange={e => setAgree(e.target.checked)} className="mt-0.5 w-4 h-4 accent-blue-600 shrink-0" />
-                                <span className="text-[11.5px] text-slate-500 font-medium leading-relaxed">
-                                    채용 알림 발송을 위한 <strong className="text-slate-700">이메일 주소 수집·이용</strong>에 동의합니다. 수신거부 시 즉시 파기되며, 메일 하단 링크로 언제든 해지할 수 있습니다. <a href="privacy.html" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">개인정보처리방침</a>
-                                </span>
-                            </label>
+                            {/* 개인정보 수집 동의는 '항목·목적·보유기간'을 구분해 고지해야 한다
+                                (개인정보 보호법 제15조 제2항). 한 줄 요약만으로는 고지 요건을 못 채운다. */}
+                            <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5">
+                                <p className="text-[11px] font-bold text-slate-500 mb-2">개인정보 수집·이용 안내</p>
+                                <ul className="text-[11.5px] text-slate-500 font-medium leading-relaxed space-y-1 mb-3">
+                                    <li>· <strong className="text-slate-700">수집 항목</strong>: 이메일 주소, 선택한 관심 기관·고용형태</li>
+                                    <li>· <strong className="text-slate-700">이용 목적</strong>: 채용 공고 알림 메일 발송</li>
+                                    <li>· <strong className="text-slate-700">보유 기간</strong>: 해지 요청 시까지 (해지 즉시 파기)</li>
+                                </ul>
+                                <label className="flex items-start gap-2.5 cursor-pointer">
+                                    <input type="checkbox" checked={agree} onChange={e => setAgree(e.target.checked)} className="mt-0.5 w-4 h-4 accent-blue-600 shrink-0" />
+                                    <span className="text-[11.5px] text-slate-600 font-medium leading-relaxed">
+                                        위 내용에 동의합니다. 동의하지 않으셔도 사이트의 다른 기능은 그대로 이용하실 수 있습니다. <a href="privacy.html" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">개인정보처리방침</a>
+                                    </span>
+                                </label>
+                            </div>
 
                             {status === "error" && <p className="text-[12px] text-red-500 font-bold">전송에 실패했어요. 잠시 후 다시 시도해주세요.</p>}
                             <button onClick={submit} disabled={status === "sending"} className="w-full py-3.5 bg-blue-600 text-white rounded-2xl font-bold hover:bg-blue-700 transition-colors shadow-lg disabled:opacity-60">{status === "sending" ? "신청 중..." : "사전 신청하기"}</button>
@@ -461,6 +483,17 @@ const App = () => {
         return () => clearInterval(timer);
     }, []);
 
+    // 정적 백업 영역(index.html 의 data-static-fallback)을 앱이 뜬 뒤에만 숨긴다.
+    //
+    // 이 영역은 자바스크립트가 없는 방문자·크롤러·광고 심사 봇에게 보여줄 본문이라
+    // HTML 에서는 항상 보이는 상태여야 한다. CSS 로 미리 숨기면 그 목적이 사라지고,
+    // 반대로 그대로 두면 앱이 뜬 화면에서 같은 내용이 두 번 나온다.
+    // → 마운트가 실제로 성공한 시점에만 숨겨, 앱이 죽으면 정적 본문이 그대로 남는다.
+    useEffect(() => {
+        document.querySelectorAll('[data-static-fallback]')
+            .forEach(el => { el.hidden = true; });
+    }, []);
+
     // ⚠️ matchType/matchRegion은 아래 filteredJobs useMemo에서 사용하므로 반드시 먼저 정의해야 한다.
     //    (const는 호이스팅되지 않아, 뒤에 두면 필터 선택 시 TDZ ReferenceError로 앱이 크래시함)
     // ⚠️ 아래 파생값들은 반드시 렌더 블록보다 위에서 정의해야 한다.
@@ -613,7 +646,7 @@ const App = () => {
                                                 <Icon name="building-2" className="w-3.5 h-3.5 text-slate-400" />
                                                 {inst.name}
                                             </button>
-                                            <button onClick={() => window.open(inst.url, '_blank')} className="text-slate-300 hover:text-blue-600 transition-colors">
+                                            <button onClick={() => window.open(inst.url, '_blank')} className="text-slate-500 hover:text-blue-600 transition-colors">
                                                 <Icon name="external-link" className="w-3.5 h-3.5" />
                                             </button>
                                         </div>
@@ -645,7 +678,7 @@ const App = () => {
 
                                 <ScrollRow>
                                     <span className="text-[11px] font-black text-slate-400 uppercase tracking-widest mr-1 shrink-0 flex items-center gap-1 w-12"><Icon name="briefcase" className="w-3 h-3"/> 계약</span>
-                                    {[ { id: 'all', label: '전체' }, { id: '정규직', label: '정규직' }, { id: '무기계약직', label: '무기계약직' }, { id: '계약직', label: '계약직/기간제' }, { id: '비정규직', label: '비정규직' }, { id: '인턴', label: '체험형 인턴' }].map(type => (
+                                    {[ { id: 'all', label: '전체' }, { id: '정규직', label: '정규직' }, { id: '무기계약직', label: '무기계약직' }, { id: '계약직', label: '계약직/기간제' }, { id: '비정규직', label: '비정규직' }, { id: '인턴', label: '체험형 인턴' }, { id: '전입/파견', label: '전입·파견' }].map(type => (
                                         <button key={type.id} onClick={() => toggleFilter(setActiveJobTypes, type.id)} className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-[11.5px] font-bold border transition-all ${(type.id === 'all' ? activeJobTypes.length === 0 : activeJobTypes.includes(type.id)) ? 'bg-purple-600 text-white border-purple-600 shadow-md shadow-purple-100' : 'bg-white text-slate-500 border-slate-200 hover:bg-purple-50 hover:text-purple-700 hover:border-purple-200'}`}>
                                             {type.label}
                                         </button>
@@ -672,7 +705,7 @@ const App = () => {
                         </div>
 
                         <div className="space-y-3">
-                            {loading ? <div className="py-20 text-center text-slate-300 animate-pulse font-bold text-sm">최신 채용 정보를 동기화 중입니다...</div> :
+                            {loading ? <div className="py-20 text-center text-slate-500 animate-pulse font-bold text-sm">최신 채용 정보를 동기화 중입니다...</div> :
                                 filteredJobs.length > 0 ? (
                                     filteredJobs.map(job => {
                                         const instInfo = institutions.find(i => i.id === job.instId) || { shortName: (job.instId || '').toUpperCase() };
@@ -686,13 +719,13 @@ const App = () => {
                                                         {dday && <span className={`text-[10px] font-black px-2 py-0.5 rounded ${dday.urgent ? 'bg-red-500 text-white' : 'bg-orange-100 text-orange-600 border border-orange-200'}`}>{dday.label}</span>}
                                                         <span className="text-[10px] font-black px-2 py-0.5 bg-slate-100 rounded text-slate-500 uppercase tracking-tight">{instInfo.shortName}</span>
                                                         <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${isClosed ? 'text-red-600 bg-red-50 border-red-100' : 'text-blue-600 bg-blue-50 border-blue-100'}`}>{isClosed ? '서류접수마감' : '채용진행중'}</span>
-                                                        <span className="text-[10px] font-bold px-2 py-0.5 rounded border text-purple-600 bg-purple-50 border-purple-100">{job.jobType || "정규직"}</span>
+                                                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${job.jobType === '전입/파견' ? 'text-amber-700 bg-amber-50 border-amber-200' : 'text-purple-600 bg-purple-50 border-purple-100'}`}>{job.jobType || "정규직"}</span>
                                                         <span className="text-[10px] font-bold px-2 py-0.5 rounded border text-emerald-600 bg-emerald-50 border-emerald-100 flex items-center gap-0.5">
                                                             <Icon name="map-pin" className="w-2.5 h-2.5" /> {job.region || "전국"}
                                                         </span>
                                                     </div>
                                                     <h3 className={`text-[16px] md:text-[17px] font-bold text-slate-800 mb-2 leading-snug break-keep`}>{job.title}</h3>
-                                                    <p className="text-[11px] font-bold text-slate-400 flex items-center gap-1"><Icon name="calendar" className="w-3 h-3" /> 접수기간: {job.startDate} ~ <span className={isClosed ? 'text-slate-300' : 'text-red-400'}>{job.endDate}</span></p>
+                                                    <p className="text-[11px] font-bold text-slate-400 flex items-center gap-1"><Icon name="calendar" className="w-3 h-3" /> 접수기간: {job.startDate} ~ <span className={isClosed ? 'text-slate-500' : 'text-red-600'}>{job.endDate}</span></p>
                                                 </div>
                                                 <span className={`w-full md:w-auto px-7 py-2.5 rounded-xl font-bold text-xs shadow-sm transition-all text-center ${isClosed ? 'bg-slate-100 text-slate-400' : 'bg-slate-900 text-white group-hover:bg-blue-600'}`}>{isClosed ? '모집종료' : '지원하기 →'}</span>
                                             </a>
@@ -830,8 +863,8 @@ const App = () => {
                     <button onClick={() => setShowContact(true)} className="hover:text-slate-800 transition-colors">문의하기</button>
                 </div>
                 <div className="space-y-1">
-                    <p className="text-[11px] text-slate-400 font-medium">© 2026 보건의료 채용 포털. All rights reserved.</p>
-                    <p className="text-[10px] text-slate-300">모든 채용 정보는 실시간 수집 데이터로, 정확한 내용은 반드시 각 기관의 공식 공고문을 확인하시기 바랍니다.</p>
+                    <p className="text-[11px] text-slate-400 font-medium">© 2026 보건공기업 알리미. All rights reserved.</p>
+                    <p className="text-[11.5px] text-slate-500">모든 채용 정보는 실시간 수집 데이터로, 정확한 내용은 반드시 각 기관의 공식 공고문을 확인하시기 바랍니다.</p>
                 </div>
             </footer>
 
@@ -868,7 +901,7 @@ const App = () => {
             {showContact && (
                 <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
                     <div className="bg-white w-full max-w-sm rounded-[2.5rem] p-8 shadow-2xl relative text-center animate-in zoom-in duration-300">
-                        <button onClick={() => setShowContact(false)} className="absolute top-6 right-6 text-slate-300 hover:text-slate-900"><Icon name="x" /></button>
+                        <button onClick={() => setShowContact(false)} className="absolute top-6 right-6 text-slate-500 hover:text-slate-900"><Icon name="x" /></button>
                         <Icon name="mail" className="w-14 h-14 mx-auto text-blue-500 mb-4" />
                         <h2 className="text-xl font-black text-slate-900 mb-3">운영자 문의하기</h2>
                         <p className="text-sm text-slate-600 font-medium mb-6 leading-relaxed">기관 추가 요청·오류 제보·건의사항은 아래 버튼으로 남겨주시거나, 메일로 보내주셔도 됩니다.</p>
