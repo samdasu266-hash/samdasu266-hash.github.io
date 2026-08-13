@@ -106,6 +106,23 @@ NMC_CLINICAL = [
 DOCTOR_RE = re.compile(r'(?<![가-힣])(?:의사직|의사|전문의|수련의|전공의)(?![가-힣])')
 
 
+# 신규 채용이 아닌 공고 제외.
+#
+# 【수집 정책】아래는 형식만 '모집 공고'일 뿐 이 사이트 독자가 지원할 수 있는
+# 신규 채용이 아니다. 지원 자격 자체가 '현직자'이거나 임원·기관장급이다.
+#   · 전입·전출·파견 — 현직 공무원 대상 인사 이동 (예: "지방직 7급 공무원 전입희망자 모집")
+#   · 초빙·이사장 — 임원 공모 (예: "국민건강보험공단 이사장 초빙")
+#   · 위원장 — 심사·평가 위원회 위원장, 사실상 의사 등 전문가 위촉 (예: "진료심사평가위원장 채용")
+#   · 개방형 직위 — 기관장·고위직 공모 (예: "심사평가정책연구소장(개방형 직위)")
+NON_HIRING = ["전입", "전출", "초빙", "이사장", "위원장", "개방형 직위"]
+
+# ⚠️ '파견'은 통째로 막으면 안 된다. "파견직·파견근로자"는 현직자 인사 이동이 아니라
+#    엄연한 고용형태라서, 그런 공고까지 사라지면 진짜 채용을 놓친다.
+#    현직자 대상 파견(= 파견근무자/파견자 모집)만 골라낸다.
+DISPATCH_RE = re.compile(r'파견\s*(?:근무자|자|근무)')
+EMPLOYMENT_DISPATCH_RE = re.compile(r'파견\s*(?:직|근로자|사원)')
+
+
 def is_excluded_title(inst_id, title):
     """현재 수집 정책상 제외 대상인 제목인지 판정한다.
 
@@ -116,6 +133,10 @@ def is_excluded_title(inst_id, title):
     t = (title or "").replace('[', ' ').replace(']', ' ')
     if DOCTOR_RE.search(t):
         return True
+    if any(k in t for k in NON_HIRING):
+        return True
+    if DISPATCH_RE.search(t) and not EMPLOYMENT_DISPATCH_RE.search(t):
+        return True
     if inst_id == 'nmc' and any(k in title for k in NMC_CLINICAL):
         return True
     return False
@@ -124,17 +145,16 @@ def is_excluded_title(inst_id, title):
 def classify_job_type(title):
     """공고 제목에서 고용형태를 판정한다.
 
-    ⚠️ '전입·파견·초빙'은 신규 채용이 아니라 현직자(주로 공무원) 대상 인사 공고다.
-       분류하지 않으면 전부 '정규직'으로 떨어져 취업준비생에게 노이즈가 되므로
-       별도 유형으로 분리해 필터에서 걸러낼 수 있게 한다.
+    현직자 대상 전입·파견이나 임원 공모는 여기서 분류하지 않는다. 애초에
+    is_excluded_title() 에서 수집 자체를 막기 때문이다.
+    반면 '파견직·파견근로자'는 실재하는 고용형태이므로 계약직으로 분류한다.
     """
-    if any(k in title for k in ["전입", "파견", "초빙", "전출"]):
-        return "전입/파견"
     if "무기계약직" in title:
         return "무기계약직"
     if "공무직" in title:
         return "공무직"
-    if any(k in title for k in ["기간제", "계약직", "촉탁직", "휴직", "대체", "임시직"]):
+    if any(k in title for k in ["기간제", "계약직", "촉탁직", "휴직", "대체", "임시직",
+                                "파견직", "파견근로자"]):
         return "계약직/기간제"
     if "비정규직" in title:
         return "비정규직"
@@ -269,7 +289,8 @@ def build_careeron_jobs(payload, inst_id):
             continue
         if any(ex in title for ex in exclude_words):
             continue
-        if re.search(r'(?:의사|전문의|수련의|전공의)', title):
+        # 의사 면허 필요 직무·전입·파견·임원 공모 제외 (다른 수집 경로와 같은 기준)
+        if is_excluded_title(inst_id, title):
             continue
         rid = None
         for k, v in it.items():
