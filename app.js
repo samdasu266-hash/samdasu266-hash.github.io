@@ -78,7 +78,7 @@ const RequestModal = ({
     onClick: e => e.stopPropagation()
   }, /*#__PURE__*/React.createElement("button", {
     onClick: close,
-    className: "absolute top-5 right-5 text-slate-300 hover:text-slate-900"
+    className: "absolute top-5 right-5 text-slate-500 hover:text-slate-900"
   }, /*#__PURE__*/React.createElement(Icon, {
     name: "x"
   })), status === "done" ? /*#__PURE__*/React.createElement("div", {
@@ -90,9 +90,15 @@ const RequestModal = ({
     className: "w-8 h-8"
   })), /*#__PURE__*/React.createElement("h2", {
     className: "text-lg font-black text-slate-900 mb-2"
-  }, "요청이 접수되었어요!"), /*#__PURE__*/React.createElement("p", {
+  }, "요청을 전송했어요"), email ? /*#__PURE__*/React.createElement("p", {
     className: "text-sm text-slate-500 font-medium leading-relaxed mb-6"
-  }, "보내주신 의견을 검토 후 반영하겠습니다.", email ? " 입력하신 메일로 접수 확인 메일을 보내드렸어요." : ""), /*#__PURE__*/React.createElement("button", {
+  }, /*#__PURE__*/React.createElement("strong", {
+    className: "text-slate-700"
+  }, "접수 확인 메일이 도착하면 정상 접수"), "된 것입니다. 몇 분이 지나도 메일이 오지 않으면 스팸함을 확인하시고 다시 보내주세요.") : /*#__PURE__*/React.createElement("p", {
+    className: "text-sm text-slate-500 font-medium leading-relaxed mb-6"
+  }, "다만 ", /*#__PURE__*/React.createElement("strong", {
+    className: "text-slate-700"
+  }, "전송 결과를 바로 확인할 수 없어"), " 정상 접수되지 않았을 가능성이 있습니다. 확실하게 접수하시려면 이메일을 입력해 다시 보내주세요 — 접수되면 확인 메일이 갑니다."), /*#__PURE__*/React.createElement("button", {
     onClick: close,
     className: "w-full py-3.5 bg-slate-900 text-white rounded-2xl font-bold hover:bg-blue-600 transition-colors"
   }, "닫기")) : /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h2", {
@@ -131,7 +137,7 @@ const RequestModal = ({
   }), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
     className: "text-[11px] font-bold text-slate-500 mb-1.5 block"
   }, "회신 받을 이메일 ", /*#__PURE__*/React.createElement("span", {
-    className: "text-slate-300 font-medium"
+    className: "text-slate-500 font-medium"
   }, "(선택 · 접수 확인 메일 발송)")), /*#__PURE__*/React.createElement("div", {
     className: "flex items-center gap-1.5"
   }, /*#__PURE__*/React.createElement("input", {
@@ -180,6 +186,15 @@ const NotifyModal = ({
   const [agree, setAgree] = useState(false);
   const [status, setStatus] = useState("idle"); // idle | sending | done | error
   const [mode, setMode] = useState(typeof location !== 'undefined' && location.hash === '#notify-cancel' ? "cancel" : "subscribe");
+
+  // 알림 메일 하단 링크(?unsub=토큰#notify-cancel)로 들어온 경우.
+  // 토큰을 가졌다는 건 그 주소의 메일함을 연다는 뜻이라 본인 확인이 되므로,
+  // 이메일을 다시 입력받지 않고 확인 버튼 하나로 해지한다.
+  //
+  // ⚠️ 링크만 열려도 바로 해지시키면 안 된다. 회사 메일 보안 스캐너가 링크를
+  //    미리 열어보는 경우가 있어, 사용자가 누르지도 않았는데 해지될 수 있다.
+  //    그래서 확인 버튼을 한 번 거치게 둔다.
+  const unsubToken = typeof location !== 'undefined' ? new URLSearchParams(location.search).get('unsub') : null;
   if (!open) return null;
   const domain = emailDomain === "__custom__" ? customDomain.trim() : emailDomain;
   const email = emailLocal.trim() && domain ? `${emailLocal.trim()}@${domain}` : "";
@@ -198,6 +213,11 @@ const NotifyModal = ({
     onClose();
   };
   const toggle = (setter, value) => setter(prev => prev.includes(value) ? prev.filter(v => v !== value) : [...prev, value]);
+
+  // ⚠️ no-cors 요청의 응답은 opaque 라 상태 코드를 읽을 수 없다. 즉 이 then 은
+  //    "요청이 나갔다"만 뜻하고 "서버가 처리했다"는 뜻이 아니다. 그래서 완료 화면에서
+  //    '접수 완료'라고 단정하지 않고, 확인 메일 도착을 최종 확인 신호로 안내한다.
+  //    (GAS 웹앱은 CORS 헤더를 붙여주지 않아 no-cors 외에는 선택지가 없다)
   const post = payload => {
     setStatus("sending");
     fetch(REQUEST_ENDPOINT, {
@@ -226,9 +246,18 @@ const NotifyModal = ({
     });
   };
 
-  // 해지는 이메일만 받고, 본인 확인을 위해 해당 주소로 해지 링크를 보낸다
-  // (즉시 해지하면 제3자가 남의 주소를 해지시킬 수 있다)
+  // 해지는 이메일만 받아 즉시 처리하고(행 삭제), 해지되었다는 알림 메일을 한 통 보낸다.
+  // 확인 링크를 거치는 방식은 GAS 웹앱 링크가 열리지 않는 문제가 반복돼 걷어냈다.
+  // 제3자가 남의 주소를 해지시킬 위험은 남지만, 해지 알림 메일을 받은 본인이
+  // 다시 신청하면 복구되므로 피해가 회복 가능한 범위다.
   const requestCancel = () => {
+    if (unsubToken) {
+      post({
+        type: "채용알림 해지",
+        token: unsubToken
+      });
+      return;
+    }
     if (!/.+@.+\..+/.test(email)) {
       alert("이메일 주소를 정확히 입력해주세요.");
       return;
@@ -247,7 +276,7 @@ const NotifyModal = ({
     onClick: e => e.stopPropagation()
   }, /*#__PURE__*/React.createElement("button", {
     onClick: close,
-    className: "absolute top-5 right-5 text-slate-300 hover:text-slate-900"
+    className: "absolute top-5 right-5 text-slate-500 hover:text-slate-900"
   }, /*#__PURE__*/React.createElement(Icon, {
     name: "x"
   })), status === "done" ? /*#__PURE__*/React.createElement("div", {
@@ -259,17 +288,19 @@ const NotifyModal = ({
     className: "w-8 h-8"
   })), mode === "cancel" ? /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h2", {
     className: "text-lg font-black text-slate-900 mb-2"
-  }, "알림이 해지되었어요"), /*#__PURE__*/React.createElement("p", {
+  }, "해지 요청을 보냈어요"), /*#__PURE__*/React.createElement("p", {
     className: "text-sm text-slate-500 font-medium leading-relaxed mb-6"
-  }, "더 이상 알림 메일을 보내지 않으며, 등록하셨던 ", /*#__PURE__*/React.createElement("strong", {
+  }, "처리가 끝나면 ", /*#__PURE__*/React.createElement("strong", {
     className: "text-slate-700"
-  }, "이메일 주소는 파기"), "했습니다. 확인 메일을 한 통 보내드렸어요.")) : /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h2", {
+  }, "해지 완료 메일"), "이 한 통 도착합니다. 이후로는 알림 메일을 보내지 않고 등록된 주소도 파기됩니다. 몇 분이 지나도 메일이 오지 않으면 다시 시도해 주세요.")) : /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h2", {
     className: "text-lg font-black text-slate-900 mb-2"
-  }, "사전 신청이 완료되었어요!"), /*#__PURE__*/React.createElement("p", {
+  }, "사전 신청을 보냈어요!"), /*#__PURE__*/React.createElement("p", {
     className: "text-sm text-slate-500 font-medium leading-relaxed mb-6"
-  }, "확인 메일을 보내드렸어요. ", /*#__PURE__*/React.createElement("strong", {
+  }, /*#__PURE__*/React.createElement("strong", {
     className: "text-slate-700"
-  }, "9월 1일부터"), " 새 공고가 올라온 날 오전 8시에 한 통으로 모아 보내드립니다. 그때까지는 메일이 가지 않습니다.")), /*#__PURE__*/React.createElement("button", {
+  }, "확인 메일이 도착하면 접수 완료"), "입니다. 이후 ", /*#__PURE__*/React.createElement("strong", {
+    className: "text-slate-700"
+  }, "9월 1일부터"), " 새 공고가 올라온 날 오전 8시에 한 통으로 모아 보내드리며, 그때까지는 메일이 가지 않습니다. 몇 분이 지나도 메일이 없으면 스팸함을 확인하시고 다시 신청해 주세요.")), /*#__PURE__*/React.createElement("button", {
     onClick: close,
     className: "w-full py-3.5 bg-slate-900 text-white rounded-2xl font-bold hover:bg-blue-600 transition-colors"
   }, "닫기")) : mode === "cancel" ? /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h2", {
@@ -279,7 +310,22 @@ const NotifyModal = ({
     className: "text-slate-500 w-5 h-5"
   }), " 채용 알림 해지"), /*#__PURE__*/React.createElement("p", {
     className: "text-[12px] text-slate-400 font-medium mb-5"
-  }, "신청하신 이메일 주소를 입력해주세요."), /*#__PURE__*/React.createElement("div", {
+  }, unsubToken ? "아래 버튼을 누르면 해지됩니다." : "신청하신 이메일 주소를 입력해주세요."), unsubToken ? /*#__PURE__*/React.createElement("div", {
+    className: "space-y-4 text-left"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-[11.5px] text-slate-500 font-medium leading-relaxed"
+  }, "🔒 알림 메일에 담긴 링크로 접속하셨습니다. 본인 확인이 끝났으니 ", /*#__PURE__*/React.createElement("strong", {
+    className: "text-slate-700"
+  }, "이메일을 다시 입력하실 필요가 없습니다."), " 해지하시면 저장된 주소는 즉시 파기되고, 확인 메일이 한 통 발송됩니다."), status === "error" && /*#__PURE__*/React.createElement("p", {
+    className: "text-[12px] text-red-500 font-bold"
+  }, "전송에 실패했어요. 잠시 후 다시 시도해주세요."), /*#__PURE__*/React.createElement("button", {
+    onClick: requestCancel,
+    disabled: status === "sending",
+    className: "w-full py-3.5 bg-slate-900 text-white rounded-2xl font-bold hover:bg-slate-800 transition-colors shadow-lg disabled:opacity-60"
+  }, status === "sending" ? "처리 중..." : "알림 해지하기"), /*#__PURE__*/React.createElement("button", {
+    onClick: close,
+    className: "w-full text-[12px] text-slate-400 font-bold hover:text-slate-600 transition-colors"
+  }, "해지하지 않고 닫기")) : /*#__PURE__*/React.createElement("div", {
     className: "space-y-4 text-left"
   }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
     className: "text-[11px] font-bold text-slate-500 mb-1.5 block"
@@ -388,23 +434,33 @@ const NotifyModal = ({
     className: "bg-blue-50 border border-blue-100 rounded-xl p-3.5 text-[11.5px] text-blue-900 font-medium leading-relaxed"
   }, "📮 발송은 ", /*#__PURE__*/React.createElement("strong", null, "9월 1일부터"), " 시작합니다. 이후 ", /*#__PURE__*/React.createElement("strong", null, "선택한 조건에 맞는 새 공고가 있는 날에만"), " 메일을 보내드리며, 해당하는 공고가 없는 날은 발송되지 않습니다.", (insts.length > 0 || jobTypes.length > 0) && /*#__PURE__*/React.createElement("span", {
     className: "block mt-1.5 text-blue-700"
-  }, "현재 조건: ", insts.length > 0 ? insts.map(id => (institutions.find(i => i.id === id) || {}).shortName).join(' · ') : '전체 기관', " / ", jobTypes.length > 0 ? jobTypes.join(' · ') : '전체 고용형태')), /*#__PURE__*/React.createElement("label", {
-    className: "flex items-start gap-2.5 bg-slate-50 border border-slate-200 rounded-xl p-3.5 cursor-pointer"
+  }, "현재 조건: ", insts.length > 0 ? insts.map(id => (institutions.find(i => i.id === id) || {}).shortName).join(' · ') : '전체 기관', " / ", jobTypes.length > 0 ? jobTypes.join(' · ') : '전체 고용형태')), /*#__PURE__*/React.createElement("div", {
+    className: "bg-slate-50 border border-slate-200 rounded-xl p-3.5"
+  }, /*#__PURE__*/React.createElement("p", {
+    className: "text-[11px] font-bold text-slate-500 mb-2"
+  }, "개인정보 수집·이용 안내"), /*#__PURE__*/React.createElement("ul", {
+    className: "text-[11.5px] text-slate-500 font-medium leading-relaxed space-y-1 mb-3"
+  }, /*#__PURE__*/React.createElement("li", null, "· ", /*#__PURE__*/React.createElement("strong", {
+    className: "text-slate-700"
+  }, "수집 항목"), ": 이메일 주소, 선택한 관심 기관·고용형태"), /*#__PURE__*/React.createElement("li", null, "· ", /*#__PURE__*/React.createElement("strong", {
+    className: "text-slate-700"
+  }, "이용 목적"), ": 채용 공고 알림 메일 발송"), /*#__PURE__*/React.createElement("li", null, "· ", /*#__PURE__*/React.createElement("strong", {
+    className: "text-slate-700"
+  }, "보유 기간"), ": 해지 요청 시까지 (해지 즉시 파기)")), /*#__PURE__*/React.createElement("label", {
+    className: "flex items-start gap-2.5 cursor-pointer"
   }, /*#__PURE__*/React.createElement("input", {
     type: "checkbox",
     checked: agree,
     onChange: e => setAgree(e.target.checked),
     className: "mt-0.5 w-4 h-4 accent-blue-600 shrink-0"
   }), /*#__PURE__*/React.createElement("span", {
-    className: "text-[11.5px] text-slate-500 font-medium leading-relaxed"
-  }, "채용 알림 발송을 위한 ", /*#__PURE__*/React.createElement("strong", {
-    className: "text-slate-700"
-  }, "이메일 주소 수집·이용"), "에 동의합니다. 수신거부 시 즉시 파기되며, 메일 하단 링크로 언제든 해지할 수 있습니다. ", /*#__PURE__*/React.createElement("a", {
+    className: "text-[11.5px] text-slate-600 font-medium leading-relaxed"
+  }, "위 내용에 동의합니다. 동의하지 않으셔도 사이트의 다른 기능은 그대로 이용하실 수 있습니다. ", /*#__PURE__*/React.createElement("a", {
     href: "privacy.html",
     target: "_blank",
     rel: "noopener noreferrer",
     className: "text-blue-600 underline"
-  }, "개인정보처리방침"))), status === "error" && /*#__PURE__*/React.createElement("p", {
+  }, "개인정보처리방침")))), status === "error" && /*#__PURE__*/React.createElement("p", {
     className: "text-[12px] text-red-500 font-bold"
   }, "전송에 실패했어요. 잠시 후 다시 시도해주세요."), /*#__PURE__*/React.createElement("button", {
     onClick: submit,
@@ -705,6 +761,18 @@ const App = () => {
     return () => clearInterval(timer);
   }, []);
 
+  // 정적 백업 영역(index.html 의 data-static-fallback)을 앱이 뜬 뒤에만 숨긴다.
+  //
+  // 이 영역은 자바스크립트가 없는 방문자·크롤러·광고 심사 봇에게 보여줄 본문이라
+  // HTML 에서는 항상 보이는 상태여야 한다. CSS 로 미리 숨기면 그 목적이 사라지고,
+  // 반대로 그대로 두면 앱이 뜬 화면에서 같은 내용이 두 번 나온다.
+  // → 마운트가 실제로 성공한 시점에만 숨겨, 앱이 죽으면 정적 본문이 그대로 남는다.
+  useEffect(() => {
+    document.querySelectorAll('[data-static-fallback]').forEach(el => {
+      el.hidden = true;
+    });
+  }, []);
+
   // ⚠️ matchType/matchRegion은 아래 filteredJobs useMemo에서 사용하므로 반드시 먼저 정의해야 한다.
   //    (const는 호이스팅되지 않아, 뒤에 두면 필터 선택 시 TDZ ReferenceError로 앱이 크래시함)
   // ⚠️ 아래 파생값들은 반드시 렌더 블록보다 위에서 정의해야 한다.
@@ -935,7 +1003,7 @@ const App = () => {
     className: "w-3.5 h-3.5 text-slate-400"
   }), inst.name), /*#__PURE__*/React.createElement("button", {
     onClick: () => window.open(inst.url, '_blank'),
-    className: "text-slate-300 hover:text-blue-600 transition-colors"
+    className: "text-slate-500 hover:text-blue-600 transition-colors"
   }, /*#__PURE__*/React.createElement(Icon, {
     name: "external-link",
     className: "w-3.5 h-3.5"
@@ -998,6 +1066,9 @@ const App = () => {
   }, {
     id: '인턴',
     label: '체험형 인턴'
+  }, {
+    id: '전입/파견',
+    label: '전입·파견'
   }].map(type => /*#__PURE__*/React.createElement("button", {
     key: type.id,
     onClick: () => toggleFilter(setActiveJobTypes, type.id),
@@ -1076,7 +1147,7 @@ const App = () => {
   }, "마감임박순"))), /*#__PURE__*/React.createElement("div", {
     className: "space-y-3"
   }, loading ? /*#__PURE__*/React.createElement("div", {
-    className: "py-20 text-center text-slate-300 animate-pulse font-bold text-sm"
+    className: "py-20 text-center text-slate-500 animate-pulse font-bold text-sm"
   }, "최신 채용 정보를 동기화 중입니다...") : filteredJobs.length > 0 ? filteredJobs.map(job => {
     const instInfo = institutions.find(i => i.id === job.instId) || {
       shortName: (job.instId || '').toUpperCase()
@@ -1103,7 +1174,7 @@ const App = () => {
     }, instInfo.shortName), /*#__PURE__*/React.createElement("span", {
       className: `text-[10px] font-bold px-2 py-0.5 rounded border ${isClosed ? 'text-red-600 bg-red-50 border-red-100' : 'text-blue-600 bg-blue-50 border-blue-100'}`
     }, isClosed ? '서류접수마감' : '채용진행중'), /*#__PURE__*/React.createElement("span", {
-      className: "text-[10px] font-bold px-2 py-0.5 rounded border text-purple-600 bg-purple-50 border-purple-100"
+      className: `text-[10px] font-bold px-2 py-0.5 rounded border ${job.jobType === '전입/파견' ? 'text-amber-700 bg-amber-50 border-amber-200' : 'text-purple-600 bg-purple-50 border-purple-100'}`
     }, job.jobType || "정규직"), /*#__PURE__*/React.createElement("span", {
       className: "text-[10px] font-bold px-2 py-0.5 rounded border text-emerald-600 bg-emerald-50 border-emerald-100 flex items-center gap-0.5"
     }, /*#__PURE__*/React.createElement(Icon, {
@@ -1117,7 +1188,7 @@ const App = () => {
       name: "calendar",
       className: "w-3 h-3"
     }), " 접수기간: ", job.startDate, " ~ ", /*#__PURE__*/React.createElement("span", {
-      className: isClosed ? 'text-slate-300' : 'text-red-400'
+      className: isClosed ? 'text-slate-500' : 'text-red-600'
     }, job.endDate))), /*#__PURE__*/React.createElement("span", {
       className: `w-full md:w-auto px-7 py-2.5 rounded-xl font-bold text-xs shadow-sm transition-all text-center ${isClosed ? 'bg-slate-100 text-slate-400' : 'bg-slate-900 text-white group-hover:bg-blue-600'}`
     }, isClosed ? '모집종료' : '지원하기 →'));
@@ -1288,8 +1359,8 @@ const App = () => {
     className: "space-y-1"
   }, /*#__PURE__*/React.createElement("p", {
     className: "text-[11px] text-slate-400 font-medium"
-  }, "© 2026 보건의료 채용 포털. All rights reserved."), /*#__PURE__*/React.createElement("p", {
-    className: "text-[10px] text-slate-300"
+  }, "© 2026 보건공기업 알리미. All rights reserved."), /*#__PURE__*/React.createElement("p", {
+    className: "text-[11.5px] text-slate-500"
   }, "모든 채용 정보는 실시간 수집 데이터로, 정확한 내용은 반드시 각 기관의 공식 공고문을 확인하시기 바랍니다."))), showTop && /*#__PURE__*/React.createElement("button", {
     onClick: () => window.scrollTo({
       top: 0,
@@ -1323,7 +1394,7 @@ const App = () => {
     className: "bg-white w-full max-w-sm rounded-[2.5rem] p-8 shadow-2xl relative text-center animate-in zoom-in duration-300"
   }, /*#__PURE__*/React.createElement("button", {
     onClick: () => setShowContact(false),
-    className: "absolute top-6 right-6 text-slate-300 hover:text-slate-900"
+    className: "absolute top-6 right-6 text-slate-500 hover:text-slate-900"
   }, /*#__PURE__*/React.createElement(Icon, {
     name: "x"
   })), /*#__PURE__*/React.createElement(Icon, {

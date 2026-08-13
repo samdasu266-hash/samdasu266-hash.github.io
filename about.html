@@ -1,6 +1,23 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
+<!-- Google Consent Mode v2 — EEA·영국·스위스 방문자는 동의 전 광고·분석 저장소를 막는다.
+     동의 수집은 AdSense 콘솔의 인증 CMP(개인 정보 보호 및 메시지)가 담당하고,
+     동의가 확인되면 이 기본값을 갱신한다.
+     region 을 지정했으므로 국내 방문자의 광고·분석 동작에는 영향이 없다.
+     ⚠️ 반드시 gtag.js·adsbygoogle.js 보다 먼저 실행돼야 한다. -->
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('consent', 'default', {
+    ad_storage: 'denied',
+    ad_user_data: 'denied',
+    ad_personalization: 'denied',
+    analytics_storage: 'denied',
+    region: ['AT','BE','BG','HR','CY','CZ','DK','EE','FI','FR','DE','GR','HU','IE','IT','LV','LT','LU','MT','NL','PL','PT','RO','SK','SI','ES','SE','IS','LI','NO','GB','CH'],
+    wait_for_update: 500
+  });
+</script>
 <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-7297NMP8GQ"></script>
 <script>
@@ -20,7 +37,7 @@
     <meta property="og:title" content="사이트 소개 및 운영 정책 | 보건공기업 알리미">
     <meta property="og:description" content="보건공기업 알리미의 서비스 소개, 채용 정보 수집 출처와 방식, 운영 원칙, 개인정보·쿠키 처리 방침을 안내합니다.">
     <meta property="og:url" content="https://samdasu266-hash.github.io/about.html">
-    <meta property="og:image" content="https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?q=80&w=1200&auto=format&fit=crop">
+    <meta property="og:image" content="https://samdasu266-hash.github.io/og-image.png">
     <meta name="twitter:card" content="summary_large_image">
     <script type="application/ld+json">
 {
@@ -35,8 +52,11 @@
     <title>사이트 소개 및 운영 정책 | 보건공기업 알리미</title>
     <meta name="description" content="보건공기업 알리미의 서비스 소개, 채용 정보 수집 출처와 방식, 운영 원칙, 개인정보·쿠키 처리 방침을 안내합니다.">
     <link rel="stylesheet" href="tailwind.css?v=202608120000">
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+    <link rel="icon" href="favicon.png" type="image/png">
+    <link rel="apple-touch-icon" href="favicon.png">
     <style>
-        @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css');
         body { font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif; background-color: #f8fafc; color: #1e293b; line-height: 1.8; }
     </style>
 </head>
@@ -102,7 +122,7 @@
     </article>
 
     <footer class="mt-12 text-center text-slate-400 text-[12px] font-medium border-t pt-8">
-        <p>© 2026 보건의료 채용 포털. All rights reserved.</p>
+        <p>© 2026 보건공기업 알리미. All rights reserved.</p>
         <p class="mt-1">본 콘텐츠는 참고용이며, 정확한 채용 정보는 각 기관의 공식 공고문을 확인하시기 바랍니다.</p>
     </footer>
 

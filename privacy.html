@@ -1,6 +1,23 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
+<!-- Google Consent Mode v2 — EEA·영국·스위스 방문자는 동의 전 광고·분석 저장소를 막는다.
+     동의 수집은 AdSense 콘솔의 인증 CMP(개인 정보 보호 및 메시지)가 담당하고,
+     동의가 확인되면 이 기본값을 갱신한다.
+     region 을 지정했으므로 국내 방문자의 광고·분석 동작에는 영향이 없다.
+     ⚠️ 반드시 gtag.js·adsbygoogle.js 보다 먼저 실행돼야 한다. -->
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('consent', 'default', {
+    ad_storage: 'denied',
+    ad_user_data: 'denied',
+    ad_personalization: 'denied',
+    analytics_storage: 'denied',
+    region: ['AT','BE','BG','HR','CY','CZ','DK','EE','FI','FR','DE','GR','HU','IE','IT','LV','LT','LU','MT','NL','PL','PT','RO','SK','SI','ES','SE','IS','LI','NO','GB','CH'],
+    wait_for_update: 500
+  });
+</script>
 <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-7297NMP8GQ"></script>
 <script>
@@ -20,7 +37,7 @@
     <meta property="og:title" content="개인정보처리방침 | 보건공기업 알리미">
     <meta property="og:description" content="보건공기업 알리미가 채용 알림 서비스를 위해 수집하는 개인정보 항목과 이용 목적, 보유 기간, 파기 절차, 이용자의 권리를 안내합니다.">
     <meta property="og:url" content="https://samdasu266-hash.github.io/privacy.html">
-    <meta property="og:image" content="https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?q=80&w=1200&auto=format&fit=crop">
+    <meta property="og:image" content="https://samdasu266-hash.github.io/og-image.png">
     <meta name="twitter:card" content="summary_large_image">
     <script type="application/ld+json">
 {
@@ -35,8 +52,11 @@
     <title>개인정보처리방침 | 보건공기업 알리미</title>
     <meta name="description" content="보건공기업 알리미가 채용 알림 서비스를 위해 수집하는 개인정보 항목과 이용 목적, 보유 기간, 파기 절차, 이용자의 권리를 안내합니다.">
     <link rel="stylesheet" href="tailwind.css?v=202608120000">
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+    <link rel="icon" href="favicon.png" type="image/png">
+    <link rel="apple-touch-icon" href="favicon.png">
     <style>
-        @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css');
         body { font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif; background-color: #f8fafc; color: #1e293b; line-height: 1.8; }
     </style>
 </head>
@@ -112,7 +132,7 @@
                 <h2 class="text-lg font-bold text-slate-900 mb-3">6. 이용자의 권리와 행사 방법</h2>
                 <p>이용자는 언제든지 본인의 개인정보에 대한 <strong>열람·정정·삭제·처리정지</strong>를 요구할 수 있습니다. 해지 방법은 다음 세 가지이며, 어느 방법이든 완료 시 저장된 이메일 주소는 즉시 삭제됩니다.</p>
                 <ul class="mt-3 space-y-1.5 list-disc pl-5">
-                    <li><strong>알림 메일 하단의 &ldquo;알림 취소하기&rdquo; 링크</strong> — 사이트의 해지 화면이 바로 열립니다.</li>
+                    <li><strong>알림 메일 하단의 &ldquo;알림 취소하기&rdquo; 링크</strong> — 사이트의 해지 화면이 열리며, 확인 버튼 한 번으로 해지됩니다. 이 링크에는 신청 시 발급된 고유 값이 포함되어 있어 본인 확인이 이루어지므로, 이메일 주소를 다시 입력하실 필요가 없습니다.</li>
                     <li><strong>사이트의 알림 신청 팝업 → &ldquo;알림 취소하기&rdquo;</strong> — 신청하신 이메일 주소를 입력하시면 즉시 해지되고 저장된 주소가 파기됩니다. 해지 확인 메일이 발송되므로, 본인이 요청하지 않은 해지라면 다시 신청하실 수 있습니다.</li>
                     <li><strong>아래 문의처로 연락</strong> — 지체 없이 처리해 드립니다.</li>
                 </ul>
@@ -124,6 +144,7 @@
                 <h2 class="text-lg font-bold text-slate-900 mb-3">7. 쿠키 및 광고·분석 도구</h2>
                 <p>본 사이트는 이용 통계 분석을 위해 Google Analytics를, 사이트 운영 비용 충당을 위해 Google AdSense를 이용합니다. 이 과정에서 쿠키를 통해 방문 기록 등 비식별 정보가 수집될 수 있으며, 이는 이메일 등 본 방침이 정한 개인정보와 결합되지 않습니다.</p>
                 <p class="mt-3">쿠키 저장을 원하지 않으시면 브라우저 설정에서 쿠키를 차단하실 수 있습니다. Google의 광고 개인 최적화는 <a href="https://adssettings.google.com/" target="_blank" rel="noopener noreferrer" class="text-blue-600 underline">Google 광고 설정</a>에서 해제할 수 있습니다.</p>
+                <p class="mt-3">유럽경제지역(EEA)·영국·스위스에서 접속하시는 경우, 동의하시기 전까지 광고 및 분석 목적의 쿠키 저장이 기본적으로 차단되며(Google 동의 모드), 동의 여부는 접속 시 표시되는 동의 창에서 선택하실 수 있습니다.</p>
             </section>
 
             <section>

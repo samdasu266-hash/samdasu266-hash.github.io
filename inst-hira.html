@@ -1,6 +1,23 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
+<!-- Google Consent Mode v2 — EEA·영국·스위스 방문자는 동의 전 광고·분석 저장소를 막는다.
+     동의 수집은 AdSense 콘솔의 인증 CMP(개인 정보 보호 및 메시지)가 담당하고,
+     동의가 확인되면 이 기본값을 갱신한다.
+     region 을 지정했으므로 국내 방문자의 광고·분석 동작에는 영향이 없다.
+     ⚠️ 반드시 gtag.js·adsbygoogle.js 보다 먼저 실행돼야 한다. -->
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('consent', 'default', {
+    ad_storage: 'denied',
+    ad_user_data: 'denied',
+    ad_personalization: 'denied',
+    analytics_storage: 'denied',
+    region: ['AT','BE','BG','HR','CY','CZ','DK','EE','FI','FR','DE','GR','HU','IE','IT','LV','LT','LU','MT','NL','PL','PT','RO','SK','SI','ES','SE','IS','LI','NO','GB','CH'],
+    wait_for_update: 500
+  });
+</script>
 <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-7297NMP8GQ"></script>
 <script>
@@ -23,7 +40,7 @@
     <meta property="og:title" content="건강보험심사평가원 채용 정보 — 공고 아카이브·수집 통계 | 보건공기업 알리미">
     <meta property="og:description" content="건강보험심사평가원 채용 공고 아카이브와 수집 통계. 본사 강원특별자치도 원주시, 신입 초임 약 4,300만원, 채용 주기 연 2회 (상반기 4~5월, 하반기 9~10월). 지금까지 수집된 공고 2건의 고용형태·근무지역 분포를 함께 제공합니다.">
     <meta property="og:url" content="https://samdasu266-hash.github.io/inst-hira.html">
-    <meta property="og:image" content="https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?q=80&w=1200&auto=format&fit=crop">
+    <meta property="og:image" content="https://samdasu266-hash.github.io/og-image.png">
     <meta name="twitter:card" content="summary_large_image">
     <script type="application/ld+json">
 {
@@ -38,12 +55,15 @@
     "name": "건강보험심사평가원",
     "url": "https://hira.recruitlab.co.kr"
   },
-  "dateModified": "2026.08.12"
+  "dateModified": "2026.08.13"
 }
     </script>
-    <link rel="stylesheet" href="tailwind.css?v=202608120900">
+    <link rel="stylesheet" href="tailwind.css?v=202608131440">
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+    <link rel="icon" href="favicon.png" type="image/png">
+    <link rel="apple-touch-icon" href="favicon.png">
     <style>
-        @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css');
         body { font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif; background-color: #f8fafc; color: #1e293b; line-height: 1.8; }
     </style>
 </head>
@@ -66,7 +86,7 @@
     <article class="bg-white p-8 md:p-12 rounded-3xl border border-slate-200 shadow-sm">
         <header class="border-b border-slate-100 pb-8 mb-8">
             <h1 class="text-3xl md:text-4xl font-black text-slate-900 leading-tight">🩺 건강보험심사평가원 채용 정보</h1>
-            <p class="text-[12px] text-slate-400 font-medium mt-3">🔄 최근 갱신: 2026.08.12 · 수집 이력 2건</p>
+            <p class="text-[12px] text-slate-400 font-medium mt-3">🔄 최근 갱신: 2026.08.13 · 수집 이력 2건</p>
             <p class="text-slate-500 font-medium mt-4 leading-relaxed break-keep">요양급여 심사와 의료 질 평가를 담당합니다. 보건의료 면허 소지자 비중이 매우 높아 임상 경력을 직접 활용하기 좋은 기관입니다.</p>
         </header>
 
@@ -86,7 +106,7 @@
 
         <section class="mb-10">
             <h2 class="text-xl font-bold text-slate-900 mb-1">📊 이 사이트가 수집한 채용 통계</h2>
-            <p class="text-[12.5px] text-slate-400 mb-4">2026-07-28 ~ 2026-08-12 동안 자동 수집된 2건 기준 · 매주 갱신</p>
+            <p class="text-[12.5px] text-slate-400 mb-4">2026-07-28 ~ 2026-08-13 동안 자동 수집된 2건 기준 · 매주 갱신</p>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-[13.5px]">
                 <div class="border border-slate-200 rounded-2xl p-5">
                     <h3 class="font-bold text-slate-900 mb-2">고용형태 분포</h3>
@@ -117,7 +137,7 @@
     </article>
 
     <footer class="mt-12 text-center text-slate-400 text-[12px] font-medium border-t pt-8">
-        <p>© 2026 보건의료 채용 포털. All rights reserved.</p>
+        <p>© 2026 보건공기업 알리미. All rights reserved.</p>
         <p class="mt-1">본 아카이브는 각 기관 공식 채용 페이지에서 자동 수집한 기록입니다. 정확한 내용은 반드시 원본 공고문을 확인하세요.</p>
         <p class="mt-2"><a href="about.html" class="text-slate-500 hover:text-blue-600 underline">사이트 소개·운영정책</a></p>
     </footer>
