@@ -1066,9 +1066,6 @@ const App = () => {
   }, {
     id: '인턴',
     label: '체험형 인턴'
-  }, {
-    id: '전입/파견',
-    label: '전입·파견'
   }].map(type => /*#__PURE__*/React.createElement("button", {
     key: type.id,
     onClick: () => toggleFilter(setActiveJobTypes, type.id),
@@ -1174,7 +1171,7 @@ const App = () => {
     }, instInfo.shortName), /*#__PURE__*/React.createElement("span", {
       className: `text-[10px] font-bold px-2 py-0.5 rounded border ${isClosed ? 'text-red-600 bg-red-50 border-red-100' : 'text-blue-600 bg-blue-50 border-blue-100'}`
     }, isClosed ? '서류접수마감' : '채용진행중'), /*#__PURE__*/React.createElement("span", {
-      className: `text-[10px] font-bold px-2 py-0.5 rounded border ${job.jobType === '전입/파견' ? 'text-amber-700 bg-amber-50 border-amber-200' : 'text-purple-600 bg-purple-50 border-purple-100'}`
+      className: "text-[10px] font-bold px-2 py-0.5 rounded border text-purple-600 bg-purple-50 border-purple-100"
     }, job.jobType || "정규직"), /*#__PURE__*/React.createElement("span", {
       className: "text-[10px] font-bold px-2 py-0.5 rounded border text-emerald-600 bg-emerald-50 border-emerald-100 flex items-center gap-0.5"
     }, /*#__PURE__*/React.createElement(Icon, {

@@ -701,7 +701,7 @@ const App = () => {
 
                                 <ScrollRow>
                                     <span className="text-[11px] font-black text-slate-400 uppercase tracking-widest mr-1 shrink-0 flex items-center gap-1 w-12"><Icon name="briefcase" className="w-3 h-3"/> 계약</span>
-                                    {[ { id: 'all', label: '전체' }, { id: '정규직', label: '정규직' }, { id: '무기계약직', label: '무기계약직' }, { id: '계약직', label: '계약직/기간제' }, { id: '비정규직', label: '비정규직' }, { id: '인턴', label: '체험형 인턴' }, { id: '전입/파견', label: '전입·파견' }].map(type => (
+                                    {[ { id: 'all', label: '전체' }, { id: '정규직', label: '정규직' }, { id: '무기계약직', label: '무기계약직' }, { id: '계약직', label: '계약직/기간제' }, { id: '비정규직', label: '비정규직' }, { id: '인턴', label: '체험형 인턴' }].map(type => (
                                         <button key={type.id} onClick={() => toggleFilter(setActiveJobTypes, type.id)} className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-[11.5px] font-bold border transition-all ${(type.id === 'all' ? activeJobTypes.length === 0 : activeJobTypes.includes(type.id)) ? 'bg-purple-600 text-white border-purple-600 shadow-md shadow-purple-100' : 'bg-white text-slate-500 border-slate-200 hover:bg-purple-50 hover:text-purple-700 hover:border-purple-200'}`}>
                                             {type.label}
                                         </button>
@@ -742,7 +742,7 @@ const App = () => {
                                                         {dday && <span className={`text-[10px] font-black px-2 py-0.5 rounded ${dday.urgent ? 'bg-red-500 text-white' : 'bg-orange-100 text-orange-600 border border-orange-200'}`}>{dday.label}</span>}
                                                         <span className="text-[10px] font-black px-2 py-0.5 bg-slate-100 rounded text-slate-500 uppercase tracking-tight">{instInfo.shortName}</span>
                                                         <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${isClosed ? 'text-red-600 bg-red-50 border-red-100' : 'text-blue-600 bg-blue-50 border-blue-100'}`}>{isClosed ? '서류접수마감' : '채용진행중'}</span>
-                                                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${job.jobType === '전입/파견' ? 'text-amber-700 bg-amber-50 border-amber-200' : 'text-purple-600 bg-purple-50 border-purple-100'}`}>{job.jobType || "정규직"}</span>
+                                                        <span className="text-[10px] font-bold px-2 py-0.5 rounded border text-purple-600 bg-purple-50 border-purple-100">{job.jobType || "정규직"}</span>
                                                         <span className="text-[10px] font-bold px-2 py-0.5 rounded border text-emerald-600 bg-emerald-50 border-emerald-100 flex items-center gap-0.5">
                                                             <Icon name="map-pin" className="w-2.5 h-2.5" /> {job.region || "전국"}
                                                         </span>

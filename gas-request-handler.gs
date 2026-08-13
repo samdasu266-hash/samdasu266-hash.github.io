@@ -476,10 +476,10 @@ function filterForSubscriber_(jobs, insts, types) {
   var typeList = types ? types.split(",").map(function (s) { return s.trim(); }).filter(String) : [];
   return jobs.filter(function (j) {
     if (instList.length && instList.indexOf(j.instId) === -1) return false;
+    // 전입·파견, 임원 공모처럼 신규 채용이 아닌 공고는 수집 단계(scraper.py 의
+    // is_excluded_title)에서 이미 걸러지므로 여기서 따로 제외하지 않는다.
     if (typeList.length) return typeList.indexOf(j.jobType) !== -1;
-    // 고용형태를 고르지 않은 구독자(= 전체)에게도 전입·파견 공고는 보내지 않는다.
-    // 신규 채용이 아니라 현직 공무원 대상 인사 공고이기 때문.
-    return j.jobType !== "전입/파견";
+    return true;
   });
 }
 
