@@ -1,6 +1,18 @@
 {
- "generated": "2026-08-13T08:46:40.630109+09:00",
+ "generated": "2026-08-13T11:06:33.663505+09:00",
  "jobs": [
+  {
+   "instId": "nps",
+   "title": "[국민연금공단 대전세종지역본부] 공무직(시설직, 보안직) 및 기간제근로자(근로능력평가직) 공개채용 공고",
+   "startDate": "26.08.13",
+   "endDate": "26.08.20 18:00",
+   "status": "진행중",
+   "jobType": "공무직",
+   "region": "대전충남",
+   "link": "https://www.nps.or.kr/pnsgdnc/hiregdnc/getOHAE0004M1.do?menuId=MN24000969&pstId=ZZ202600000000000896&hmpgCd=01&hmpgBbsCd=BS20240138&sortSe=FR&pageIndex=1&searchText=&searchGbu=&pstSeCd=",
+   "firstSeen": "2026-08-13",
+   "lastSeen": "2026-08-13"
+  },
   {
    "instId": "koiha",
    "title": "의료기관평가인증원 2026년 제2회 직원채용 공고(연구직) D-Day",
