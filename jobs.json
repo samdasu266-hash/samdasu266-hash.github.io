@@ -1,5 +1,5 @@
 {
- "lastSync": "2026-08-13T13:25:03.053925+09:00",
+ "lastSync": "2026-08-13T15:23:04.661727+09:00",
  "jobs": [
   {
    "instId": "hira",
@@ -12,6 +12,16 @@
    "link": "https://hira.recruitlab.co.kr/app/recruitment-announcement/view/987"
   },
   {
+   "instId": "nhis",
+   "title": "2026년도 제2차 국민건강보험공단 개방형직위 및 전문인력 채용 공고",
+   "startDate": "26.08.13",
+   "endDate": "상세참조",
+   "status": "진행중",
+   "jobType": "정규직",
+   "region": "강원(본부·공고확인)",
+   "link": "https://www.nhis.or.kr/nhis/together/wbhaea02700m01.do"
+  },
+  {
    "instId": "nps",
    "title": "[국민연금공단 대전세종지역본부] 공무직(시설직, 보안직) 및 기간제근로자(근로능력평가직) 공개채용 공고",
    "startDate": "26.08.13",
@@ -20,56 +30,6 @@
    "jobType": "공무직",
    "region": "대전충남",
    "link": "https://www.nps.or.kr/pnsgdnc/hiregdnc/getOHAE0004M1.do?menuId=MN24000969&pstId=ZZ202600000000000896&hmpgCd=01&hmpgBbsCd=BS20240138&sortSe=FR&pageIndex=1&searchText=&searchGbu=&pstSeCd="
-  },
-  {
-   "instId": "mohw",
-   "title": "보건복지부 장애인학대대응팀 파견근무자 모집 공고",
-   "startDate": "26.08.12",
-   "endDate": "26.08.28 18:00",
-   "status": "진행중",
-   "jobType": "전입/파견",
-   "region": "대전충남",
-   "link": "https://www.mohw.go.kr/board.es?mid=a10501010400&bid=0003&act=view&list_no=1491582&tag=&nPage=1"
-  },
-  {
-   "instId": "mohw",
-   "title": "보건복지부 지방직 7급 공무원 전입희망자 모집 공고",
-   "startDate": "26.08.12",
-   "endDate": "26.08.24 18:00",
-   "status": "진행중",
-   "jobType": "전입/파견",
-   "region": "전국(공고확인)",
-   "link": "https://www.mohw.go.kr/board.es?mid=a10501010400&bid=0003&act=view&list_no=1491579&tag=&nPage=1"
-  },
-  {
-   "instId": "mohw",
-   "title": "보건복지부 국가직 6급 이하 공무원 전입희망자 모집 공고",
-   "startDate": "26.08.12",
-   "endDate": "26.08.24 18:00",
-   "status": "진행중",
-   "jobType": "전입/파견",
-   "region": "전국(공고확인)",
-   "link": "https://www.mohw.go.kr/board.es?mid=a10501010400&bid=0003&act=view&list_no=1491578&tag=&nPage=1"
-  },
-  {
-   "instId": "mohw",
-   "title": "인구정책총괄과 공무직(전문위원 나급) 채용 공고",
-   "startDate": "26.08.11",
-   "endDate": "26.08.19 18:00",
-   "status": "진행중",
-   "jobType": "공무직",
-   "region": "전국(공고확인)",
-   "link": "https://www.mohw.go.kr/board.es?mid=a10501010400&bid=0003&act=view&list_no=1491573&tag=&nPage=1"
-  },
-  {
-   "instId": "mohw",
-   "title": "보건복지부 출산정책과 파견근무자 모집 안내",
-   "startDate": "26.08.10",
-   "endDate": "26.08.25 18:00",
-   "status": "진행중",
-   "jobType": "전입/파견",
-   "region": "대전충남",
-   "link": "https://www.mohw.go.kr/board.es?mid=a10501010400&bid=0003&act=view&list_no=1491568&tag=&nPage=1"
   },
   {
    "instId": "nmc",
@@ -152,24 +112,54 @@
    "link": "https://nmc.recruiter.co.kr/app/jobnotice/view?systemKindCode=MRS2&jobnoticeSn=262971"
   },
   {
-   "instId": "nmc",
-   "title": "무기계약직 연구원(모자의료지원팀) 채용 공고",
-   "startDate": "26.07.29",
-   "endDate": "26.08.13 23:59",
+   "instId": "mohw",
+   "title": "보건복지부 장애인학대대응팀 파견근무자 모집 공고",
+   "startDate": "26.08.12",
+   "endDate": "26.08.28 18:00",
    "status": "진행중",
-   "jobType": "무기계약직",
-   "region": "서울(본부·공고확인)",
-   "link": "https://nmc.recruiter.co.kr/app/jobnotice/view?systemKindCode=MRS2&jobnoticeSn=261673"
+   "jobType": "전입/파견",
+   "region": "대전충남",
+   "link": "https://www.mohw.go.kr/board.es?mid=a10501010400&bid=0003&act=view&list_no=1491582&tag=&nPage=1"
   },
   {
-   "instId": "nmc",
-   "title": "무기계약직 간호사(약물안전센터) 채용 공고",
-   "startDate": "26.07.29",
-   "endDate": "26.08.13 23:59",
+   "instId": "mohw",
+   "title": "보건복지부 지방직 7급 공무원 전입희망자 모집 공고",
+   "startDate": "26.08.12",
+   "endDate": "26.08.24 18:00",
    "status": "진행중",
-   "jobType": "무기계약직",
-   "region": "서울(본부·공고확인)",
-   "link": "https://nmc.recruiter.co.kr/app/jobnotice/view?systemKindCode=MRS2&jobnoticeSn=261665"
+   "jobType": "전입/파견",
+   "region": "전국(공고확인)",
+   "link": "https://www.mohw.go.kr/board.es?mid=a10501010400&bid=0003&act=view&list_no=1491579&tag=&nPage=1"
+  },
+  {
+   "instId": "mohw",
+   "title": "보건복지부 국가직 6급 이하 공무원 전입희망자 모집 공고",
+   "startDate": "26.08.12",
+   "endDate": "26.08.24 18:00",
+   "status": "진행중",
+   "jobType": "전입/파견",
+   "region": "전국(공고확인)",
+   "link": "https://www.mohw.go.kr/board.es?mid=a10501010400&bid=0003&act=view&list_no=1491578&tag=&nPage=1"
+  },
+  {
+   "instId": "mohw",
+   "title": "인구정책총괄과 공무직(전문위원 나급) 채용 공고",
+   "startDate": "26.08.11",
+   "endDate": "26.08.19 18:00",
+   "status": "진행중",
+   "jobType": "공무직",
+   "region": "전국(공고확인)",
+   "link": "https://www.mohw.go.kr/board.es?mid=a10501010400&bid=0003&act=view&list_no=1491573&tag=&nPage=1"
+  },
+  {
+   "instId": "mohw",
+   "title": "보건복지부 출산정책과 파견근무자 모집 안내",
+   "startDate": "26.08.10",
+   "endDate": "26.08.25 18:00",
+   "status": "진행중",
+   "jobType": "전입/파견",
+   "region": "대전충남",
+   "link": "https://www.mohw.go.kr/board.es?mid=a10501010400&bid=0003&act=view&list_no=1491568&tag=&nPage=1"
   },
   {
    "instId": "mohw",
@@ -190,6 +180,26 @@
    "jobType": "정규직",
    "region": "대전충남",
    "link": "https://www.mohw.go.kr/board.es?mid=a10501010400&bid=0003&act=view&list_no=1491521&tag=&nPage=1"
+  },
+  {
+   "instId": "nmc",
+   "title": "무기계약직 연구원(모자의료지원팀) 채용 공고",
+   "startDate": "26.07.29",
+   "endDate": "26.08.13 23:59",
+   "status": "진행중",
+   "jobType": "무기계약직",
+   "region": "서울(본부·공고확인)",
+   "link": "https://nmc.recruiter.co.kr/app/jobnotice/view?systemKindCode=MRS2&jobnoticeSn=261673"
+  },
+  {
+   "instId": "nmc",
+   "title": "무기계약직 간호사(약물안전센터) 채용 공고",
+   "startDate": "26.07.29",
+   "endDate": "26.08.13 23:59",
+   "status": "진행중",
+   "jobType": "무기계약직",
+   "region": "서울(본부·공고확인)",
+   "link": "https://nmc.recruiter.co.kr/app/jobnotice/view?systemKindCode=MRS2&jobnoticeSn=261665"
   },
   {
    "instId": "nmc",
