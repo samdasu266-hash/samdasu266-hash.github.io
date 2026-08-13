@@ -30,11 +30,13 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          # institutions.json 은 기관 목록을 사이트에 공개해 GAS 알림 메일이
-          # 같은 목록을 읽게 하는 파일이라, 함께 커밋해야 반영된다.
-          if ! git diff --quiet inst-*.html sitemap.xml institutions.json; then
-            git add inst-*.html sitemap.xml institutions.json
+          # ⚠️ 스테이징할 파일을 나열하지 않는다 (scraper.yml 의 같은 주석 참고).
+          #    기관이 추가되면 새 inst-*.html 이 생기고, 생성기가 쓰는 파일이
+          #    늘어나면 목록이 어긋나 커밋이 누락되거나 rebase 가 깨진다.
+          if [ -n "$(git status --porcelain)" ]; then
+            git add -A
             git commit -m "기관별 상세 페이지 주간 갱신 (아카이브·통계) [skip ci]"
+            git pull --rebase origin main
             git push
           else
             echo "변경 없음"

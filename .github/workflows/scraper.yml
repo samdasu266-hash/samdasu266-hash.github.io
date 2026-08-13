@@ -45,11 +45,15 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          # 스크래퍼는 jobs.json(현재 공고)과 history.json(누적 이력)을 쓰고,
-          # build_static_home.py 가 index.html 의 정적 영역을 갱신한다.
-          # 셋 다 스테이징해야 rebase 단계에서 'unstaged changes' 오류가 나지 않는다.
-          if ! git diff --quiet jobs.json history.json index.html; then
-            git add jobs.json history.json index.html
+          # ⚠️ 스테이징할 파일을 하나하나 나열하지 않는다.
+          #    빌드 스크립트가 파일을 하나 더 쓰기 시작하면 목록이 조용히 어긋나고,
+          #    남은 변경분 때문에 아래 rebase 가 'cannot pull with rebase:
+          #    You have unstaged changes' 로 죽는다. 실제로 두 번 그렇게 깨졌다.
+          #      · history.json  — 스크래퍼가 누적 이력을 쓰기 시작했을 때
+          #      · sitemap.xml   — build_static_home.py 가 lastmod 를 올리기 시작했을 때
+          #    변경분을 통째로 스테이징하고, 산출물이 아닌 것은 .gitignore 로 막는다.
+          if [ -n "$(git status --porcelain)" ]; then
+            git add -A
             git commit -m "Update jobs data [skip ci]"
             git pull --rebase origin main
             git push
