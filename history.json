@@ -1,5 +1,5 @@
 {
- "generated": "2026-08-14T15:19:31.029858+09:00",
+ "generated": "2026-08-14T17:21:06.652105+09:00",
  "jobs": [
   {
    "instId": "nps",
@@ -10,6 +10,18 @@
    "jobType": "정규직",
    "region": "대전충남, 전북",
    "link": "https://www.nps.or.kr/pnsgdnc/hiregdnc/getOHAE0004M1.do?menuId=MN24000969&pstId=ZZ202600000000000904&hmpgCd=01&hmpgBbsCd=BS20240138&sortSe=FR&pageIndex=1&searchText=&searchGbu=&pstSeCd=",
+   "firstSeen": "2026-08-14",
+   "lastSeen": "2026-08-14"
+  },
+  {
+   "instId": "nmc",
+   "title": "계약직 연구원(데이터기반정책연구팀) 재공고",
+   "startDate": "26.08.14",
+   "endDate": "26.08.24 23:59",
+   "status": "진행중",
+   "jobType": "계약직/기간제",
+   "region": "서울(본부·공고확인)",
+   "link": "https://nmc.recruiter.co.kr/app/jobnotice/view?systemKindCode=MRS2&jobnoticeSn=263304",
    "firstSeen": "2026-08-14",
    "lastSeen": "2026-08-14"
   },
