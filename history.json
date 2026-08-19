@@ -1,5 +1,5 @@
 {
- "generated": "2026-08-19T23:37:42.315542+09:00",
+ "generated": "2026-08-20T02:31:54.359317+09:00",
  "jobs": [
   {
    "instId": "mohw",
@@ -11,7 +11,7 @@
    "region": "전국(공고확인)",
    "link": "https://www.mohw.go.kr/board.es?mid=a10501010400&bid=0003&act=view&list_no=1491619&tag=&nPage=1",
    "firstSeen": "2026-08-19",
-   "lastSeen": "2026-08-19"
+   "lastSeen": "2026-08-20"
   },
   {
    "instId": "hira",
@@ -23,7 +23,7 @@
    "region": "강원",
    "link": "https://hira.recruitlab.co.kr/app/recruitment-announcement/view/991",
    "firstSeen": "2026-08-19",
-   "lastSeen": "2026-08-19"
+   "lastSeen": "2026-08-20"
   },
   {
    "instId": "mohw",
@@ -35,7 +35,7 @@
    "region": "충북",
    "link": "https://www.mohw.go.kr/board.es?mid=a10501010400&bid=0003&act=view&list_no=1491613&tag=&nPage=1",
    "firstSeen": "2026-08-18",
-   "lastSeen": "2026-08-19"
+   "lastSeen": "2026-08-20"
   },
   {
    "instId": "nps",
@@ -47,7 +47,7 @@
    "region": "대전충남, 전북",
    "link": "https://www.nps.or.kr/pnsgdnc/hiregdnc/getOHAE0004M1.do?menuId=MN24000969&pstId=ZZ202600000000000904&hmpgCd=01&hmpgBbsCd=BS20240138&sortSe=FR&pageIndex=1&searchText=&searchGbu=&pstSeCd=",
    "firstSeen": "2026-08-14",
-   "lastSeen": "2026-08-19"
+   "lastSeen": "2026-08-20"
   },
   {
    "instId": "nmc",
@@ -59,7 +59,7 @@
    "region": "서울(본부·공고확인)",
    "link": "https://nmc.recruiter.co.kr/app/jobnotice/view?systemKindCode=MRS2&jobnoticeSn=263304",
    "firstSeen": "2026-08-14",
-   "lastSeen": "2026-08-19"
+   "lastSeen": "2026-08-20"
   },
   {
    "instId": "nps",
@@ -71,7 +71,7 @@
    "region": "대전충남",
    "link": "https://www.nps.or.kr/pnsgdnc/hiregdnc/getOHAE0004M1.do?menuId=MN24000969&pstId=ZZ202600000000000896&hmpgCd=01&hmpgBbsCd=BS20240138&sortSe=FR&pageIndex=1&searchText=&searchGbu=&pstSeCd=",
    "firstSeen": "2026-08-13",
-   "lastSeen": "2026-08-19"
+   "lastSeen": "2026-08-20"
   },
   {
    "instId": "koiha",
@@ -95,7 +95,7 @@
    "region": "전북",
    "link": "https://nmc.recruiter.co.kr/app/jobnotice/view?systemKindCode=MRS2&jobnoticeSn=263006",
    "firstSeen": "2026-08-12",
-   "lastSeen": "2026-08-19"
+   "lastSeen": "2026-08-20"
   },
   {
    "instId": "nmc",
@@ -107,7 +107,7 @@
    "region": "경북, 대구",
    "link": "https://nmc.recruiter.co.kr/app/jobnotice/view?systemKindCode=MRS2&jobnoticeSn=263004",
    "firstSeen": "2026-08-12",
-   "lastSeen": "2026-08-19"
+   "lastSeen": "2026-08-20"
   },
   {
    "instId": "nmc",
@@ -119,7 +119,7 @@
    "region": "서울, 인천",
    "link": "https://nmc.recruiter.co.kr/app/jobnotice/view?systemKindCode=MRS2&jobnoticeSn=263001",
    "firstSeen": "2026-08-12",
-   "lastSeen": "2026-08-19"
+   "lastSeen": "2026-08-20"
   },
   {
    "instId": "nmc",
@@ -131,7 +131,7 @@
    "region": "전남",
    "link": "https://nmc.recruiter.co.kr/app/jobnotice/view?systemKindCode=MRS2&jobnoticeSn=262996",
    "firstSeen": "2026-08-12",
-   "lastSeen": "2026-08-19"
+   "lastSeen": "2026-08-20"
   },
   {
    "instId": "nmc",
@@ -143,7 +143,7 @@
    "region": "울산",
    "link": "https://nmc.recruiter.co.kr/app/jobnotice/view?systemKindCode=MRS2&jobnoticeSn=262993",
    "firstSeen": "2026-08-12",
-   "lastSeen": "2026-08-19"
+   "lastSeen": "2026-08-20"
   },
   {
    "instId": "nmc",
@@ -155,7 +155,7 @@
    "region": "서울(본부·공고확인)",
    "link": "https://nmc.recruiter.co.kr/app/jobnotice/view?systemKindCode=MRS2&jobnoticeSn=262971",
    "firstSeen": "2026-08-12",
-   "lastSeen": "2026-08-19"
+   "lastSeen": "2026-08-20"
   },
   {
    "instId": "nmc",
@@ -167,7 +167,7 @@
    "region": "대전충남",
    "link": "https://nmc.recruiter.co.kr/app/jobnotice/view?systemKindCode=MRS2&jobnoticeSn=263016",
    "firstSeen": "2026-08-12",
-   "lastSeen": "2026-08-19"
+   "lastSeen": "2026-08-20"
   },
   {
    "instId": "nmc",
@@ -179,7 +179,7 @@
    "region": "경북",
    "link": "https://nmc.recruiter.co.kr/app/jobnotice/view?systemKindCode=MRS2&jobnoticeSn=263008",
    "firstSeen": "2026-08-12",
-   "lastSeen": "2026-08-19"
+   "lastSeen": "2026-08-20"
   },
   {
    "instId": "nmc",
@@ -227,7 +227,7 @@
    "region": "서울",
    "link": "https://www.mohw.go.kr/board.es?mid=a10501010400&bid=0003&act=view&list_no=1491555&tag=&nPage=1",
    "firstSeen": "2026-08-10",
-   "lastSeen": "2026-08-19"
+   "lastSeen": "2026-08-20"
   },
   {
    "instId": "mohw",
