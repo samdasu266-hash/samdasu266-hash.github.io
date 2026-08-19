@@ -1,5 +1,5 @@
 {
- "lastSync": "2026-08-19T10:19:06.311976+09:00",
+ "lastSync": "2026-08-19T12:55:29.264358+09:00",
  "jobs": [
   {
    "instId": "nps",
@@ -20,6 +20,16 @@
    "jobType": "공무직",
    "region": "대전충남",
    "link": "https://www.nps.or.kr/pnsgdnc/hiregdnc/getOHAE0004M1.do?menuId=MN24000969&pstId=ZZ202600000000000896&hmpgCd=01&hmpgBbsCd=BS20240138&sortSe=FR&pageIndex=1&searchText=&searchGbu=&pstSeCd="
+  },
+  {
+   "instId": "mohw",
+   "title": "보건복지부 인구정책총괄과 육아휴직 대체인력(기간제근로자) 채용 공고",
+   "startDate": "26.08.19",
+   "endDate": "26.08.26 18:00",
+   "status": "진행중",
+   "jobType": "계약직/기간제",
+   "region": "전국(공고확인)",
+   "link": "https://www.mohw.go.kr/board.es?mid=a10501010400&bid=0003&act=view&list_no=1491619&tag=&nPage=1"
   },
   {
    "instId": "mohw",
