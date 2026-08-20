@@ -1,5 +1,5 @@
 {
- "generated": "2026-08-20T10:18:36.869557+09:00",
+ "generated": "2026-08-20T12:01:14.536077+09:00",
  "jobs": [
   {
    "instId": "mohw",
@@ -10,6 +10,18 @@
    "jobType": "정규직",
    "region": "서울",
    "link": "https://www.mohw.go.kr/board.es?mid=a10501010400&bid=0003&act=view&list_no=1491626&tag=&nPage=1",
+   "firstSeen": "2026-08-20",
+   "lastSeen": "2026-08-20"
+  },
+  {
+   "instId": "nps",
+   "title": "베테랑 시니어지원단(기간제근로자) 공개채용 공고",
+   "startDate": "26.08.20",
+   "endDate": "26.08.27 18:00",
+   "status": "진행중",
+   "jobType": "계약직/기간제",
+   "region": "전북",
+   "link": "https://www.nps.or.kr/pnsgdnc/hiregdnc/getOHAE0004M1.do?menuId=MN24000969&pstId=ZZ202600000000000924&hmpgCd=01&hmpgBbsCd=BS20240138&sortSe=FR&pageIndex=1&searchText=&searchGbu=&pstSeCd=",
    "firstSeen": "2026-08-20",
    "lastSeen": "2026-08-20"
   },
