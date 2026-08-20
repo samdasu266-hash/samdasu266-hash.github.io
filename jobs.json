@@ -1,6 +1,16 @@
 {
- "lastSync": "2026-08-20T23:40:37.871813+09:00",
+ "lastSync": "2026-08-21T00:38:53.533858+09:00",
  "jobs": [
+  {
+   "instId": "hira",
+   "title": "2026년 하반기 정규직 채용",
+   "startDate": "26.12.22",
+   "endDate": "26.12.23 18:00",
+   "status": "진행중",
+   "jobType": "정규직",
+   "region": "강원",
+   "link": "https://hira.recruitlab.co.kr/app/recruitment-announcement/view/991"
+  },
   {
    "instId": "nps",
    "title": "2026년도 제2차 국민연금공단 기금운용본부 기금운용직 채용 공고",
@@ -20,36 +30,6 @@
    "jobType": "계약직/기간제",
    "region": "전북",
    "link": "https://www.nps.or.kr/pnsgdnc/hiregdnc/getOHAE0004M1.do?menuId=MN24000969&pstId=ZZ202600000000000924&hmpgCd=01&hmpgBbsCd=BS20240138&sortSe=FR&pageIndex=1&searchText=&searchGbu=&pstSeCd="
-  },
-  {
-   "instId": "mohw",
-   "title": "2026년 제8회 국립정신건강센터 연구직 공무원 경력경쟁채용시험」 공고",
-   "startDate": "26.08.20",
-   "endDate": "26.09.03 18:00",
-   "status": "진행중",
-   "jobType": "정규직",
-   "region": "서울",
-   "link": "https://www.mohw.go.kr/board.es?mid=a10501010400&bid=0003&act=view&list_no=1491626&tag=&nPage=1"
-  },
-  {
-   "instId": "mohw",
-   "title": "보건복지부 인구정책총괄과 육아휴직 대체인력(기간제근로자) 채용 공고",
-   "startDate": "26.08.19",
-   "endDate": "26.08.26 18:00",
-   "status": "진행중",
-   "jobType": "계약직/기간제",
-   "region": "전국(공고확인)",
-   "link": "https://www.mohw.go.kr/board.es?mid=a10501010400&bid=0003&act=view&list_no=1491619&tag=&nPage=1"
-  },
-  {
-   "instId": "mohw",
-   "title": "질병관리청 일반직·임기제공무원 경력경쟁채용시험 공고",
-   "startDate": "26.08.18",
-   "endDate": "26.08.28 18:00",
-   "status": "진행중",
-   "jobType": "정규직",
-   "region": "충북",
-   "link": "https://www.mohw.go.kr/board.es?mid=a10501010400&bid=0003&act=view&list_no=1491613&tag=&nPage=1"
   },
   {
    "instId": "nmc",
@@ -82,14 +62,34 @@
    "link": "https://nmc.recruiter.co.kr/app/jobnotice/view?systemKindCode=MRS2&jobnoticeSn=263008"
   },
   {
-   "instId": "hira",
-   "title": "2026년 하반기 정규직 채용",
-   "startDate": "26.12.22",
-   "endDate": "26.12.23 18:00",
+   "instId": "mohw",
+   "title": "2026년 제8회 국립정신건강센터 연구직 공무원 경력경쟁채용시험」 공고",
+   "startDate": "26.08.20",
+   "endDate": "26.09.03 18:00",
    "status": "진행중",
    "jobType": "정규직",
-   "region": "강원",
-   "link": "https://hira.recruitlab.co.kr/app/recruitment-announcement/view/991"
+   "region": "서울",
+   "link": "https://www.mohw.go.kr/board.es?mid=a10501010400&bid=0003&act=view&list_no=1491626&tag=&nPage=1"
+  },
+  {
+   "instId": "mohw",
+   "title": "보건복지부 인구정책총괄과 육아휴직 대체인력(기간제근로자) 채용 공고",
+   "startDate": "26.08.19",
+   "endDate": "26.08.26 18:00",
+   "status": "진행중",
+   "jobType": "계약직/기간제",
+   "region": "전국(공고확인)",
+   "link": "https://www.mohw.go.kr/board.es?mid=a10501010400&bid=0003&act=view&list_no=1491619&tag=&nPage=1"
+  },
+  {
+   "instId": "mohw",
+   "title": "질병관리청 일반직·임기제공무원 경력경쟁채용시험 공고",
+   "startDate": "26.08.18",
+   "endDate": "26.08.28 18:00",
+   "status": "진행중",
+   "jobType": "정규직",
+   "region": "충북",
+   "link": "https://www.mohw.go.kr/board.es?mid=a10501010400&bid=0003&act=view&list_no=1491613&tag=&nPage=1"
   },
   {
    "instId": "nmc",
