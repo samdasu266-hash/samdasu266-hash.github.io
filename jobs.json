@@ -1,6 +1,16 @@
 {
- "lastSync": "2026-08-20T14:34:32.332077+09:00",
+ "lastSync": "2026-08-20T15:49:55.472985+09:00",
  "jobs": [
+  {
+   "instId": "hira",
+   "title": "2026년 하반기 정규직 채용",
+   "startDate": "26.12.22",
+   "endDate": "26.12.23 18:00",
+   "status": "진행중",
+   "jobType": "정규직",
+   "region": "강원",
+   "link": "https://hira.recruitlab.co.kr/app/recruitment-announcement/view/991"
+  },
   {
    "instId": "nps",
    "title": "2026년도 제2차 국민연금공단 기금운용본부 기금운용직 채용 공고",
@@ -90,16 +100,6 @@
    "jobType": "정규직",
    "region": "경북",
    "link": "https://nmc.recruiter.co.kr/app/jobnotice/view?systemKindCode=MRS2&jobnoticeSn=263008"
-  },
-  {
-   "instId": "hira",
-   "title": "2026년 하반기 정규직 채용",
-   "startDate": "26.12.22",
-   "endDate": "26.12.23 18:00",
-   "status": "진행중",
-   "jobType": "정규직",
-   "region": "강원",
-   "link": "https://hira.recruitlab.co.kr/app/recruitment-announcement/view/991"
   },
   {
    "instId": "nmc",
