@@ -449,7 +449,10 @@ async def scrape_site(browser, inst_id, url):
                 clean_title = re.sub(r'^\s*(?:접수중|접수전|접수예정|진행중|모집중|마감임박|신규)\s+', '', clean_title)
                 # 목록 배지가 제목 뒤에 붙는 경우 제거 (예: '… 공고 공채 일반채용 신입')
                 clean_title = re.sub(r'(?:\s+(?:공채|일반채용|수시채용|상시채용|신입|경력|신입/경력))+\s*$', '', clean_title)
-                clean_title = re.sub(r'\s*D\s*-\s*\d+\s*', ' ', clean_title)
+                # ⚠️ 숫자형(D-17)뿐 아니라 마감 당일 표기(D-Day)도 지워야 한다.
+                #    안 지우면 같은 공고가 "…공고(연구직)"과 "…공고(연구직) D-Day"
+                #    두 건으로 갈려 아카이브에 중복으로 쌓인다.
+                clean_title = re.sub(r'\s*D\s*-\s*(?:\d+|[Dd][Aa][Yy])\s*', ' ', clean_title)
                 # 표 형태 목록에서 셀 구분자(|)와 뒤따르는 배지가 제목에 섞여 들어오는 경우
                 # (예: "… 공개채용 | 경력 | 2026.07.29 …" → 날짜 제거 후 "… 공개채용 | 경력 |")
                 clean_title = re.sub(
@@ -516,6 +519,9 @@ async def scrape_site(browser, inst_id, url):
                     "비전", "미션", "인재상", "찾아오시는", "오시는 길", "이용약관",
                     "개인정보처리", "사이트맵", "바로가기", "더보기", "전체보기",
                     "리스트", "목록", "공고 검색", "채용안내", "채용 안내", "복리후생",
+                    # 게시판·메뉴 이름이 공고로 잡히던 사례
+                    # (예: 인증원 "채용 프로세스", "채용 공지사항")
+                    "프로세스", "공지사항", "채용절차", "채용 절차", "전형절차", "전형 절차",
                 ]
                 if any(w in clean_title for w in nav_words): continue
                 # 배너·홍보 문구 제외 (평서형 권유문은 공고 제목이 아니다)
@@ -950,6 +956,40 @@ async def main():
                 rec["firstSeen"] = today
                 rec["lastSeen"] = today
                 hist[key] = rec
+
+        # 제목 정리 규칙이 바뀌어 같은 공고가 두 키로 갈려 있으면 하나로 합친다.
+        # (예: "…공고(연구직)" 와 "…공고(연구직) D-Day" 가 별도 항목으로 쌓였던 건)
+        # 배지 부스러기를 걷어낸 정규화 제목으로 묶고, 가장 이른 firstSeen 과
+        # 가장 늦은 lastSeen 을 살린다.
+        def _canon(t):
+            t = re.sub(r'\s*D\s*-\s*(?:\d+|[Dd][Aa][Yy])\s*', ' ', t or '')
+            return re.sub(r'[^0-9A-Za-z가-힣]', '', t)
+
+        merged = {}
+        for k, j in hist.items():
+            ck = (j.get("instId"), _canon(j.get("title")))
+            prev = merged.get(ck)
+            if prev is None:
+                merged[ck] = j
+                continue
+            # 더 짧은 제목(= 배지가 덜 붙은 쪽)을 대표로 삼는다
+            keep, drop = (prev, j) if len(prev.get("title", "")) <= len(j.get("title", "")) else (j, prev)
+            for fld in ("firstSeen",):
+                a, b = keep.get(fld), drop.get(fld)
+                if b and (not a or b < a):
+                    keep[fld] = b
+            for fld in ("lastSeen",):
+                a, b = keep.get(fld), drop.get(fld)
+                if b and (not a or b > a):
+                    keep[fld] = b
+            for fld in ("endDate", "startDate", "region", "link", "jobType"):
+                if keep.get(fld) in (None, "", "상세참조") and drop.get(fld) not in (None, "", "상세참조"):
+                    keep[fld] = drop[fld]
+            merged[ck] = keep
+        if len(merged) != len(hist):
+            print(f"🔗 배지 차이로 갈려 있던 중복 이력 {len(hist) - len(merged)}건을 합쳤습니다.")
+        hist = {f"{j.get('instId')}|{(j.get('title') or '').replace(' ','')}": j
+                for j in merged.values()}
 
         # 제외 규칙이 강화되면 이미 쌓인 이력도 함께 정리한다.
         # 이게 없으면 규칙을 고쳐도 과거에 수집된 공고가 기관별 아카이브 페이지에
