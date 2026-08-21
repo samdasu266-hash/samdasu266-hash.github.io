@@ -105,6 +105,25 @@ NMC_CLINICAL = [
 #    앞뒤 한글 여부를 직접 확인해 '의사소통' 같은 단어와만 구분한다.
 DOCTOR_RE = re.compile(r'(?<![가-힣])(?:의사직|의사|전문의|수련의|전공의)(?![가-힣])')
 
+# 약사·약무직 제외.
+# ⚠️ 부분 문자열로 막으면 안 된다. "계약사무원"에 '약사'가 들어 있어
+#    멀쩡한 사무직 공고가 사라진다. 앞뒤 한글을 확인한다.
+PHARMACIST_RE = re.compile(r'(?<![가-힣])(?:약사직|약무직|약사|약무)(?![가-힣])')
+#    ('약무직'처럼 뒤에 한글이 붙는 형태는 의사직과 같은 이유로 따로 적어야 한다)
+
+# 병원 소속 임상직 제외.
+#
+# 【수집 정책】근로복지공단은 산하에 병원 10곳(태백·동해·순천·창원·대전 등)을
+# 운영해서 병원 간호사·간호조무사 공고가 섞여 들어온다. 국립중앙의료원과 같은
+# 이유로 제외한다 — 이 사이트는 병상을 떠나려는 사람이 보는 곳이다.
+# 같은 기관이라도 병원이 아닌 지역본부·지사·연구소 공고는 그대로 수집한다.
+#   제외: "[태백병원] 의료직(간호사) 6급 채용 공고"
+#   수집: "[강원지역본부] 기간제 사무원(휴직대체) 채용"
+#         "[태백병원] 공무직(전기기계통신기사_기계) 채용 공고"  ← 병원이지만 비임상
+HOSPITAL_HINT = ("병원", "의료원")
+HOSPITAL_CLINICAL_ROLE = ("간호사", "간호조무", "물리치료", "작업치료", "임상병리",
+                          "방사선사", "치과위생", "병동", "수술실", "중환자실")
+
 
 # 신규 채용이 아닌 공고 제외.
 #
@@ -166,6 +185,23 @@ SCHEDULE_KW = ['전형일정', '서류전형', '필기시험', '면접시험', '
                '임용', '교육']
 
 
+# 제목이 게시판·메뉴 이름 그 자체인 경우.
+#
+# 목록 선택자가 안 맞아 <a> 전체 폴백으로 갈 때 게시판 이름이 공고처럼 딸려
+# 들어온다. nav_words 는 부분 문자열로 막는 방식이라 "채용 공고"처럼 진짜
+# 공고 제목에도 흔히 쓰이는 말은 넣을 수 없다. 그래서 제목 **전체**가 일반
+# 명사뿐인 경우만 따로 걸러낸다.
+#   예) 적십자사 "채용 공고"  ← 게시판 이름
+#       "2026년도 제3차 혈액관리본부 … 공개 모집"  ← 진짜 공고 (통과)
+GENERIC_TITLES = {"채용", "공고", "채용공고", "모집공고", "채용모집", "모집",
+                  "인재채용", "채용정보", "공고문", "모집공고문", "채용안내",
+                  "상시채용", "수시채용", "공개채용", "신규채용"}
+
+
+def is_generic_title(title):
+    return re.sub(r'[^0-9A-Za-z가-힣]', '', title or '') in GENERIC_TITLES
+
+
 def is_excluded_title(inst_id, title):
     """현재 수집 정책상 제외 대상인 제목인지 판정한다.
 
@@ -174,7 +210,11 @@ def is_excluded_title(inst_id, title):
     공고가 복원 경로로 되살아난다.
     """
     t = (title or "").replace('[', ' ').replace(']', ' ')
-    if DOCTOR_RE.search(t):
+    if is_generic_title(title):
+        return True
+    if DOCTOR_RE.search(t) or PHARMACIST_RE.search(t):
+        return True
+    if any(h in t for h in HOSPITAL_HINT) and any(r in t for r in HOSPITAL_CLINICAL_ROLE):
         return True
     if any(k in t for k in NON_HIRING):
         return True
@@ -295,6 +335,45 @@ def _careeron_iso_to_dot(s):
         return base + f" {int(m.group(4)):02d}:{m.group(5)}"
     return base
 
+# careeron JSON 은 '접수기간'과 '게시기간(공고가 게시판에 노출되는 기간)'을 함께 담는다.
+# 필드 이름을 느슨하게 맞추면 게시기간이 잡혀, 이미 마감된 공고가 게시 종료일까지
+# '진행중'으로 남는다.
+#   예) 혈액관리본부 제3차 공고 — 실제 접수는 7/20~8/4 인데
+#       게시일시 2026.07.20 18:10 ~ 2026.10.31 17:00 이 수집됐다.
+#       (18:10 이라는 어정쩡한 시각이 게시 시각이라는 단서였다)
+#   원인은 두 가지. 시작일 키워드에 'reg'(regDate = 등록일 = 게시일)가 있었고,
+#   'end'가 noticeEndDate 같은 게시 종료 필드에도 걸렸다.
+# → 접수(apply) 관련 이름을 우선하고, 게시·등록 관련 이름은 배제한다.
+CAREERON_SKIP = ('notice', 'disp', 'post', 'view', 'show', 'board', 'banner',
+                 'reg', 'crt', 'create', 'writ', 'mod', 'upd', 'del')
+CAREERON_APPLY = ('apply', 'appl', 'receipt', 'recept', 'rcpt', 'accept', 'entry')
+CAREERON_START = ('start', 'begin', 'open', 'from')
+CAREERON_END = ('end', 'close', 'deadline', 'expire', 'fin', 'until')
+
+
+def _careeron_pick(item, kind):
+    """접수 시작/마감 필드를 고른다. 접수 관련 이름이 있으면 그쪽을 먼저 쓴다."""
+    words = CAREERON_START if kind == 'start' else CAREERON_END
+    best = None   # (우선순위, 값) — 0 = 접수 전용 필드, 1 = 일반 시작/종료 필드
+    for k, v in (item or {}).items():
+        if not v:
+            continue
+        lk = str(k).lower()
+        is_apply = any(x in lk for x in CAREERON_APPLY)
+        # 게시·등록 필드는 건너뛴다 (단, 접수 표기가 함께 있으면 살린다)
+        if any(x in lk for x in CAREERON_SKIP) and not is_apply:
+            continue
+        if not any(x in lk for x in words):
+            continue
+        dv = _careeron_iso_to_dot(v)
+        if not dv:
+            continue
+        tier = 0 if is_apply else 1
+        if best is None or tier < best[0]:
+            best = (tier, dv)
+    return best[1] if best else "상세참조"
+
+
 def build_careeron_jobs(payload, inst_id):
     # careeron SPA의 목록 API(JSON)에서 공고를 직접 추출한다.
     if not payload:
@@ -317,7 +396,7 @@ def build_careeron_jobs(payload, inst_id):
 
     items = find_list(payload) or []
     now = datetime.now(KST).replace(tzinfo=None)
-    exclude_words = ["발표", "합격", "면접", "약사", "약무", "의무직", "사전공개", "채용계획",
+    exclude_words = ["발표", "합격", "면접", "의무직", "사전공개", "채용계획",
                      "공시송달", "서류전형", "참여기관", "공모", "재직", "상임", "고령", "친인척",
                      "계획 공고", "실습 인정", "교육훈련기관", "등록폐지", "윤리위원회",
                      "기준보험료", "심사위원", "변호사"]
@@ -345,17 +424,8 @@ def build_careeron_jobs(payload, inst_id):
                 rid = str(v).strip()
                 break
         link = f"https://bloodinfo.careeron.co.kr/#/recruitment/detail/{rid}" if rid else "https://bloodinfo.careeron.co.kr/#/recruitment/list"
-        start_str, end_str = "상세참조", "상세참조"
-        for k, v in it.items():
-            lk = k.lower()
-            if start_str == "상세참조" and any(x in lk for x in ['start', 'begin', 'apply', 'open', 'reg']) and v:
-                dv = _careeron_iso_to_dot(v)
-                if dv:
-                    start_str = dv
-            if end_str == "상세참조" and any(x in lk for x in ['end', 'close', 'deadline', 'expire', 'fin']) and v:
-                dv = _careeron_iso_to_dot(v)
-                if dv:
-                    end_str = dv
+        start_str = _careeron_pick(it, 'start')
+        end_str = _careeron_pick(it, 'end')
         status = "진행중"
         m = re.match(r'(\d{2})\.(\d{2})\.(\d{2})(?:\s+(\d{1,2}):(\d{2}))?', end_str)
         if m:
@@ -408,13 +478,32 @@ async def scrape_site(browser, inst_id, url):
 
         job_candidates = []
         row_limit = 15
-        rows = await page.query_selector_all("tbody tr, .board-list li, ul.list li, .recruitment-item")
+        primary = "tbody tr, .board-list li, ul.list li, .recruitment-item"
+        rows = await page.query_selector_all(primary)
+        selector_used = primary
+        if not rows:
+            # 기본 선택자가 안 맞는 게시판을 위한 2차 후보들.
+            # ⚠️ 기본 선택자가 이미 맞은 기관에는 영향이 없다(비었을 때만 시도).
+            for sel in ("table tr",
+                        ".board_list li, .bbs_list li, .list_wrap li",
+                        "div.list li, ol.list li",
+                        "[class*=list] li",
+                        "[class*=board] tr, [class*=list] tr",
+                        # 카드 그리드형 (근로복지공단 채용공고가 이 형태다)
+                        "[class*=card]",
+                        "[class*=item]"):
+                rows = await page.query_selector_all(sel)
+                if rows:
+                    selector_used = sel
+                    break
         if not rows:
             # 링크 전체 폴백: 상단 내비게이션 링크가 많으므로 더 넓게 훑는다
             rows = await page.query_selector_all("a")
+            selector_used = "a (전체 링크 폴백)"
             # 링크 전체 폴백에서는 상단 내비게이션 링크가 앞부분을 차지해,
             # 한도가 낮으면 정작 뒤쪽의 실제 공고를 못 보고 잘린다. 넉넉히 잡는다.
             row_limit = 150
+        print(f"[{inst_id}] 목록 행 {len(rows)}개 (선택자: {selector_used})")
 
         now = datetime.now(KST)
 
@@ -446,10 +535,20 @@ async def scrape_site(browser, inst_id, url):
                 clean_title = clean_title.replace('[마감]', '').replace('[새글]', '').replace('새글', '').replace('~', '').strip()
                 # 목록 페이지의 상태 배지·D-day 부스러기 제거
                 # (예: "접수중 의료기관평가인증원 … 공고(연구직) D-17" → "의료기관평가인증원 … 공고(연구직)")
+                # 카드형 목록은 배지가 여러 개 앞에 붙는다 (예: "신입 접수중 [태백병원] …").
+                # ⚠️ '신입'·'경력'만 보고 지우면 "신입사원 공개채용" 같은 진짜 제목이
+                #    잘린다. 상태 배지(접수중 등)가 함께 있을 때만 통째로 걷어낸다.
+                _badge = r'(?:접수중|접수전|접수예정|진행중|모집중|마감임박|신규|신입\+경력|신입|경력)'
+                _m = re.match(r'^((?:\s*' + _badge + r')+)\s+', clean_title)
+                if _m and re.search(r'접수중|접수전|접수예정|진행중|모집중|마감임박', _m.group(1)):
+                    clean_title = clean_title[_m.end():]
                 clean_title = re.sub(r'^\s*(?:접수중|접수전|접수예정|진행중|모집중|마감임박|신규)\s+', '', clean_title)
                 # 목록 배지가 제목 뒤에 붙는 경우 제거 (예: '… 공고 공채 일반채용 신입')
                 clean_title = re.sub(r'(?:\s+(?:공채|일반채용|수시채용|상시채용|신입|경력|신입/경력))+\s*$', '', clean_title)
-                clean_title = re.sub(r'\s*D\s*-\s*\d+\s*', ' ', clean_title)
+                # ⚠️ 숫자형(D-17)뿐 아니라 마감 당일 표기(D-Day)도 지워야 한다.
+                #    안 지우면 같은 공고가 "…공고(연구직)"과 "…공고(연구직) D-Day"
+                #    두 건으로 갈려 아카이브에 중복으로 쌓인다.
+                clean_title = re.sub(r'\s*D\s*-\s*(?:\d+|[Dd][Aa][Yy])\s*', ' ', clean_title)
                 # 표 형태 목록에서 셀 구분자(|)와 뒤따르는 배지가 제목에 섞여 들어오는 경우
                 # (예: "… 공개채용 | 경력 | 2026.07.29 …" → 날짜 제거 후 "… 공개채용 | 경력 |")
                 clean_title = re.sub(
@@ -499,7 +598,7 @@ async def scrape_site(browser, inst_id, url):
                     
                 # 🔥 미수집 제외 키워드 대폭 강화
                 exclude_words = [
-                    "발표", "합격", "면접", "약사", "약무", "의무직",
+                    "발표", "합격", "면접", "의무직",
                     "사전공개", "채용계획", "공시송달", "서류전형", "참여기관", "공모",
                     "재직", "상임", "고령", "친인척",
                     "계획 공고", "실습 인정", "교육훈련기관",
@@ -516,6 +615,9 @@ async def scrape_site(browser, inst_id, url):
                     "비전", "미션", "인재상", "찾아오시는", "오시는 길", "이용약관",
                     "개인정보처리", "사이트맵", "바로가기", "더보기", "전체보기",
                     "리스트", "목록", "공고 검색", "채용안내", "채용 안내", "복리후생",
+                    # 게시판·메뉴 이름이 공고로 잡히던 사례
+                    # (예: 인증원 "채용 프로세스", "채용 공지사항")
+                    "프로세스", "공지사항", "채용절차", "채용 절차", "전형절차", "전형 절차",
                 ]
                 if any(w in clean_title for w in nav_words): continue
                 # 배너·홍보 문구 제외 (평서형 권유문은 공고 제목이 아니다)
@@ -749,6 +851,11 @@ async def scrape_site(browser, inst_id, url):
                     "link": safe_link 
                 })
         
+        # 어디서 공고가 사라졌는지 로그로 남긴다.
+        # 사이트가 정상 접속되는데 결과가 0건이면 여태 조용히 넘어갔다.
+        # (comwel·khepi 가 누적 0건인 것을 한참 뒤에야 알았다)
+        print(f"[{inst_id}] 제목 필터 통과 {len(job_candidates)}개 → 접수중 {len(found_jobs)}개")
+
         unique_jobs = []
         seen = set()
         for job in found_jobs:
@@ -770,7 +877,9 @@ async def main():
             {"id": "hira", "url": "https://hira.recruitlab.co.kr/app/recruitment-announcement/list"},
             {"id": "nhis", "url": "https://www.nhis.or.kr/nhis/together/wbhaea02700m01.do"},
             {"id": "neca", "url": "https://www.neca.re.kr/lay1/program/S1T207C209/people/index.do"},
-            {"id": "kuksiwon", "url": "https://dware.intojob.co.kr/main/kuksiwon.jsp"},
+            # 국시원은 채용 페이지를 인크루트로 옮겼다. 옛 intojob 주소는 열리지 않아
+            # 수집 실적이 0건이었다(history.json 에 kuksiwon 항목이 한 건도 없었음).
+            {"id": "kuksiwon", "url": "https://recruit.incruit.com/kuksiwon"},
             {"id": "koiha", "url": "https://koiha.recruiter.co.kr/career/job"},
             {"id": "nps", "url": "https://www.nps.or.kr/pnsgdnc/hiregdnc/getOHAE0004M0List.do"},
             {"id": "comwel", "url": "https://www.comwel.or.kr/recruit/hp/pblanc/pblancList.do"},
@@ -795,6 +904,14 @@ async def main():
         if not succeeded:
             print("모든 사이트 수집 실패 - 기존 데이터를 유지합니다.")
             return
+
+        # 접속은 됐는데 한 건도 못 가져온 기관을 눈에 띄게 남긴다.
+        # 이게 없으면 선택자가 안 맞아 계속 0건인 기관을 알아채지 못한다.
+        got = {j.get("instId") for j in all_jobs}
+        empty = sorted(i for i in succeeded if i not in got)
+        if empty:
+            print(f"⚠️  접속은 됐지만 수집 0건인 기관: {', '.join(empty)}")
+            print("    (목록 선택자가 안 맞거나 제목 필터에서 전부 걸러졌을 수 있음)")
 
         # 수집에 실패한 기관은 기존 jobs.json의 데이터를 보존
         try:
@@ -950,6 +1067,40 @@ async def main():
                 rec["firstSeen"] = today
                 rec["lastSeen"] = today
                 hist[key] = rec
+
+        # 제목 정리 규칙이 바뀌어 같은 공고가 두 키로 갈려 있으면 하나로 합친다.
+        # (예: "…공고(연구직)" 와 "…공고(연구직) D-Day" 가 별도 항목으로 쌓였던 건)
+        # 배지 부스러기를 걷어낸 정규화 제목으로 묶고, 가장 이른 firstSeen 과
+        # 가장 늦은 lastSeen 을 살린다.
+        def _canon(t):
+            t = re.sub(r'\s*D\s*-\s*(?:\d+|[Dd][Aa][Yy])\s*', ' ', t or '')
+            return re.sub(r'[^0-9A-Za-z가-힣]', '', t)
+
+        merged = {}
+        for k, j in hist.items():
+            ck = (j.get("instId"), _canon(j.get("title")))
+            prev = merged.get(ck)
+            if prev is None:
+                merged[ck] = j
+                continue
+            # 더 짧은 제목(= 배지가 덜 붙은 쪽)을 대표로 삼는다
+            keep, drop = (prev, j) if len(prev.get("title", "")) <= len(j.get("title", "")) else (j, prev)
+            for fld in ("firstSeen",):
+                a, b = keep.get(fld), drop.get(fld)
+                if b and (not a or b < a):
+                    keep[fld] = b
+            for fld in ("lastSeen",):
+                a, b = keep.get(fld), drop.get(fld)
+                if b and (not a or b > a):
+                    keep[fld] = b
+            for fld in ("endDate", "startDate", "region", "link", "jobType"):
+                if keep.get(fld) in (None, "", "상세참조") and drop.get(fld) not in (None, "", "상세참조"):
+                    keep[fld] = drop[fld]
+            merged[ck] = keep
+        if len(merged) != len(hist):
+            print(f"🔗 배지 차이로 갈려 있던 중복 이력 {len(hist) - len(merged)}건을 합쳤습니다.")
+        hist = {f"{j.get('instId')}|{(j.get('title') or '').replace(' ','')}": j
+                for j in merged.values()}
 
         # 제외 규칙이 강화되면 이미 쌓인 이력도 함께 정리한다.
         # 이게 없으면 규칙을 고쳐도 과거에 수집된 공고가 기관별 아카이브 페이지에

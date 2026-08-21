@@ -638,7 +638,7 @@ const App = () => {
     id: 'kuksiwon',
     name: '한국보건의료인국가시험원',
     shortName: '국시원',
-    url: 'https://dware.intojob.co.kr',
+    url: 'https://recruit.incruit.com/kuksiwon',
     specs: {
       recruitSchedule: '연 1~2회 (하반기 집중)',
       seasonMonths: [9, 10, 11],
