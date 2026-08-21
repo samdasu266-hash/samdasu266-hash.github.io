@@ -227,6 +227,24 @@ def is_excluded_title(inst_id, title):
     return False
 
 
+# 제목만으로는 고용형태가 안 드러나는 공고가 있다.
+#   예) "2026년 제8회 국립정신건강센터 연구직 공무원 경력경쟁채용시험 공고"
+#       — 제목엔 단서가 없지만 실제로는 3년 계약의 보건연구사 일반임기제다.
+# 상세 본문에 임기제 표기가 있으면 정규직 판정을 뒤집는다.
+#
+# ⚠️ 일부러 '임기제' 하나만 본다. '계약기간'·'근무기간' 같은 말은 정규직 공고
+#    본문에도 나올 수 있어서, 진짜 정규직 공채를 계약직으로 잘못 표시할 위험이
+#    있다. 잘못된 축소보다 놓치는 쪽이 낫다.
+FIXED_TERM_RE = re.compile(r'임기제')
+
+
+def refine_job_type(job_type, body):
+    """상세 본문까지 확보한 뒤 고용형태를 다시 본다."""
+    if job_type != "정규직":
+        return job_type
+    return "계약직/기간제" if FIXED_TERM_RE.search(body or "") else job_type
+
+
 def classify_job_type(title):
     """공고 제목에서 고용형태를 판정한다.
 
@@ -239,7 +257,10 @@ def classify_job_type(title):
     if "공무직" in title:
         return "공무직"
     if any(k in title for k in ["기간제", "계약직", "촉탁직", "휴직", "대체", "임시직",
-                                "파견직", "파견근로자"]):
+                                "파견직", "파견근로자", "임기제"]):
+        # '임기제공무원'(일반·전문·시간선택제)은 정년이 보장되는 자리가 아니라
+        # 통상 2~5년 계약이다. 제목에 '공무원'이 들어 있어 정규직으로 보이지만
+        # 실제 신분은 기간제다.
         return "계약직/기간제"
     if "비정규직" in title:
         return "비정규직"
@@ -554,6 +575,11 @@ async def scrape_site(browser, inst_id, url):
                 clean_title = re.sub(
                     r'(?:\s*\|\s*(?:경력|신입|신입/경력|공채|일반채용|수시채용|상시채용|정규직|계약직)?)+\s*$',
                     '', clean_title)
+                # 「…」로 감싼 공고명에서 여는 괄호만 잘려 나가는 경우가 있다.
+                # (예: "2026년 제8회 … 경력경쟁채용시험」 공고")
+                for open_c, close_c in (('「', '」'), ('『', '』'), ('《', '》')):
+                    if close_c in clean_title and open_c not in clean_title:
+                        clean_title = clean_title.replace(close_c, '')
                 clean_title = re.sub(r'\s+', ' ', clean_title).strip()
 
                 # 적십자사: 본문에 있는 소속기관명 낚아채기
@@ -846,7 +872,7 @@ async def scrape_site(browser, inst_id, url):
                     "startDate": start_str,
                     "endDate": end_str,
                     "status": status,
-                    "jobType": job['jobType'],
+                    "jobType": refine_job_type(job['jobType'], combined_text),
                     "region": detected_region,
                     "link": safe_link 
                 })
