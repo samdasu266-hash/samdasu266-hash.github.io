@@ -776,7 +776,9 @@ async def main():
             {"id": "hira", "url": "https://hira.recruitlab.co.kr/app/recruitment-announcement/list"},
             {"id": "nhis", "url": "https://www.nhis.or.kr/nhis/together/wbhaea02700m01.do"},
             {"id": "neca", "url": "https://www.neca.re.kr/lay1/program/S1T207C209/people/index.do"},
-            {"id": "kuksiwon", "url": "https://dware.intojob.co.kr/main/kuksiwon.jsp"},
+            # 국시원은 채용 페이지를 인크루트로 옮겼다. 옛 intojob 주소는 열리지 않아
+            # 수집 실적이 0건이었다(history.json 에 kuksiwon 항목이 한 건도 없었음).
+            {"id": "kuksiwon", "url": "https://recruit.incruit.com/kuksiwon"},
             {"id": "koiha", "url": "https://koiha.recruiter.co.kr/career/job"},
             {"id": "nps", "url": "https://www.nps.or.kr/pnsgdnc/hiregdnc/getOHAE0004M0List.do"},
             {"id": "comwel", "url": "https://www.comwel.or.kr/recruit/hp/pblanc/pblancList.do"},

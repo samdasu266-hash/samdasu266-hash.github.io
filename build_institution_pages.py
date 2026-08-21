@@ -82,7 +82,7 @@ INSTITUTIONS = [
     },
     {
         "id": "kuksiwon", "name": "한국보건의료인국가시험원", "short": "국시원", "emoji": "📝",
-        "url": "https://dware.intojob.co.kr",
+        "url": "https://recruit.incruit.com/kuksiwon",
         "location": "서울특별시 광진구",
         "salary": "약 3,700만원", "avg": "약 5,300만원",
         "schedule": "연 1~2회 (하반기 집중)",
