@@ -531,6 +531,23 @@ async def scrape_site(browser, inst_id, url):
             # 링크 전체 폴백에서는 상단 내비게이션 링크가 앞부분을 차지해,
             # 한도가 낮으면 정작 뒤쪽의 실제 공고를 못 보고 잘린다. 넉넉히 잡는다.
             row_limit = 150
+        # 목록이 아예 안 잡히면 아직 안 그려진 것이다. 근로복지공단이 그랬다
+        # — <a> 폴백에서도 링크가 0개였다(= 페이지가 껍데기 상태).
+        # 네트워크가 잠잠해질 때까지 기다렸다가 한 번 더 훑는다.
+        if not rows:
+            print(f"[{inst_id}] 목록이 비어 있어 렌더링을 더 기다립니다")
+            try:
+                await page.wait_for_load_state("networkidle", timeout=20000)
+            except Exception:
+                pass
+            await asyncio.sleep(5)
+            for sel in (primary, "table tr", "[class*=card]", "[class*=item]",
+                        "[class*=list] li", "[class*=board] tr", "a"):
+                rows = await page.query_selector_all(sel)
+                if rows:
+                    selector_used = sel + " (재시도)"
+                    row_limit = 150 if sel == "a" else 15
+                    break
         print(f"[{inst_id}] 목록 행 {len(rows)}개 (선택자: {selector_used})")
 
         now = datetime.now(KST)
@@ -700,7 +717,9 @@ async def scrape_site(browser, inst_id, url):
                 continue
 
         found_jobs = []
-        
+        from collections import Counter
+        drop_reasons = Counter()
+
         for job in job_candidates:
             combined_text = job['raw_title'] + " \n" + job['row_text']
             js_code = job['js_code']
@@ -884,6 +903,16 @@ async def scrape_site(browser, inst_id, url):
                or "접수종료" in job['row_html'] or "접수마감" in job['row_html'] or "채용종료" in job['row_html']:
                 status = "마감"
 
+            # 왜 떨어졌는지 남긴다. "제목은 통과했는데 접수중이 0개"인 기관이
+            # 많은데, 정말 다 마감인지 날짜를 잘못 읽은 건지 구분이 안 됐다.
+            if status == "마감":
+                if end_item:
+                    drop_reasons["마감일 지남"] += 1
+                elif start_item:
+                    drop_reasons["시작일+15일 경과(마감일 못읽음)"] += 1
+                else:
+                    drop_reasons["목록에 마감 표기"] += 1
+
             # 마감된 공고는 저장하지 않음 → 사이트에 노출되지 않음
             if status != "마감":
                 found_jobs.append({
@@ -900,7 +929,8 @@ async def scrape_site(browser, inst_id, url):
         # 어디서 공고가 사라졌는지 로그로 남긴다.
         # 사이트가 정상 접속되는데 결과가 0건이면 여태 조용히 넘어갔다.
         # (comwel·khepi 가 누적 0건인 것을 한참 뒤에야 알았다)
-        print(f"[{inst_id}] 제목 필터 통과 {len(job_candidates)}개 → 접수중 {len(found_jobs)}개")
+        detail = ("  탈락: " + ", ".join(f"{k} {v}" for k, v in drop_reasons.items())) if drop_reasons else ""
+        print(f"[{inst_id}] 제목 필터 통과 {len(job_candidates)}개 → 접수중 {len(found_jobs)}개{detail}")
 
         unique_jobs = []
         seen = set()
