@@ -400,9 +400,9 @@
   {
    "instId": "redcross",
    "title": "2026년도 제3차 혈액관리본부 전문직 등(간호·보건·운수) 신규 직원 공개 모집",
-   "startDate": "26.07.20 18:10",
-   "endDate": "26.10.31 17:00",
-   "status": "진행중",
+   "startDate": "26.07.20",
+   "endDate": "26.08.04 18:00",
+   "status": "마감",
    "jobType": "정규직",
    "region": "강원",
    "link": "https://bloodinfo.careeron.co.kr/#/recruitment/detail/38",
@@ -540,18 +540,6 @@
    "link": "https://www.nps.or.kr/pnsgdnc/hiregdnc/getOHAE0004M1.do?menuId=MN24000969&pstId=ZZ202600000000000573&hmpgCd=01&hmpgBbsCd=BS20240138&sortSe=FR&pageIndex=1&searchText=&searchGbu=&pstSeCd=",
    "firstSeen": "2026-07-21",
    "lastSeen": "2026-07-22"
-  },
-  {
-   "instId": "redcross",
-   "title": "채용 공고",
-   "startDate": "26.07.20",
-   "endDate": "26.08.04 18:00",
-   "status": "진행중",
-   "jobType": "정규직",
-   "region": "강원",
-   "link": "https://bloodinfo.careeron.co.kr/#/recruitment/list",
-   "firstSeen": "2026-07-21",
-   "lastSeen": "2026-07-21"
   },
   {
    "instId": "mohw",

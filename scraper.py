@@ -166,6 +166,23 @@ SCHEDULE_KW = ['전형일정', '서류전형', '필기시험', '면접시험', '
                '임용', '교육']
 
 
+# 제목이 게시판·메뉴 이름 그 자체인 경우.
+#
+# 목록 선택자가 안 맞아 <a> 전체 폴백으로 갈 때 게시판 이름이 공고처럼 딸려
+# 들어온다. nav_words 는 부분 문자열로 막는 방식이라 "채용 공고"처럼 진짜
+# 공고 제목에도 흔히 쓰이는 말은 넣을 수 없다. 그래서 제목 **전체**가 일반
+# 명사뿐인 경우만 따로 걸러낸다.
+#   예) 적십자사 "채용 공고"  ← 게시판 이름
+#       "2026년도 제3차 혈액관리본부 … 공개 모집"  ← 진짜 공고 (통과)
+GENERIC_TITLES = {"채용", "공고", "채용공고", "모집공고", "채용모집", "모집",
+                  "인재채용", "채용정보", "공고문", "모집공고문", "채용안내",
+                  "상시채용", "수시채용", "공개채용", "신규채용"}
+
+
+def is_generic_title(title):
+    return re.sub(r'[^0-9A-Za-z가-힣]', '', title or '') in GENERIC_TITLES
+
+
 def is_excluded_title(inst_id, title):
     """현재 수집 정책상 제외 대상인 제목인지 판정한다.
 
@@ -174,6 +191,8 @@ def is_excluded_title(inst_id, title):
     공고가 복원 경로로 되살아난다.
     """
     t = (title or "").replace('[', ' ').replace(']', ' ')
+    if is_generic_title(title):
+        return True
     if DOCTOR_RE.search(t):
         return True
     if any(k in t for k in NON_HIRING):
@@ -295,6 +314,45 @@ def _careeron_iso_to_dot(s):
         return base + f" {int(m.group(4)):02d}:{m.group(5)}"
     return base
 
+# careeron JSON 은 '접수기간'과 '게시기간(공고가 게시판에 노출되는 기간)'을 함께 담는다.
+# 필드 이름을 느슨하게 맞추면 게시기간이 잡혀, 이미 마감된 공고가 게시 종료일까지
+# '진행중'으로 남는다.
+#   예) 혈액관리본부 제3차 공고 — 실제 접수는 7/20~8/4 인데
+#       게시일시 2026.07.20 18:10 ~ 2026.10.31 17:00 이 수집됐다.
+#       (18:10 이라는 어정쩡한 시각이 게시 시각이라는 단서였다)
+#   원인은 두 가지. 시작일 키워드에 'reg'(regDate = 등록일 = 게시일)가 있었고,
+#   'end'가 noticeEndDate 같은 게시 종료 필드에도 걸렸다.
+# → 접수(apply) 관련 이름을 우선하고, 게시·등록 관련 이름은 배제한다.
+CAREERON_SKIP = ('notice', 'disp', 'post', 'view', 'show', 'board', 'banner',
+                 'reg', 'crt', 'create', 'writ', 'mod', 'upd', 'del')
+CAREERON_APPLY = ('apply', 'appl', 'receipt', 'recept', 'rcpt', 'accept', 'entry')
+CAREERON_START = ('start', 'begin', 'open', 'from')
+CAREERON_END = ('end', 'close', 'deadline', 'expire', 'fin', 'until')
+
+
+def _careeron_pick(item, kind):
+    """접수 시작/마감 필드를 고른다. 접수 관련 이름이 있으면 그쪽을 먼저 쓴다."""
+    words = CAREERON_START if kind == 'start' else CAREERON_END
+    best = None   # (우선순위, 값) — 0 = 접수 전용 필드, 1 = 일반 시작/종료 필드
+    for k, v in (item or {}).items():
+        if not v:
+            continue
+        lk = str(k).lower()
+        is_apply = any(x in lk for x in CAREERON_APPLY)
+        # 게시·등록 필드는 건너뛴다 (단, 접수 표기가 함께 있으면 살린다)
+        if any(x in lk for x in CAREERON_SKIP) and not is_apply:
+            continue
+        if not any(x in lk for x in words):
+            continue
+        dv = _careeron_iso_to_dot(v)
+        if not dv:
+            continue
+        tier = 0 if is_apply else 1
+        if best is None or tier < best[0]:
+            best = (tier, dv)
+    return best[1] if best else "상세참조"
+
+
 def build_careeron_jobs(payload, inst_id):
     # careeron SPA의 목록 API(JSON)에서 공고를 직접 추출한다.
     if not payload:
@@ -345,17 +403,8 @@ def build_careeron_jobs(payload, inst_id):
                 rid = str(v).strip()
                 break
         link = f"https://bloodinfo.careeron.co.kr/#/recruitment/detail/{rid}" if rid else "https://bloodinfo.careeron.co.kr/#/recruitment/list"
-        start_str, end_str = "상세참조", "상세참조"
-        for k, v in it.items():
-            lk = k.lower()
-            if start_str == "상세참조" and any(x in lk for x in ['start', 'begin', 'apply', 'open', 'reg']) and v:
-                dv = _careeron_iso_to_dot(v)
-                if dv:
-                    start_str = dv
-            if end_str == "상세참조" and any(x in lk for x in ['end', 'close', 'deadline', 'expire', 'fin']) and v:
-                dv = _careeron_iso_to_dot(v)
-                if dv:
-                    end_str = dv
+        start_str = _careeron_pick(it, 'start')
+        end_str = _careeron_pick(it, 'end')
         status = "진행중"
         m = re.match(r'(\d{2})\.(\d{2})\.(\d{2})(?:\s+(\d{1,2}):(\d{2}))?', end_str)
         if m:
