@@ -105,6 +105,25 @@ NMC_CLINICAL = [
 #    앞뒤 한글 여부를 직접 확인해 '의사소통' 같은 단어와만 구분한다.
 DOCTOR_RE = re.compile(r'(?<![가-힣])(?:의사직|의사|전문의|수련의|전공의)(?![가-힣])')
 
+# 약사·약무직 제외.
+# ⚠️ 부분 문자열로 막으면 안 된다. "계약사무원"에 '약사'가 들어 있어
+#    멀쩡한 사무직 공고가 사라진다. 앞뒤 한글을 확인한다.
+PHARMACIST_RE = re.compile(r'(?<![가-힣])(?:약사직|약무직|약사|약무)(?![가-힣])')
+#    ('약무직'처럼 뒤에 한글이 붙는 형태는 의사직과 같은 이유로 따로 적어야 한다)
+
+# 병원 소속 임상직 제외.
+#
+# 【수집 정책】근로복지공단은 산하에 병원 10곳(태백·동해·순천·창원·대전 등)을
+# 운영해서 병원 간호사·간호조무사 공고가 섞여 들어온다. 국립중앙의료원과 같은
+# 이유로 제외한다 — 이 사이트는 병상을 떠나려는 사람이 보는 곳이다.
+# 같은 기관이라도 병원이 아닌 지역본부·지사·연구소 공고는 그대로 수집한다.
+#   제외: "[태백병원] 의료직(간호사) 6급 채용 공고"
+#   수집: "[강원지역본부] 기간제 사무원(휴직대체) 채용"
+#         "[태백병원] 공무직(전기기계통신기사_기계) 채용 공고"  ← 병원이지만 비임상
+HOSPITAL_HINT = ("병원", "의료원")
+HOSPITAL_CLINICAL_ROLE = ("간호사", "간호조무", "물리치료", "작업치료", "임상병리",
+                          "방사선사", "치과위생", "병동", "수술실", "중환자실")
+
 
 # 신규 채용이 아닌 공고 제외.
 #
@@ -193,7 +212,9 @@ def is_excluded_title(inst_id, title):
     t = (title or "").replace('[', ' ').replace(']', ' ')
     if is_generic_title(title):
         return True
-    if DOCTOR_RE.search(t):
+    if DOCTOR_RE.search(t) or PHARMACIST_RE.search(t):
+        return True
+    if any(h in t for h in HOSPITAL_HINT) and any(r in t for r in HOSPITAL_CLINICAL_ROLE):
         return True
     if any(k in t for k in NON_HIRING):
         return True
@@ -375,7 +396,7 @@ def build_careeron_jobs(payload, inst_id):
 
     items = find_list(payload) or []
     now = datetime.now(KST).replace(tzinfo=None)
-    exclude_words = ["발표", "합격", "면접", "약사", "약무", "의무직", "사전공개", "채용계획",
+    exclude_words = ["발표", "합격", "면접", "의무직", "사전공개", "채용계획",
                      "공시송달", "서류전형", "참여기관", "공모", "재직", "상임", "고령", "친인척",
                      "계획 공고", "실습 인정", "교육훈련기관", "등록폐지", "윤리위원회",
                      "기준보험료", "심사위원", "변호사"]
@@ -467,7 +488,10 @@ async def scrape_site(browser, inst_id, url):
                         ".board_list li, .bbs_list li, .list_wrap li",
                         "div.list li, ol.list li",
                         "[class*=list] li",
-                        "[class*=board] tr, [class*=list] tr"):
+                        "[class*=board] tr, [class*=list] tr",
+                        # 카드 그리드형 (근로복지공단 채용공고가 이 형태다)
+                        "[class*=card]",
+                        "[class*=item]"):
                 rows = await page.query_selector_all(sel)
                 if rows:
                     selector_used = sel
@@ -511,6 +535,13 @@ async def scrape_site(browser, inst_id, url):
                 clean_title = clean_title.replace('[마감]', '').replace('[새글]', '').replace('새글', '').replace('~', '').strip()
                 # 목록 페이지의 상태 배지·D-day 부스러기 제거
                 # (예: "접수중 의료기관평가인증원 … 공고(연구직) D-17" → "의료기관평가인증원 … 공고(연구직)")
+                # 카드형 목록은 배지가 여러 개 앞에 붙는다 (예: "신입 접수중 [태백병원] …").
+                # ⚠️ '신입'·'경력'만 보고 지우면 "신입사원 공개채용" 같은 진짜 제목이
+                #    잘린다. 상태 배지(접수중 등)가 함께 있을 때만 통째로 걷어낸다.
+                _badge = r'(?:접수중|접수전|접수예정|진행중|모집중|마감임박|신규|신입\+경력|신입|경력)'
+                _m = re.match(r'^((?:\s*' + _badge + r')+)\s+', clean_title)
+                if _m and re.search(r'접수중|접수전|접수예정|진행중|모집중|마감임박', _m.group(1)):
+                    clean_title = clean_title[_m.end():]
                 clean_title = re.sub(r'^\s*(?:접수중|접수전|접수예정|진행중|모집중|마감임박|신규)\s+', '', clean_title)
                 # 목록 배지가 제목 뒤에 붙는 경우 제거 (예: '… 공고 공채 일반채용 신입')
                 clean_title = re.sub(r'(?:\s+(?:공채|일반채용|수시채용|상시채용|신입|경력|신입/경력))+\s*$', '', clean_title)
@@ -567,7 +598,7 @@ async def scrape_site(browser, inst_id, url):
                     
                 # 🔥 미수집 제외 키워드 대폭 강화
                 exclude_words = [
-                    "발표", "합격", "면접", "약사", "약무", "의무직",
+                    "발표", "합격", "면접", "의무직",
                     "사전공개", "채용계획", "공시송달", "서류전형", "참여기관", "공모",
                     "재직", "상임", "고령", "친인척",
                     "계획 공고", "실습 인정", "교육훈련기관",
