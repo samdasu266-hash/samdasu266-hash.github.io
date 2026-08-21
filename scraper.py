@@ -113,7 +113,8 @@ DOCTOR_RE = re.compile(r'(?<![가-힣])(?:의사직|의사|전문의|수련의|�
 #   · 전입·전출·파견 — 현직 공무원 대상 인사 이동 (예: "지방직 7급 공무원 전입희망자 모집")
 #   · 초빙·이사장 — 임원 공모 (예: "국민건강보험공단 이사장 초빙")
 #   · 위원장 — 심사·평가 위원회 위원장, 사실상 의사 등 전문가 위촉 (예: "진료심사평가위원장 채용")
-#   · 연구소장·연구원장 — 기관장급 보직 공모 (예: "심사평가정책연구소장(개방형 직위) 채용")
+#   · 연구소장·연구원장·병원장 — 기관장급 보직 공모
+#       (예: "심사평가정책연구소장(개방형 직위) 채용", "경북대학교병원장 공개모집 공고")
 #   · 개방형 — 개방형직위 및 그와 함께 뽑는 전문인력. 둘 다 현직 고위직 대상이다.
 #
 # ⚠️ '개방형직위 및 전문인력 채용'은 '전문인력'이라는 말 때문에 일반 채용으로 보이지만,
@@ -123,13 +124,35 @@ DOCTOR_RE = re.compile(r'(?<![가-힣])(?:의사직|의사|전문의|수련의|�
 #                                     또는 공기업·준정부기관 2급 이상 1년 이상 재직
 #    취업준비생·탈임상 간호사는 지원 자체가 불가능하므로 '개방형'이 붙으면 제외한다.
 #    (띄어쓰기가 '개방형직위'·'개방형 직위' 양쪽으로 쓰여 '개방형'만으로 잡는다)
-NON_HIRING = ["전입", "전출", "초빙", "이사장", "위원장", "연구소장", "연구원장", "개방형"]
+NON_HIRING = ["전입", "전출", "초빙", "이사장", "위원장",
+              "연구소장", "연구원장", "병원장", "의료원장", "개방형"]
+
+# 신규 채용이 맞지만 이 사이트 독자를 대상으로 하지 않는 공고.
+#
+# 【수집 정책】'베테랑 시니어지원단', '시니어인턴' 등은 퇴직자·고령자 대상
+# 재취업 지원 사업이다. 채용은 채용이지만 응시 대상이 취업준비생·탈임상
+# 간호사가 아니라서, 목록에 섞이면 노이즈가 된다.
+# (기존 exclude_words 의 '고령'과 같은 취지다)
+OFF_TARGET = ["시니어", "베테랑", "신중년"]
 
 # ⚠️ '파견'은 통째로 막으면 안 된다. "파견직·파견근로자"는 현직자 인사 이동이 아니라
 #    엄연한 고용형태라서, 그런 공고까지 사라지면 진짜 채용을 놓친다.
 #    현직자 대상 파견(= 파견근무자/파견자 모집)만 골라낸다.
 DISPATCH_RE = re.compile(r'파견\s*(?:근무자|자|근무)')
 EMPLOYMENT_DISPATCH_RE = re.compile(r'파견\s*(?:직|근로자|사원)')
+
+
+# 접수기간을 가리키는 키워드. 강할수록 먼저 채택한다.
+#
+# ⚠️ '일정'은 넣지 않는다. "전형일정" 표가 걸려 서류발표·필기·면접·임용 날짜를
+#    접수기간으로 잘못 읽어오기 때문이다. "접수일정"은 '접수'로 이미 잡힌다.
+PERIOD_KW_STRONG = ['접수기간', '접수 기간', '원서접수', '지원기간', '신청기간',
+                    '공고기간', '모집기간']
+PERIOD_KW_WEAK = ['접수', '지원', '기간', '기한', '모집', '신청', '마감']
+
+# 전형 일정 표를 접수기간으로 오인하지 않기 위한 신호
+SCHEDULE_KW = ['전형일정', '서류전형', '필기시험', '면접시험', '합격자', '발표',
+               '임용', '교육']
 
 
 def is_excluded_title(inst_id, title):
@@ -143,6 +166,8 @@ def is_excluded_title(inst_id, title):
     if DOCTOR_RE.search(t):
         return True
     if any(k in t for k in NON_HIRING):
+        return True
+    if any(k in t for k in OFF_TARGET):
         return True
     if DISPATCH_RE.search(t) and not EMPLOYMENT_DISPATCH_RE.search(t):
         return True
@@ -598,17 +623,48 @@ async def scrape_site(browser, inst_id, url):
             now_kst = now.replace(tzinfo=None)
 
             lines = combined_text.split('\n')
-            PERIOD_KW = ['접수', '지원', '기간', '기한', '모집', '일정', '신청', '마감', '공고기간']
-            # 1) 접수기간류 키워드가 있는 문맥(해당 줄 + 다음 2줄)에서 날짜 탐색.
-            #    한 줄만 있어도 놓치지 않도록 first-match break 대신 후보를 누적한다.
+            # 1) 접수기간류 키워드가 있는 문맥에서 날짜 탐색.
+            #
+            # ⚠️ 예전에는 키워드에 '일정'이 있었고, 조건을 만족하는 첫 문맥에서 바로
+            #    break 했다. 그래서 접수기간이 표에서 여러 줄로 쪼개져 한 번에 안 잡히면,
+            #    뒤에 오는 '전형일정' 표(서류발표·필기·면접·최종합격·임용)가 대신 잡혀
+            #    엉뚱한 날짜가 접수기간으로 올라갔다.
+            #      예) 심평원 "2026년 하반기 정규직 채용"
+            #          실제 2026-08-19 17:00 ~ 2026-09-02 18:00
+            #          수집 26.12.22 ~ 26.12.23  ← 최종합격 발표·임용 예정일
+            #    → '일정'을 빼고, 키워드 강도로 우선순위를 매겨 가장 확실한 문맥을 고른다.
+            best = None   # (우선순위, 줄번호, 시작, 마감)
             for i, line in enumerate(lines):
-                if not any(k in line for k in PERIOD_KW):
+                if any(k in line for k in PERIOD_KW_STRONG):
+                    priority, window = 2, 4   # 라벨과 값이 여러 줄로 나뉜 표까지 커버
+                elif any(k in line for k in PERIOD_KW_WEAK):
+                    priority, window = 1, 3
+                else:
                     continue
-                context = " ".join(lines[i:i+3])
+                context = " ".join(lines[i:i + window])
+                # 전형 일정만 있는 문맥은 접수기간 후보가 아니다
+                if any(k in context for k in SCHEDULE_KW) \
+                   and not any(k in context for k in ('접수', '원서')):
+                    continue
+                # 접수기간 **뒤에 이어 붙은** 전형 일정 표는 잘라낸다.
+                # 안 자르면 창(window)이 일정 표까지 삼켜서 dates[-1]이
+                # 최종합격자 발표일·임용일이 되어 마감일로 올라간다.
+                cut = len(context)
+                for kw in SCHEDULE_KW:
+                    p = context.find(kw)
+                    if p > 0:
+                        cut = min(cut, p)
+                context = context[:cut]
                 dates = extract_dates(context, now.year)
                 if len(dates) >= 2:
-                    start_item, end_item = dates[0], dates[-1]
-                    break
+                    s_cand, e_cand = dates[0], dates[-1]
+                    # 접수기간이 90일을 넘는 공고는 없다. 넘으면 서로 다른 항목의
+                    # 날짜를 짝지은 것이므로 버린다.
+                    if (e_cand['dt'] - s_cand['dt']).days > 90:
+                        continue
+                    if best is None or priority > best[0]:
+                        best = (priority, i, s_cand, e_cand)
+                    continue
                 if len(dates) == 1:
                     d = dates[0]
                     if any(c in context for c in ['까지', '마감', '~', '-']):
@@ -616,6 +672,8 @@ async def scrape_site(browser, inst_id, url):
                             end_item = d  # 마감일 후보 (가장 늦은 날짜 유지)
                     elif start_item is None:
                         start_item = d   # 시작일 후보 (가장 처음 것 유지)
+            if best:
+                start_item, end_item = best[2], best[3]
 
             # 2) "YYYY.MM.DD ~ (YYYY.)MM.DD [HH:MM]" 범위 패턴 (전체 본문)
             if not (start_item and end_item):
@@ -862,8 +920,17 @@ async def main():
             key = f"{j.get('instId')}|{(j.get('title') or '').replace(' ','')}"
             if key in hist:
                 hist[key]["lastSeen"] = today
-                # 마감일·지역 등이 뒤늦게 확보되면 채워 넣는다
-                for fld in ("endDate", "region", "link", "startDate", "jobType"):
+                # 이번 수집값이 더 낫거나 같으면 이력을 갱신한다.
+                #
+                # 예전에는 이력이 비어 있을 때만 채웠는데, 그러면 한번 잘못 읽은
+                # 날짜가 아카이브에 영구히 남는다. 파서를 고쳐도 기관 페이지에는
+                # 옛 날짜가 그대로 보이므로, 날짜는 정확도가 떨어지지 않는 한
+                # 최신 수집값으로 덮어쓴다.
+                for fld in ("endDate", "startDate"):
+                    v = j.get(fld)
+                    if v and _date_rank(v) >= _date_rank(hist[key].get(fld)):
+                        hist[key][fld] = v
+                for fld in ("region", "link", "jobType"):
                     v = j.get(fld)
                     if v and v != "상세참조" and hist[key].get(fld) in (None, "", "상세참조"):
                         hist[key][fld] = v
