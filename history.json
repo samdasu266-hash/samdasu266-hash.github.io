@@ -1,6 +1,30 @@
 {
- "generated": "2026-08-21T08:30:45.229036+09:00",
+ "generated": "2026-08-21T10:23:05.355321+09:00",
  "jobs": [
+  {
+   "instId": "mohw",
+   "title": "국민연금공단 기금운용본부 자산운용전문가 채용공고",
+   "startDate": "26.08.21",
+   "endDate": "26.08.28 18:00",
+   "status": "진행중",
+   "jobType": "정규직",
+   "region": "전국(공고확인)",
+   "link": "https://www.mohw.go.kr/board.es?mid=a10501010400&bid=0003&act=view&list_no=1491633&tag=&nPage=1",
+   "firstSeen": "2026-08-21",
+   "lastSeen": "2026-08-21"
+  },
+  {
+   "instId": "mohw",
+   "title": "경북대학교병원장 공개모집 공고",
+   "startDate": "26.08.21",
+   "endDate": "26.09.04 18:00",
+   "status": "진행중",
+   "jobType": "정규직",
+   "region": "경북",
+   "link": "https://www.mohw.go.kr/board.es?mid=a10501010400&bid=0003&act=view&list_no=1491632&tag=&nPage=1",
+   "firstSeen": "2026-08-21",
+   "lastSeen": "2026-08-21"
+  },
   {
    "instId": "mohw",
    "title": "2026년 제8회 국립정신건강센터 연구직 공무원 경력경쟁채용시험」 공고",
