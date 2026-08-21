@@ -59,6 +59,10 @@ def extract_dates(text, current_year):
     parsed_dates.sort(key=lambda x: x['dt'])
     return parsed_dates
 
+# 접수기간 후보 선택 과정을 로그로 남길 기관. 문제를 겪은 곳만 켠다.
+DATE_DEBUG_INSTS = {'hira'}
+
+
 def now_kst_naive():
     return datetime.now(KST).replace(tzinfo=None)
 
@@ -839,6 +843,15 @@ async def scrape_site(browser, inst_id, url):
                             end_item = d  # 마감일 후보 (가장 늦은 날짜 유지)
                     elif start_item is None:
                         start_item = d   # 시작일 후보 (가장 처음 것 유지)
+            # 실제 페이지에서 어떤 후보들이 잡혔고 무엇을 골랐는지 남긴다.
+            # 픽스처로만 검증하다 심평원 공고를 두 번 틀렸다. 사이트에 직접
+            # 접근할 수 없으니 실행 로그가 유일한 확인 수단이다.
+            if candidates and job['instId'] in DATE_DEBUG_INSTS:
+                shown = ", ".join(
+                    f"{c[2]['dt']:%y.%m.%d %H:%M}~{c[3]['dt']:%y.%m.%d %H:%M}"
+                    f"(등급{c[0]}{',시각' if c[1] else ''})" for c in candidates)
+                print(f"[{job['instId']}] 접수기간 후보: {shown}")
+
             if candidates:
                 # 같은 등급이면 **가장 이른** 후보를 고른다.
                 #
@@ -852,6 +865,9 @@ async def scrape_site(browser, inst_id, url):
                 pool = sorted((c for c in candidates if (c[0], c[1]) == top),
                               key=lambda c: c[2]['dt'])
                 start_item, end_item = pool[0][2], pool[0][3]
+                if job['instId'] in DATE_DEBUG_INSTS:
+                    print(f"[{job['instId']}] → 선택: "
+                          f"{start_item['dt']:%y.%m.%d %H:%M} ~ {end_item['dt']:%y.%m.%d %H:%M}")
 
             # 2) "YYYY.MM.DD ~ (YYYY.)MM.DD [HH:MM]" 범위 패턴 (전체 본문)
             if not (start_item and end_item):
