@@ -1,6 +1,16 @@
 {
- "lastSync": "2026-08-22T06:28:35.174619+09:00",
+ "lastSync": "2026-08-22T07:29:23.326511+09:00",
  "jobs": [
+  {
+   "instId": "hira",
+   "title": "2026년 하반기 정규직 채용",
+   "startDate": "26.11.13",
+   "endDate": "26.12.15 18:00",
+   "status": "진행중",
+   "jobType": "정규직",
+   "region": "강원",
+   "link": "https://hira.recruitlab.co.kr/app/recruitment-announcement/view/991"
+  },
   {
    "instId": "redcross",
    "title": "2026년도 제3차 혈액관리본부 전문직 등(간호·보건·운수) 신규 직원 공개 모집",
@@ -60,16 +70,6 @@
    "jobType": "정규직",
    "region": "경북",
    "link": "https://nmc.recruiter.co.kr/app/jobnotice/view?systemKindCode=MRS2&jobnoticeSn=263008"
-  },
-  {
-   "instId": "hira",
-   "title": "2026년 하반기 정규직 채용",
-   "startDate": "26.11.13",
-   "endDate": "26.12.15 18:00",
-   "status": "진행중",
-   "jobType": "정규직",
-   "region": "강원",
-   "link": "https://hira.recruitlab.co.kr/app/recruitment-announcement/view/991"
   },
   {
    "instId": "mohw",
