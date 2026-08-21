@@ -59,6 +59,10 @@ def extract_dates(text, current_year):
     parsed_dates.sort(key=lambda x: x['dt'])
     return parsed_dates
 
+# 접수기간 후보 선택 과정을 로그로 남길 기관. 문제를 겪은 곳만 켠다.
+DATE_DEBUG_INSTS = {'hira'}
+
+
 def now_kst_naive():
     return datetime.now(KST).replace(tzinfo=None)
 
@@ -103,12 +107,19 @@ NMC_CLINICAL = [
 #    '의사직'의 '의사'와 '직' 사이에 단어 경계가 성립하지 않아 매치되지 않는다.
 #    (이 때문에 "의사직(응급의료정책연구팀) 채용 재공고"가 그대로 수집됐다)
 #    앞뒤 한글 여부를 직접 확인해 '의사소통' 같은 단어와만 구분한다.
-DOCTOR_RE = re.compile(r'(?<![가-힣])(?:의사직|의사|전문의|수련의|전공의)(?![가-힣])')
+#    앞쪽 경계도 두지 않는다. '한의사'·'치과의사'처럼 앞에 한글이 붙는 형태를
+#    놓치기 때문이다. '의사소통'·'의사결정'·'협의사항'은 뒤쪽 경계로 걸러진다.
+DOCTOR_RE = re.compile(r'(?:의사직|의사|전문의|수련의|전공의)(?![가-힣])')
 
 # 약사·약무직 제외.
 # ⚠️ 부분 문자열로 막으면 안 된다. "계약사무원"에 '약사'가 들어 있어
 #    멀쩡한 사무직 공고가 사라진다. 앞뒤 한글을 확인한다.
-PHARMACIST_RE = re.compile(r'(?<![가-힣])(?:약사직|약무직|약사|약무)(?![가-힣])')
+# ⚠️ 앞쪽을 '한글 전체'로 막으면 안 된다. "주말약사"·"당직약사"·"한약사"처럼
+#    앞에 한글이 붙는 진짜 약사 공고가 통째로 빠져나간다.
+#    (실제로 "계약직 주말약사(약제부) 재공고"가 수집됐다)
+#    뒤쪽 경계만으로 "계약사무원"(계-약사-무-원)은 이미 걸러지고,
+#    남는 건 '계약사'·'제약사' 두 낱말뿐이라 그 앞글자만 집어서 막는다.
+PHARMACIST_RE = re.compile(r'(?<![계제])(?:약사직|약무직|약사|약무)(?![가-힣])')
 #    ('약무직'처럼 뒤에 한글이 붙는 형태는 의사직과 같은 이유로 따로 적어야 한다)
 
 # 병원 소속 임상직 제외.
@@ -227,6 +238,24 @@ def is_excluded_title(inst_id, title):
     return False
 
 
+# 제목만으로는 고용형태가 안 드러나는 공고가 있다.
+#   예) "2026년 제8회 국립정신건강센터 연구직 공무원 경력경쟁채용시험 공고"
+#       — 제목엔 단서가 없지만 실제로는 3년 계약의 보건연구사 일반임기제다.
+# 상세 본문에 임기제 표기가 있으면 정규직 판정을 뒤집는다.
+#
+# ⚠️ 일부러 '임기제' 하나만 본다. '계약기간'·'근무기간' 같은 말은 정규직 공고
+#    본문에도 나올 수 있어서, 진짜 정규직 공채를 계약직으로 잘못 표시할 위험이
+#    있다. 잘못된 축소보다 놓치는 쪽이 낫다.
+FIXED_TERM_RE = re.compile(r'임기제')
+
+
+def refine_job_type(job_type, body):
+    """상세 본문까지 확보한 뒤 고용형태를 다시 본다."""
+    if job_type != "정규직":
+        return job_type
+    return "계약직/기간제" if FIXED_TERM_RE.search(body or "") else job_type
+
+
 def classify_job_type(title):
     """공고 제목에서 고용형태를 판정한다.
 
@@ -239,7 +268,10 @@ def classify_job_type(title):
     if "공무직" in title:
         return "공무직"
     if any(k in title for k in ["기간제", "계약직", "촉탁직", "휴직", "대체", "임시직",
-                                "파견직", "파견근로자"]):
+                                "파견직", "파견근로자", "임기제"]):
+        # '임기제공무원'(일반·전문·시간선택제)은 정년이 보장되는 자리가 아니라
+        # 통상 2~5년 계약이다. 제목에 '공무원'이 들어 있어 정규직으로 보이지만
+        # 실제 신분은 기간제다.
         return "계약직/기간제"
     if "비정규직" in title:
         return "비정규직"
@@ -503,6 +535,23 @@ async def scrape_site(browser, inst_id, url):
             # 링크 전체 폴백에서는 상단 내비게이션 링크가 앞부분을 차지해,
             # 한도가 낮으면 정작 뒤쪽의 실제 공고를 못 보고 잘린다. 넉넉히 잡는다.
             row_limit = 150
+        # 목록이 아예 안 잡히면 아직 안 그려진 것이다. 근로복지공단이 그랬다
+        # — <a> 폴백에서도 링크가 0개였다(= 페이지가 껍데기 상태).
+        # 네트워크가 잠잠해질 때까지 기다렸다가 한 번 더 훑는다.
+        if not rows:
+            print(f"[{inst_id}] 목록이 비어 있어 렌더링을 더 기다립니다")
+            try:
+                await page.wait_for_load_state("networkidle", timeout=20000)
+            except Exception:
+                pass
+            await asyncio.sleep(5)
+            for sel in (primary, "table tr", "[class*=card]", "[class*=item]",
+                        "[class*=list] li", "[class*=board] tr", "a"):
+                rows = await page.query_selector_all(sel)
+                if rows:
+                    selector_used = sel + " (재시도)"
+                    row_limit = 150 if sel == "a" else 15
+                    break
         print(f"[{inst_id}] 목록 행 {len(rows)}개 (선택자: {selector_used})")
 
         now = datetime.now(KST)
@@ -554,6 +603,11 @@ async def scrape_site(browser, inst_id, url):
                 clean_title = re.sub(
                     r'(?:\s*\|\s*(?:경력|신입|신입/경력|공채|일반채용|수시채용|상시채용|정규직|계약직)?)+\s*$',
                     '', clean_title)
+                # 「…」로 감싼 공고명에서 여는 괄호만 잘려 나가는 경우가 있다.
+                # (예: "2026년 제8회 … 경력경쟁채용시험」 공고")
+                for open_c, close_c in (('「', '」'), ('『', '』'), ('《', '》')):
+                    if close_c in clean_title and open_c not in clean_title:
+                        clean_title = clean_title.replace(close_c, '')
                 clean_title = re.sub(r'\s+', ' ', clean_title).strip()
 
                 # 적십자사: 본문에 있는 소속기관명 낚아채기
@@ -667,7 +721,9 @@ async def scrape_site(browser, inst_id, url):
                 continue
 
         found_jobs = []
-        
+        from collections import Counter
+        drop_reasons = Counter()
+
         for job in job_candidates:
             combined_text = job['raw_title'] + " \n" + job['row_text']
             js_code = job['js_code']
@@ -746,7 +802,7 @@ async def scrape_site(browser, inst_id, url):
             #          실제 2026-08-19 17:00 ~ 2026-09-02 18:00
             #          수집 26.12.22 ~ 26.12.23  ← 최종합격 발표·임용 예정일
             #    → '일정'을 빼고, 키워드 강도로 우선순위를 매겨 가장 확실한 문맥을 고른다.
-            best = None   # (우선순위, 줄번호, 시작, 마감)
+            candidates = []   # (우선순위, 양끝시각여부, 시작, 마감)
             for i, line in enumerate(lines):
                 if any(k in line for k in PERIOD_KW_STRONG):
                     priority, window = 2, 4   # 라벨과 값이 여러 줄로 나뉜 표까지 커버
@@ -775,8 +831,10 @@ async def scrape_site(browser, inst_id, url):
                     # 날짜를 짝지은 것이므로 버린다.
                     if (e_cand['dt'] - s_cand['dt']).days > 90:
                         continue
-                    if best is None or priority > best[0]:
-                        best = (priority, i, s_cand, e_cand)
+                    # 접수기간은 마감 시각을 명시하는 경우가 많다("~ 9.2 18:00").
+                    # 전형일정 표의 날짜는 보통 시각이 없다. 이 차이를 순위에 쓴다.
+                    both_times = s_cand['has_time'] and e_cand['has_time']
+                    candidates.append((priority, both_times, s_cand, e_cand))
                     continue
                 if len(dates) == 1:
                     d = dates[0]
@@ -785,8 +843,31 @@ async def scrape_site(browser, inst_id, url):
                             end_item = d  # 마감일 후보 (가장 늦은 날짜 유지)
                     elif start_item is None:
                         start_item = d   # 시작일 후보 (가장 처음 것 유지)
-            if best:
-                start_item, end_item = best[2], best[3]
+            # 실제 페이지에서 어떤 후보들이 잡혔고 무엇을 골랐는지 남긴다.
+            # 픽스처로만 검증하다 심평원 공고를 두 번 틀렸다. 사이트에 직접
+            # 접근할 수 없으니 실행 로그가 유일한 확인 수단이다.
+            if candidates and job['instId'] in DATE_DEBUG_INSTS:
+                shown = ", ".join(
+                    f"{c[2]['dt']:%y.%m.%d %H:%M}~{c[3]['dt']:%y.%m.%d %H:%M}"
+                    f"(등급{c[0]}{',시각' if c[1] else ''})" for c in candidates)
+                print(f"[{job['instId']}] 접수기간 후보: {shown}")
+
+            if candidates:
+                # 같은 등급이면 **가장 이른** 후보를 고른다.
+                #
+                # ⚠️ 이게 핵심 방어선이다. 접수는 언제나 전형(필기·면접·발표·임용)보다
+                #    먼저다. 그래서 전형일정 표를 잘못 집으면 반드시 실제 접수기간보다
+                #    뒤의 날짜가 나온다. 실제로 심평원 공고에서 두 번 그렇게 틀렸다.
+                #      실제 08.19~09.02 / 잘못 집은 값 12.22~12.23, 11.13~12.15
+                #    문자열을 잘라내는 방식만으로는 표 배치에 따라 계속 새어서,
+                #    '가장 이른 후보'라는 구조적 기준을 함께 둔다.
+                top = max((c[0], c[1]) for c in candidates)
+                pool = sorted((c for c in candidates if (c[0], c[1]) == top),
+                              key=lambda c: c[2]['dt'])
+                start_item, end_item = pool[0][2], pool[0][3]
+                if job['instId'] in DATE_DEBUG_INSTS:
+                    print(f"[{job['instId']}] → 선택: "
+                          f"{start_item['dt']:%y.%m.%d %H:%M} ~ {end_item['dt']:%y.%m.%d %H:%M}")
 
             # 2) "YYYY.MM.DD ~ (YYYY.)MM.DD [HH:MM]" 범위 패턴 (전체 본문)
             if not (start_item and end_item):
@@ -838,6 +919,16 @@ async def scrape_site(browser, inst_id, url):
                or "접수종료" in job['row_html'] or "접수마감" in job['row_html'] or "채용종료" in job['row_html']:
                 status = "마감"
 
+            # 왜 떨어졌는지 남긴다. "제목은 통과했는데 접수중이 0개"인 기관이
+            # 많은데, 정말 다 마감인지 날짜를 잘못 읽은 건지 구분이 안 됐다.
+            if status == "마감":
+                if end_item:
+                    drop_reasons["마감일 지남"] += 1
+                elif start_item:
+                    drop_reasons["시작일+15일 경과(마감일 못읽음)"] += 1
+                else:
+                    drop_reasons["목록에 마감 표기"] += 1
+
             # 마감된 공고는 저장하지 않음 → 사이트에 노출되지 않음
             if status != "마감":
                 found_jobs.append({
@@ -846,7 +937,7 @@ async def scrape_site(browser, inst_id, url):
                     "startDate": start_str,
                     "endDate": end_str,
                     "status": status,
-                    "jobType": job['jobType'],
+                    "jobType": refine_job_type(job['jobType'], combined_text),
                     "region": detected_region,
                     "link": safe_link 
                 })
@@ -854,7 +945,8 @@ async def scrape_site(browser, inst_id, url):
         # 어디서 공고가 사라졌는지 로그로 남긴다.
         # 사이트가 정상 접속되는데 결과가 0건이면 여태 조용히 넘어갔다.
         # (comwel·khepi 가 누적 0건인 것을 한참 뒤에야 알았다)
-        print(f"[{inst_id}] 제목 필터 통과 {len(job_candidates)}개 → 접수중 {len(found_jobs)}개")
+        detail = ("  탈락: " + ", ".join(f"{k} {v}" for k, v in drop_reasons.items())) if drop_reasons else ""
+        print(f"[{inst_id}] 제목 필터 통과 {len(job_candidates)}개 → 접수중 {len(found_jobs)}개{detail}")
 
         unique_jobs = []
         seen = set()
