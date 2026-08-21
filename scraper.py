@@ -772,7 +772,7 @@ async def scrape_site(browser, inst_id, url):
             #          실제 2026-08-19 17:00 ~ 2026-09-02 18:00
             #          수집 26.12.22 ~ 26.12.23  ← 최종합격 발표·임용 예정일
             #    → '일정'을 빼고, 키워드 강도로 우선순위를 매겨 가장 확실한 문맥을 고른다.
-            best = None   # (우선순위, 줄번호, 시작, 마감)
+            candidates = []   # (우선순위, 양끝시각여부, 시작, 마감)
             for i, line in enumerate(lines):
                 if any(k in line for k in PERIOD_KW_STRONG):
                     priority, window = 2, 4   # 라벨과 값이 여러 줄로 나뉜 표까지 커버
@@ -801,8 +801,10 @@ async def scrape_site(browser, inst_id, url):
                     # 날짜를 짝지은 것이므로 버린다.
                     if (e_cand['dt'] - s_cand['dt']).days > 90:
                         continue
-                    if best is None or priority > best[0]:
-                        best = (priority, i, s_cand, e_cand)
+                    # 접수기간은 마감 시각을 명시하는 경우가 많다("~ 9.2 18:00").
+                    # 전형일정 표의 날짜는 보통 시각이 없다. 이 차이를 순위에 쓴다.
+                    both_times = s_cand['has_time'] and e_cand['has_time']
+                    candidates.append((priority, both_times, s_cand, e_cand))
                     continue
                 if len(dates) == 1:
                     d = dates[0]
@@ -811,8 +813,19 @@ async def scrape_site(browser, inst_id, url):
                             end_item = d  # 마감일 후보 (가장 늦은 날짜 유지)
                     elif start_item is None:
                         start_item = d   # 시작일 후보 (가장 처음 것 유지)
-            if best:
-                start_item, end_item = best[2], best[3]
+            if candidates:
+                # 같은 등급이면 **가장 이른** 후보를 고른다.
+                #
+                # ⚠️ 이게 핵심 방어선이다. 접수는 언제나 전형(필기·면접·발표·임용)보다
+                #    먼저다. 그래서 전형일정 표를 잘못 집으면 반드시 실제 접수기간보다
+                #    뒤의 날짜가 나온다. 실제로 심평원 공고에서 두 번 그렇게 틀렸다.
+                #      실제 08.19~09.02 / 잘못 집은 값 12.22~12.23, 11.13~12.15
+                #    문자열을 잘라내는 방식만으로는 표 배치에 따라 계속 새어서,
+                #    '가장 이른 후보'라는 구조적 기준을 함께 둔다.
+                top = max((c[0], c[1]) for c in candidates)
+                pool = sorted((c for c in candidates if (c[0], c[1]) == top),
+                              key=lambda c: c[2]['dt'])
+                start_item, end_item = pool[0][2], pool[0][3]
 
             # 2) "YYYY.MM.DD ~ (YYYY.)MM.DD [HH:MM]" 범위 패턴 (전체 본문)
             if not (start_item and end_item):
