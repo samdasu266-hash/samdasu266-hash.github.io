@@ -1,5 +1,5 @@
 {
- "generated": "2026-08-21T23:40:21.240734+09:00",
+ "generated": "2026-08-22T00:38:00.158133+09:00",
  "jobs": [
   {
    "instId": "mohw",
@@ -11,7 +11,7 @@
    "region": "서울",
    "link": "https://www.mohw.go.kr/board.es?mid=a10501010400&bid=0003&act=view&list_no=1491626&tag=&nPage=1",
    "firstSeen": "2026-08-20",
-   "lastSeen": "2026-08-21"
+   "lastSeen": "2026-08-22"
   },
   {
    "instId": "mohw",
@@ -23,19 +23,19 @@
    "region": "전국(공고확인)",
    "link": "https://www.mohw.go.kr/board.es?mid=a10501010400&bid=0003&act=view&list_no=1491619&tag=&nPage=1",
    "firstSeen": "2026-08-19",
-   "lastSeen": "2026-08-21"
+   "lastSeen": "2026-08-22"
   },
   {
    "instId": "hira",
    "title": "2026년 하반기 정규직 채용",
-   "startDate": "26.08.19",
-   "endDate": "26.09.02 18:00",
+   "startDate": "26.11.13",
+   "endDate": "26.12.15 18:00",
    "status": "진행중",
    "jobType": "정규직",
    "region": "강원",
    "link": "https://hira.recruitlab.co.kr/app/recruitment-announcement/view/991",
    "firstSeen": "2026-08-19",
-   "lastSeen": "2026-08-21"
+   "lastSeen": "2026-08-22"
   },
   {
    "instId": "mohw",
@@ -47,7 +47,7 @@
    "region": "충북",
    "link": "https://www.mohw.go.kr/board.es?mid=a10501010400&bid=0003&act=view&list_no=1491613&tag=&nPage=1",
    "firstSeen": "2026-08-18",
-   "lastSeen": "2026-08-21"
+   "lastSeen": "2026-08-22"
   },
   {
    "instId": "nmc",
@@ -59,7 +59,7 @@
    "region": "서울(본부·공고확인)",
    "link": "https://nmc.recruiter.co.kr/app/jobnotice/view?systemKindCode=MRS2&jobnoticeSn=263304",
    "firstSeen": "2026-08-14",
-   "lastSeen": "2026-08-21"
+   "lastSeen": "2026-08-22"
   },
   {
    "instId": "nps",
@@ -83,7 +83,7 @@
    "region": "전북",
    "link": "https://nmc.recruiter.co.kr/app/jobnotice/view?systemKindCode=MRS2&jobnoticeSn=263006",
    "firstSeen": "2026-08-12",
-   "lastSeen": "2026-08-21"
+   "lastSeen": "2026-08-22"
   },
   {
    "instId": "nmc",
@@ -95,7 +95,7 @@
    "region": "경북, 대구",
    "link": "https://nmc.recruiter.co.kr/app/jobnotice/view?systemKindCode=MRS2&jobnoticeSn=263004",
    "firstSeen": "2026-08-12",
-   "lastSeen": "2026-08-21"
+   "lastSeen": "2026-08-22"
   },
   {
    "instId": "nmc",
@@ -107,7 +107,7 @@
    "region": "서울, 인천",
    "link": "https://nmc.recruiter.co.kr/app/jobnotice/view?systemKindCode=MRS2&jobnoticeSn=263001",
    "firstSeen": "2026-08-12",
-   "lastSeen": "2026-08-21"
+   "lastSeen": "2026-08-22"
   },
   {
    "instId": "nmc",
@@ -119,7 +119,7 @@
    "region": "전남",
    "link": "https://nmc.recruiter.co.kr/app/jobnotice/view?systemKindCode=MRS2&jobnoticeSn=262996",
    "firstSeen": "2026-08-12",
-   "lastSeen": "2026-08-21"
+   "lastSeen": "2026-08-22"
   },
   {
    "instId": "nmc",
@@ -131,7 +131,7 @@
    "region": "울산",
    "link": "https://nmc.recruiter.co.kr/app/jobnotice/view?systemKindCode=MRS2&jobnoticeSn=262993",
    "firstSeen": "2026-08-12",
-   "lastSeen": "2026-08-21"
+   "lastSeen": "2026-08-22"
   },
   {
    "instId": "nmc",
@@ -143,7 +143,7 @@
    "region": "서울(본부·공고확인)",
    "link": "https://nmc.recruiter.co.kr/app/jobnotice/view?systemKindCode=MRS2&jobnoticeSn=262971",
    "firstSeen": "2026-08-12",
-   "lastSeen": "2026-08-21"
+   "lastSeen": "2026-08-22"
   },
   {
    "instId": "nmc",
@@ -155,7 +155,7 @@
    "region": "대전충남",
    "link": "https://nmc.recruiter.co.kr/app/jobnotice/view?systemKindCode=MRS2&jobnoticeSn=263016",
    "firstSeen": "2026-08-12",
-   "lastSeen": "2026-08-21"
+   "lastSeen": "2026-08-22"
   },
   {
    "instId": "nmc",
@@ -167,7 +167,7 @@
    "region": "경북",
    "link": "https://nmc.recruiter.co.kr/app/jobnotice/view?systemKindCode=MRS2&jobnoticeSn=263008",
    "firstSeen": "2026-08-12",
-   "lastSeen": "2026-08-21"
+   "lastSeen": "2026-08-22"
   },
   {
    "instId": "nmc",
@@ -407,7 +407,7 @@
    "region": "강원",
    "link": "https://bloodinfo.careeron.co.kr/#/recruitment/detail/38",
    "firstSeen": "2026-07-22",
-   "lastSeen": "2026-08-21"
+   "lastSeen": "2026-08-22"
   },
   {
    "instId": "nps",
