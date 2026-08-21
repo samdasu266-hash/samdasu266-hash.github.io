@@ -457,13 +457,29 @@ async def scrape_site(browser, inst_id, url):
 
         job_candidates = []
         row_limit = 15
-        rows = await page.query_selector_all("tbody tr, .board-list li, ul.list li, .recruitment-item")
+        primary = "tbody tr, .board-list li, ul.list li, .recruitment-item"
+        rows = await page.query_selector_all(primary)
+        selector_used = primary
+        if not rows:
+            # 기본 선택자가 안 맞는 게시판을 위한 2차 후보들.
+            # ⚠️ 기본 선택자가 이미 맞은 기관에는 영향이 없다(비었을 때만 시도).
+            for sel in ("table tr",
+                        ".board_list li, .bbs_list li, .list_wrap li",
+                        "div.list li, ol.list li",
+                        "[class*=list] li",
+                        "[class*=board] tr, [class*=list] tr"):
+                rows = await page.query_selector_all(sel)
+                if rows:
+                    selector_used = sel
+                    break
         if not rows:
             # 링크 전체 폴백: 상단 내비게이션 링크가 많으므로 더 넓게 훑는다
             rows = await page.query_selector_all("a")
+            selector_used = "a (전체 링크 폴백)"
             # 링크 전체 폴백에서는 상단 내비게이션 링크가 앞부분을 차지해,
             # 한도가 낮으면 정작 뒤쪽의 실제 공고를 못 보고 잘린다. 넉넉히 잡는다.
             row_limit = 150
+        print(f"[{inst_id}] 목록 행 {len(rows)}개 (선택자: {selector_used})")
 
         now = datetime.now(KST)
 
@@ -804,6 +820,11 @@ async def scrape_site(browser, inst_id, url):
                     "link": safe_link 
                 })
         
+        # 어디서 공고가 사라졌는지 로그로 남긴다.
+        # 사이트가 정상 접속되는데 결과가 0건이면 여태 조용히 넘어갔다.
+        # (comwel·khepi 가 누적 0건인 것을 한참 뒤에야 알았다)
+        print(f"[{inst_id}] 제목 필터 통과 {len(job_candidates)}개 → 접수중 {len(found_jobs)}개")
+
         unique_jobs = []
         seen = set()
         for job in found_jobs:
@@ -852,6 +873,14 @@ async def main():
         if not succeeded:
             print("모든 사이트 수집 실패 - 기존 데이터를 유지합니다.")
             return
+
+        # 접속은 됐는데 한 건도 못 가져온 기관을 눈에 띄게 남긴다.
+        # 이게 없으면 선택자가 안 맞아 계속 0건인 기관을 알아채지 못한다.
+        got = {j.get("instId") for j in all_jobs}
+        empty = sorted(i for i in succeeded if i not in got)
+        if empty:
+            print(f"⚠️  접속은 됐지만 수집 0건인 기관: {', '.join(empty)}")
+            print("    (목록 선택자가 안 맞거나 제목 필터에서 전부 걸러졌을 수 있음)")
 
         # 수집에 실패한 기관은 기존 jobs.json의 데이터를 보존
         try:
